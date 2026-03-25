@@ -27,6 +27,15 @@ function formatAmount(amount: number) {
   }).format(amount);
 }
 
+function to12Hour(raw: string) {
+  const hhmm = String(raw).slice(0, 5);
+  const [h, m] = hhmm.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`;
+}
+
 function prettyDate(date: string) {
   const [year, month, day] = date.split("-").map(Number);
   if (!year || !month || !day) return date;
@@ -353,7 +362,7 @@ export default function PaymentPage() {
                   Date and Time
                 </div>
                 <div className="mt-1 text-base font-medium text-[#1f2937]">
-                  {prettyDate(details.date)} at {details.time}
+                  {prettyDate(details.date)} at {to12Hour(details.time)}
                 </div>
               </div>
 

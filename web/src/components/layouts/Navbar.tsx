@@ -91,9 +91,6 @@ function getNavItems(roleKind: RoleKind): NavItem[] {
   if (roleKind === "admin") {
     return [
       { to: "/admin", label: "Dashboard", end: true },
-      { to: "/admin/users", label: "Users" },
-      { to: "/admin/restaurants", label: "Restaurants" },
-      { to: "/admin/reservations", label: "Reservations" },
     ];
   }
 
@@ -133,6 +130,7 @@ export default function Navbar() {
   const [profileFullName, setProfileFullName] = useState("");
   const [profileAvatarUrl, setProfileAvatarUrl] = useState("");
   const [avatarLoadError, setAvatarLoadError] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
@@ -367,7 +365,7 @@ export default function Navbar() {
       "
     >
       <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4" ref={menuRef}>
-        <div className="flex items-center justify-between gap-2">
+        <div className="relative flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
@@ -397,20 +395,21 @@ export default function Navbar() {
             </button>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <nav className="hidden items-center gap-2 sm:flex">
-              {navItems.map((item) => (
-                <NavLink key={item.to} to={item.to} className={linkClass} end={item.end}>
-                  {item.label}
-                </NavLink>
-              ))}
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-2 sm:flex">
+            {navItems.map((item) => (
+              <NavLink key={item.to} to={item.to} className={linkClass} end={item.end}>
+                {item.label}
+              </NavLink>
+            ))}
 
-              {!session && (
-                <NavLink to="/log-in-sign-up" className={linkClass}>
-                  Login / Sign up
-                </NavLink>
-              )}
-            </nav>
+            {!session && (
+              <NavLink to="/log-in-sign-up" className={linkClass}>
+                Login / Sign up
+              </NavLink>
+            )}
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-2">
 
             {session ? (
               <>
@@ -533,7 +532,7 @@ export default function Navbar() {
                       <div className="h-px bg-[#f0e8ea]" />
 
                       <button
-                        onClick={logout}
+                        onClick={() => { setProfileOpen(false); setShowLogoutConfirm(true); }}
                         className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[#b42336] transition hover:bg-[#fff3f5]"
                       >
                         <LogOut className="h-4 w-4" />
@@ -588,6 +587,38 @@ export default function Navbar() {
           </div>
         )}
       </div>
+
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-[#e8dfe2] bg-white p-6 shadow-[0_22px_48px_rgba(15,23,42,0.18)]">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#fff1f2] text-[#be123c]">
+                <LogOut className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[#1f2937]">Sign Out</h3>
+                <p className="text-sm text-[#6b7280]">Are you sure you want to sign out?</p>
+              </div>
+            </div>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 rounded-xl border border-[#d8dbe2] bg-white px-4 py-2.5 text-sm font-semibold text-[#374151] transition hover:bg-[#f3f4f6]"
+              >
+                No, Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowLogoutConfirm(false); logout(); }}
+                className="flex-1 rounded-xl border border-[#f5c2c7] bg-[#fff1f2] px-4 py-2.5 text-sm font-semibold text-[#be123c] transition hover:bg-[#ffe4e8]"
+              >
+                Yes, Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

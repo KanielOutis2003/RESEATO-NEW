@@ -36,8 +36,38 @@ function toPesoFromMinor(minor: number) {
     minimumFractionDigits: 2,
   }).format((Number(minor) || 0) / 100);
 }
+function to12Hour(raw: string) {
+  const hhmm = String(raw).slice(0, 5);
+  const [h, m] = hhmm.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`;
+}
+
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
+}
+
+const RESTAURANT_MAP_QUERIES: Record<string, string> = {
+  "sachi ramen": "Sachi Ramen SM City Cebu",
+  "somac korean": "Somac Korean Restaurant SM Seaside Cebu",
+  "boy belly": "Boy Belly SM Seaside Cebu",
+  "seafood & ribs warehouse": "Seafood & Ribs Warehouse SM Seaside Cebu",
+  "kuya j": "Kuya J SM Seaside City Cebu",
+  "cabalen": "Cabalen SM Seaside City Cebu",
+  "chika-an": "Chika-an Cebuano Kitchen SM City Cebu",
+  "mesa restaurant": "Mesa Restaurant Philippines SM Seaside Cebu",
+  "seoul black": "Seoul Black SM Seaside City Cebu",
+  "superbowl of china": "Superbowl of China SM City Cebu",
+};
+
+function getMapQuery(restaurantName: string): string {
+  const lower = restaurantName.toLowerCase();
+  for (const [key, value] of Object.entries(RESTAURANT_MAP_QUERIES)) {
+    if (lower.includes(key)) return value;
+  }
+  return `${restaurantName} Cebu`;
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -333,6 +363,34 @@ export default function RestaurantDetailsPage() {
             </div>
 
             <div className="rounded-3xl border border-[#e8e2e3] bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-[#1f2937] sm:text-xl">
+                  Location Map
+                </h3>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getMapQuery(data.name))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-[#7b2f3b] hover:underline"
+                >
+                  <MapPin className="h-3 w-3" /> Open in Google Maps
+                </a>
+              </div>
+              <div className="mt-3 overflow-hidden rounded-2xl border border-[#ece8e9]">
+                <iframe
+                  title="Restaurant Location"
+                  width="100%"
+                  height="280"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(getMapQuery(data.name))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                  allowFullScreen
+                />
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-[#e8e2e3] bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
               <h3 className="text-lg font-semibold text-[#1f2937] sm:text-xl">
                 House rules
               </h3>
@@ -480,73 +538,85 @@ export default function RestaurantDetailsPage() {
 
                   <div className="mt-5">
                     <div className="text-xs uppercase tracking-wider text-[#7b8498]">
-                      Select time
+                      Select time slot
                     </div>
 
-                    <div className="mt-2 rounded-2xl border border-[#ece8e9] bg-[#fafafa] p-4">
+                    <div className="mt-2 overflow-hidden rounded-2xl border border-[#ece8e9]">
                       {loadingSlots ? (
-                        <div className="text-sm text-[#667085]">Loading slots...</div>
+                        <div className="bg-[#fafafa] px-4 py-6 text-center text-sm text-[#667085]">Loading slots...</div>
                       ) : availableTimes.length === 0 ? (
-                        <div className="text-sm text-[#667085]">
+                        <div className="bg-[#fafafa] px-4 py-6 text-center text-sm text-[#667085]">
                           No available slots for this date.
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          {morningSlots.length > 0 && (
-                            <div>
-                              <div className="text-[11px] uppercase tracking-wider text-[#7b8498]">
-                                Morning
-                              </div>
-                              <div className="mt-2 grid grid-cols-3 gap-2">
-                                {morningSlots.map((s) => (
-                                  <button
-                                    type="button"
-                                    key={s.time}
-                                    onClick={() => setTime(s.time)}
-                                    className={cx(
-                                      "rounded-xl border px-3 py-2 text-sm transition",
-                                      time === s.time
-                                        ? "border-[#c98d98] bg-[#f8ecee] text-[#7b2f3b]"
-                                        : "border-[#ddd8da] bg-white text-[#374151] hover:bg-[#f7f3f4]",
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-[#ece8e9] bg-[#f8fafc]">
+                              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Period</th>
+                              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Time</th>
+                              <th className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {slots.map((s) => {
+                              const hour = Number(s.time.slice(0, 2));
+                              const period = hour < 12 ? "AM" : "PM";
+                              const isSelected = time === s.time && s.available;
+                              return (
+                                <tr
+                                  key={s.time}
+                                  onClick={() => s.available && setTime(s.time)}
+                                  className={cx(
+                                    "border-b border-[#f1f5f9] transition",
+                                    s.available ? "cursor-pointer" : "cursor-default opacity-50",
+                                    isSelected
+                                      ? "bg-[#f8ecee]"
+                                      : s.available
+                                        ? "hover:bg-[#faf7f8]"
+                                        : "bg-[#fafafa]",
+                                  )}
+                                >
+                                  <td className="px-3 py-2.5">
+                                    <span className={cx(
+                                      "inline-flex rounded-md px-2 py-0.5 text-[11px] font-medium",
+                                      hour < 12
+                                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                        : "bg-blue-50 text-blue-700 border border-blue-200",
+                                    )}>
+                                      {period}
+                                    </span>
+                                  </td>
+                                  <td className={cx(
+                                    "px-3 py-2.5 font-medium",
+                                    isSelected ? "text-[#7b2f3b]" : "text-[#374151]",
+                                  )}>
+                                    {to12Hour(s.time)}
+                                  </td>
+                                  <td className="px-3 py-2.5 text-center">
+                                    {!s.available ? (
+                                      <span className="inline-flex rounded-full border border-[#f0cdd4] bg-[#fff6f7] px-2 py-0.5 text-[11px] font-medium text-[#be123c]">
+                                        Full
+                                      </span>
+                                    ) : isSelected ? (
+                                      <span className="inline-flex rounded-full border border-[#c98d98] bg-[#f8ecee] px-2 py-0.5 text-[11px] font-semibold text-[#7b2f3b]">
+                                        Selected
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                                        Open
+                                      </span>
                                     )}
-                                  >
-                                    {s.time}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {afternoonSlots.length > 0 && (
-                            <div>
-                              <div className="text-[11px] uppercase tracking-wider text-[#7b8498]">
-                                Afternoon
-                              </div>
-                              <div className="mt-2 grid grid-cols-3 gap-2">
-                                {afternoonSlots.map((s) => (
-                                  <button
-                                    type="button"
-                                    key={s.time}
-                                    onClick={() => setTime(s.time)}
-                                    className={cx(
-                                      "rounded-xl border px-3 py-2 text-sm transition",
-                                      time === s.time
-                                        ? "border-[#c98d98] bg-[#f8ecee] text-[#7b2f3b]"
-                                        : "border-[#ddd8da] bg-white text-[#374151] hover:bg-[#f7f3f4]",
-                                    )}
-                                  >
-                                    {s.time}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       )}
                     </div>
 
                     <div className="mt-2 text-[11px] text-[#98a2b3]">
-                      Times shown are in 30-minute intervals.
+                      Click on a row to select your preferred time slot.
                     </div>
                   </div>
 

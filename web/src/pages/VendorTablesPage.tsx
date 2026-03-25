@@ -5,7 +5,6 @@ import {
   CalendarClock,
   Loader2,
   MapPin,
-  PackagePlus,
   Settings2,
   Store,
   UtensilsCrossed,
@@ -224,13 +223,6 @@ export default function VendorTablesPage() {
                             <ArrowRight className="h-3.5 w-3.5" />
                           </Link>
 
-                          <Link
-                            to={`/vendor/restaurants/${restaurant.id}/best-sellers`}
-                            className="inline-flex items-center gap-2 rounded-xl border border-[#d8dbe2] bg-white px-3 py-2 text-xs font-semibold text-[#374151] hover:bg-[#f8fafc]"
-                          >
-                            Manage Best Sellers
-                            <PackagePlus className="h-3.5 w-3.5" />
-                          </Link>
                         </div>
                       </div>
                     </article>

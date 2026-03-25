@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { EmailOtpType, Session } from "@supabase/supabase-js";
-import { Eye, EyeOff, Mail, Lock, User, Phone, CheckCircle2, Circle, UtensilsCrossed, Check, ArrowLeft } from "lucide-react";
-import { motion } from "framer-motion";
+import { Eye, EyeOff, Mail, Lock, User, Phone, CheckCircle2, Circle, UtensilsCrossed, Check, ArrowLeft, X, Info, FileText } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { getPostAuthRedirect } from "../lib/auth/roleRedirect";
 import { supabase } from "../lib/supabase";
 
@@ -95,6 +95,148 @@ function RequirementItem(props: { ok: boolean; text: string }) {
   );
 }
 
+function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+            transition={{ duration: 0.22 }}
+            className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-[24px] border border-[#e8e2e3] bg-white p-6 shadow-[0_28px_60px_rgba(15,23,42,0.18)] md:p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-[#e5e7eb] bg-[#f8fafc] text-[#6b7280] transition hover:bg-[#f1f1f3]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#f8ecee] text-[#8b3d4a]">
+                <Info className="h-5 w-5" />
+              </div>
+              <h2 className="text-2xl font-semibold text-[#1f2937]">About RESEATO</h2>
+            </div>
+
+            <p className="mt-4 leading-relaxed text-[#475467]">
+              RESEATO helps you book the best tables at top rated restaurants in SM
+              City and SM Seaside Cebu. Skip the line, enjoy the dine—and suggest
+              what&apos;s best.
+            </p>
+            <p className="mt-3 leading-relaxed text-[#475467]">
+              Our platform connects diners with their favorite restaurants, providing
+              seamless online reservations with secure payment processing. Whether
+              you&apos;re planning a casual lunch or a special celebration, RESEATO
+              makes it easy.
+            </p>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-6 w-full rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105"
+            >
+              Close
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function TermsModal({ open, onClose, onAccept }: { open: boolean; onClose: () => void; onAccept: () => void }) {
+  if (!open) return null;
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+            transition={{ duration: 0.22 }}
+            className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-[24px] border border-[#e8e2e3] bg-white p-6 shadow-[0_28px_60px_rgba(15,23,42,0.18)] md:p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-[#e5e7eb] bg-[#f8fafc] text-[#6b7280] transition hover:bg-[#f1f1f3]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#f8ecee] text-[#8b3d4a]">
+                <FileText className="h-5 w-5" />
+              </div>
+              <h2 className="text-2xl font-semibold text-[#1f2937]">Terms and Conditions</h2>
+            </div>
+
+            <p className="mt-4 text-sm text-[#667085]">
+              By ticking the agreement box and proceeding with payment, you
+              acknowledge that you have read, understood, and agreed to the following
+              Terms and Conditions.
+            </p>
+
+            <ol className="mt-5 list-decimal list-outside space-y-4 pl-5 text-sm leading-relaxed text-[#475467]">
+              <li><strong className="text-[#1f2937]">Acceptance of Terms.</strong> By using RESEATO and completing a reservation, you agree to comply with all policies stated herein. If you do not agree with these terms, you must not proceed with the reservation or payment.</li>
+              <li><strong className="text-[#1f2937]">Payment Policy.</strong> All reservation payments made through RESEATO are considered final and non-refundable once successfully processed.</li>
+              <li><strong className="text-[#1f2937]">No Cancellation Policy.</strong> Once payment has been successfully processed, the reservation is confirmed and cannot be canceled, transferred, or rescheduled.</li>
+              <li><strong className="text-[#1f2937]">Limitation of Liability.</strong> RESEATO utilizes third-party payment gateway providers. RESEATO shall not be held liable for any data breach, unauthorized access, or compromise of payment details.</li>
+              <li><strong className="text-[#1f2937]">Accuracy of Information.</strong> Customers are responsible for providing accurate and complete personal and payment information.</li>
+              <li><strong className="text-[#1f2937]">Restaurant Responsibility.</strong> RESEATO acts as a reservation platform only. The partnered restaurant is solely responsible for food quality, service delivery, and dining experience.</li>
+              <li><strong className="text-[#1f2937]">Force Majeure.</strong> RESEATO shall not be held liable for failure to fulfill reservations due to events beyond reasonable control.</li>
+              <li><strong className="text-[#1f2937]">System Availability.</strong> We do not guarantee uninterrupted access due to possible maintenance, updates, or technical issues.</li>
+              <li><strong className="text-[#1f2937]">Amendments.</strong> RESEATO reserves the right to modify these Terms and Conditions at any time.</li>
+              <li><strong className="text-[#1f2937]">No-Show Policy.</strong> Payment will be forfeited if the customer fails to appear at the reserved time.</li>
+              <li><strong className="text-[#1f2937]">Chargeback Protection.</strong> Customers agree not to initiate fraudulent chargebacks.</li>
+              <li><strong className="text-[#1f2937]">Privacy Policy.</strong> Personal data is collected, stored, and protected in accordance with our privacy practices.</li>
+              <li><strong className="text-[#1f2937]">User Conduct.</strong> No fraudulent bookings or misuse of the platform is permitted.</li>
+              <li><strong className="text-[#1f2937]">Time Allowance Policy.</strong> Reservation automatically expires if the customer arrives late (15-30 minutes grace period).</li>
+            </ol>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 rounded-xl border border-[#d8dbe2] bg-white px-4 py-2.5 text-sm font-semibold text-[#475467] transition hover:bg-[#f8fafc]"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={onAccept}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105"
+              >
+                I Accept
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function AuthPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -127,10 +269,17 @@ export default function AuthPage() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [termsError, setTermsError] = useState(false);
+
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [resendingConfirmation, setResendingConfirmation] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgType, setMsgType] = useState<"error" | "success" | "info">("error");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [signupConfirmationEmail, setSignupConfirmationEmail] = useState<string | null>(null);
   const [lastAuthEmail, setLastAuthEmail] = useState("");
   const [showResendConfirmation, setShowResendConfirmation] = useState(false);
@@ -336,16 +485,42 @@ export default function AuthPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
+    setMsgType("error");
+    setTermsError(false);
+    setFieldErrors({});
     setShowResendConfirmation(false);
 
+    const errors: Record<string, string> = {};
+
+    if (!email.trim()) errors.email = "Email is required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = "Please enter a valid email address.";
+
+    if (!password) errors.password = "Password is required.";
+    else if (mode === "login" && password.length < 6) errors.password = "Password must be at least 6 characters.";
+
+    if (mode === "signup") {
+      if (!firstName.trim()) errors.firstName = "First name is required.";
+      if (!lastName.trim()) errors.lastName = "Last name is required.";
+      if (password && !passwordChecks.minLength) errors.password = "Password must be at least 6 characters.";
+      if (password && !passwordRulePass) errors.password = "Password needs uppercase, number, and special character.";
+      if (!confirmPassword) errors.confirmPassword = "Please confirm your password.";
+      else if (!passwordChecks.matches) errors.confirmPassword = "Passwords do not match.";
+    }
+
+    if (!agreed) {
+      errors.terms = "You must accept the Terms and Conditions.";
+      setTermsError(true);
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstError = Object.values(errors)[0];
+      setMsg(firstError);
+      return;
+    }
+
     if (!canSubmit) {
-      if (mode === "signup" && !passwordRulePass) {
-        setMsg(
-          "Password must include at least one uppercase letter, one number, and one special character.",
-        );
-      } else {
-        setMsg("Please complete the form properly.");
-      }
+      setMsg("Please complete the form properly.");
       return;
     }
 
@@ -367,6 +542,7 @@ export default function AuthPage() {
 
         if (error) throw error;
 
+        setMsgType("success");
         setMsg("Logged in!");
         setShowResendConfirmation(false);
         const target = await resolveRedirect(data.session);
@@ -390,6 +566,7 @@ export default function AuthPage() {
         if (error) throw error;
 
         if (data.session) {
+          setMsgType("success");
           setMsg("Account created. You are now logged in.");
           setShowResendConfirmation(false);
           const target = await resolveRedirect(data.session);
@@ -413,12 +590,14 @@ export default function AuthPage() {
     } catch (err: any) {
       const parsed = parseAuthError(err, "Auth failed");
 
-      if (parsed.lower.includes("email not confirmed")) {
+      if (parsed.lower.includes("invalid login credentials") || parsed.lower.includes("invalid credentials")) {
+        setMsg("Incorrect email or password. Please check your credentials and try again.");
+      } else if (parsed.lower.includes("email not confirmed")) {
         setMsg("Email not confirmed yet. Check your inbox, or resend the confirmation link below.");
         setShowResendConfirmation(true);
       } else if (parsed.lower.includes("rate limit")) {
-        setMsg("Too many email requests. Please wait about a minute before requesting another email.");
-        setShowResendConfirmation(true);
+        setMsg("Too many attempts. Please wait a moment before trying again.");
+        setShowResendConfirmation(false);
       } else if (parsed.lower.includes("error sending confirmation email")) {
         const resent = await resendConfirmationEmail(cleanEmail, "form");
         if (!resent) {
@@ -427,9 +606,12 @@ export default function AuthPage() {
       } else if (parsed.lower.includes("user already registered")) {
         setMsg("This email is already registered. If not confirmed yet, resend the confirmation email below.");
         setShowResendConfirmation(true);
+      } else if (parsed.lower.includes("user not found") || parsed.lower.includes("no user found")) {
+        setMsg("No account found with this email. Please sign up first.");
+      } else if (parsed.lower.includes("network") || parsed.lower.includes("fetch")) {
+        setMsg("Unable to connect. Please check your internet connection and try again.");
       } else {
-        const statusText = parsed.status ? ` (HTTP ${parsed.status})` : "";
-        setMsg(`${parsed.message}${statusText}`);
+        setMsg("Something went wrong. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -516,29 +698,36 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f3f3f4] px-6 py-10 text-[#1f2937]">
-      <div className="mx-auto max-w-6xl">
-        <div className="relative min-h-[calc(100vh-80px)] py-6">
-          <div className="absolute left-0 top-0 z-10">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 rounded-2xl border border-[#ded7d9] bg-white px-4 py-2.5 text-sm font-medium text-[#6b7280] shadow-[0_6px_18px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#cdb8bd] hover:text-[#7b2f3b]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
-            </Link>
-          </div>
-
-          <div
-            className={`grid min-h-[calc(100vh-80px)] w-full gap-10 pt-14 md:grid-cols-2 ${
-              mode === "signup" ? "md:items-start" : "md:items-center"
-            }`}
+    <>
+    <AboutModal open={showAboutModal} onClose={() => setShowAboutModal(false)} />
+    <TermsModal
+      open={showTermsModal}
+      onClose={() => setShowTermsModal(false)}
+      onAccept={() => {
+        setAgreed(true);
+        setTermsError(false);
+        setShowTermsModal(false);
+      }}
+    />
+    <div className="fixed inset-0 overflow-hidden bg-[#f3f3f4] px-6 text-[#1f2937]">
+      <div className="mx-auto flex h-full max-w-6xl flex-col py-6">
+        <div className="z-10">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-2xl border border-[#ded7d9] bg-white px-4 py-2.5 text-sm font-medium text-[#6b7280] shadow-[0_6px_18px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#cdb8bd] hover:text-[#7b2f3b]"
           >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Link>
+        </div>
+
+        <div className="flex flex-1 items-center">
+          <div className="grid w-full gap-10 md:grid-cols-2 md:items-center">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className={`hidden md:block ${mode === "signup" ? "md:flex md:h-[78vh] md:items-center" : ""}`}
+          className="hidden md:block"
         >
           <div className="space-y-6">
             <div className="shrink-0">
@@ -576,7 +765,7 @@ export default function AuthPage() {
         >
           <div
             className={`rounded-[24px] border border-[#e6e2e4] bg-white p-6 md:p-10 shadow-[0_18px_40px_rgba(15,23,42,0.08)] ${
-              mode === "signup" ? "md:h-[78vh] md:overflow-y-auto" : ""
+              mode === "signup" ? "max-h-[78vh] overflow-y-auto" : ""
             }`}
           >
             <div className="flex rounded-2xl border border-[#dccfd2] bg-[#f6edef] p-1.5">
@@ -657,15 +846,17 @@ export default function AuthPage() {
                       label="First Name"
                       icon={<User className="h-4 w-4" />}
                       value={firstName}
-                      onChange={setFirstName}
+                      onChange={(v) => { setFirstName(v); setFieldErrors((p) => { const n = { ...p }; delete n.firstName; return n; }); }}
                       placeholder="Christian"
+                      error={fieldErrors.firstName}
                     />
                     <Field
                       label="Last Name"
                       icon={<User className="h-4 w-4" />}
                       value={lastName}
-                      onChange={setLastName}
+                      onChange={(v) => { setLastName(v); setFieldErrors((p) => { const n = { ...p }; delete n.lastName; return n; }); }}
                       placeholder="Boyles"
+                      error={fieldErrors.lastName}
                     />
                   </div>
 
@@ -683,22 +874,33 @@ export default function AuthPage() {
                 label="Email"
                 icon={<Mail className="h-4 w-4" />}
                 value={email}
-                onChange={setEmail}
+                onChange={(v) => { setEmail(v); setFieldErrors((p) => { const n = { ...p }; delete n.email; return n; }); }}
                 placeholder="you@email.com"
                 type="email"
+                error={fieldErrors.email}
               />
 
               <PasswordField
                 label="Password"
                 icon={<Lock className="h-4 w-4" />}
                 value={password}
-                onChange={setPassword}
+                onChange={(v) => { setPassword(v); setFieldErrors((p) => { const n = { ...p }; delete n.password; return n; }); }}
                 show={showPassword}
                 toggleShow={() => setShowPassword((s) => !s)}
+                error={fieldErrors.password}
               />
 
               {mode === "login" && (
-                <div className="-mt-2 flex justify-end">
+                <div className="-mt-1 flex items-center justify-between">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="h-4 w-4 shrink-0 rounded border-[#d6c8cc] bg-white text-[#8b3d4a]"
+                    />
+                    <span className="text-xs text-[#4b5563] leading-none">Remember me</span>
+                  </label>
                   <Link
                     to="/forgot-password"
                     state={{ email: email.trim() }}
@@ -715,9 +917,10 @@ export default function AuthPage() {
                     label="Confirm Password"
                     icon={<Lock className="h-4 w-4" />}
                     value={confirmPassword}
-                    onChange={setConfirmPassword}
+                    onChange={(v) => { setConfirmPassword(v); setFieldErrors((p) => { const n = { ...p }; delete n.confirmPassword; return n; }); }}
                     show={showPassword}
                     toggleShow={() => setShowPassword((s) => !s)}
+                    error={fieldErrors.confirmPassword}
                   />
 
                   <div className="rounded-2xl border border-[#e8d8dc] bg-[#fff9fa] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
@@ -771,20 +974,47 @@ export default function AuthPage() {
                 </>
               )}
 
-              <label className="flex items-start gap-3 text-sm text-[#4b5563]">
-                <input
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-[#d6c8cc] bg-white text-[#8b3d4a]"
-                />
-                <span>
-                  I agree to the <span className="underline">Terms and Conditions</span>.
-                </span>
-              </label>
+              <div>
+                <label className={`inline-flex items-center gap-2 cursor-pointer transition ${
+                  termsError && !agreed
+                    ? "rounded-lg border border-[#f0a0a8] bg-[#fff5f6] px-2 py-1.5"
+                    : ""
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => {
+                      setAgreed(e.target.checked);
+                      if (e.target.checked) { setTermsError(false); setFieldErrors((p) => { const n = { ...p }; delete n.terms; return n; }); }
+                    }}
+                    className="h-4 w-4 shrink-0 rounded border-[#d6c8cc] bg-white text-[#8b3d4a]"
+                  />
+                  <span className="text-xs text-[#4b5563] leading-none">
+                    I have read and agree to the{" "}
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      className="font-semibold text-[#7b2f3b] underline underline-offset-2 hover:text-[#923f4a]"
+                    >
+                      Terms and Conditions
+                    </button>
+                  </span>
+                </label>
+                {termsError && !agreed && (
+                  <p className="mt-1 pl-6 text-xs font-medium text-[#be123c]">
+                    You must accept the Terms and Conditions to proceed.
+                  </p>
+                )}
+              </div>
 
               {msg && (
-                <div className="rounded-xl border border-[#ead9dd] bg-[#fff7f8] px-4 py-3 text-sm text-[#7b2f3b]">
+                <div className={`rounded-xl border px-4 py-3 text-sm ${
+                  msgType === "success"
+                    ? "border-[#b7e4c7] bg-[#ecfdf3] text-[#166534]"
+                    : msgType === "info"
+                      ? "border-[#bdd8f2] bg-[#eaf4ff] text-[#1d5f93]"
+                      : "border-[#ead9dd] bg-[#fff7f8] text-[#7b2f3b]"
+                }`}>
                   {msg}
                 </div>
               )}
@@ -812,10 +1042,36 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={!canSubmit || loading}
-                className="w-full rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Please wait..." : mode === "login" ? "Login" : "Create account"}
+                {loading ? "Please wait..." : mode === "login" ? (<>Sign In <span aria-hidden="true">&rarr;</span></>) : "Create account"}
               </button>
+
+              <p className="mt-1 text-center text-sm text-[#6b7280]">
+                {mode === "login" ? (
+                  <>
+                    Don&apos;t have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => { setMode("signup"); setMsg(null); setShowResendConfirmation(false); }}
+                      className="font-semibold text-[#7b2f3b] hover:text-[#923f4a]"
+                    >
+                      Sign up for free
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => { setMode("login"); setMsg(null); setShowResendConfirmation(false); }}
+                      className="font-semibold text-[#7b2f3b] hover:text-[#923f4a]"
+                    >
+                      Sign in
+                    </button>
+                  </>
+                )}
+              </p>
             </form>
           </div>
         </motion.div>
@@ -823,6 +1079,7 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -833,11 +1090,14 @@ function Field(props: {
   onChange: (v: string) => void;
   placeholder?: string;
   type?: string;
+  error?: string;
 }) {
   return (
     <label className="block space-y-1">
       <div className="text-sm text-[#4b5563]">{props.label}</div>
-      <div className="auth-field flex items-center gap-2 rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5">
+      <div className={`auth-field flex items-center gap-2 rounded-xl border bg-white px-3 py-2.5 ${
+        props.error ? "border-[#e11d48] ring-1 ring-[#e11d48]/20" : "border-[#ddd8da]"
+      }`}>
         <span className="text-[#9ca3af]">{props.icon}</span>
         <input
           type={props.type ?? "text"}
@@ -847,6 +1107,7 @@ function Field(props: {
           className="auth-input w-full bg-transparent text-sm text-[#111827] placeholder:text-[#9ca3af]"
         />
       </div>
+      {props.error && <p className="text-xs text-[#be123c]">{props.error}</p>}
     </label>
   );
 }
@@ -858,11 +1119,14 @@ function PasswordField(props: {
   onChange: (v: string) => void;
   show: boolean;
   toggleShow: () => void;
+  error?: string;
 }) {
   return (
     <label className="block space-y-1">
       <div className="text-sm text-[#4b5563]">{props.label}</div>
-      <div className="auth-field flex items-center gap-2 rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5">
+      <div className={`auth-field flex items-center gap-2 rounded-xl border bg-white px-3 py-2.5 ${
+        props.error ? "border-[#e11d48] ring-1 ring-[#e11d48]/20" : "border-[#ddd8da]"
+      }`}>
         <span className="text-[#9ca3af]">{props.icon}</span>
         <input
           type={props.show ? "text" : "password"}
@@ -879,6 +1143,7 @@ function PasswordField(props: {
           {props.show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
+      {props.error && <p className="text-xs text-[#be123c]">{props.error}</p>}
     </label>
   );
 }

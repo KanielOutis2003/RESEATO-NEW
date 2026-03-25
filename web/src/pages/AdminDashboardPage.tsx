@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   Building2,
   CalendarCheck2,
-  ClipboardList,
   Loader2,
   RefreshCcw,
-  Shield,
+  Search,
   Users,
   Wallet,
 } from "lucide-react";
 import { useAuth } from "../lib/auth/useAuth";
-import { CompletionBarChart, ReservationsLineChart } from "../components/admin/AdminOverviewCharts";
+import { CompletionLineChart, ReservationsLineChart } from "../components/admin/AdminOverviewCharts";
 import { supabase } from "../lib/supabase";
 import {
   AdminAuditLog,
@@ -32,7 +31,7 @@ import {
   updateAdminUserRole,
 } from "../lib/api/admin.api";
 
-type TabKey = "overview" | "users" | "restaurants" | "reservations" | "audit";
+type TabKey = "overview" | "users" | "restaurants" | "reservations" | "audit" | "charts";
 type ChartPreset = "7d" | "14d" | "30d" | "90d" | "custom";
 
 function toPeso(minor: number) {
@@ -66,13 +65,20 @@ function sectionToTab(section?: string): TabKey {
   if (value === "restaurants") return "restaurants";
   if (value === "reservations") return "reservations";
   if (value === "audit") return "audit";
+  if (value === "charts") return "charts";
   return "overview";
   }
 
-function tabToPath(tab: TabKey) {
-  if (tab === "overview") return "/admin";
-  return `/admin/${tab}`;
-  }
+
+
+function to12Hour(raw: string) {
+  const hhmm = String(raw).slice(0, 5);
+  const [h, m] = hhmm.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`;
+}
 
 function shortId(value: string) {
   if (!value) return "-";
@@ -166,7 +172,6 @@ function parsePositiveInt(
   return parsed;
 }
 export default function AdminDashboardPage() {
-  const navigate = useNavigate();
   const { section } = useParams<{ section?: string }>();
   const { isAuthed, loading: authLoading, user } = useAuth();
 
@@ -195,6 +200,7 @@ export default function AdminDashboardPage() {
   const [reservationStatusFilter, setReservationStatusFilter] = useState("all");
   const [reservationPaymentFilter, setReservationPaymentFilter] = useState("all");
   const [reservationDateFilter, setReservationDateFilter] = useState("");
+  const [reservationSearch, setReservationSearch] = useState("");
 
   const [roleDraftByUserId, setRoleDraftByUserId] = useState<Record<string, string>>({});
   const [statusDraftByReservationId, setStatusDraftByReservationId] = useState<Record<string, string>>({});
@@ -217,18 +223,19 @@ export default function AdminDashboardPage() {
     description: "",
   });
 
+
   const [ownerDraftByRestaurantId, setOwnerDraftByRestaurantId] = useState<Record<string, string>>({});
   const [creatingRestaurant, setCreatingRestaurant] = useState(false);
   const [assigningRestaurantId, setAssigningRestaurantId] = useState<string | null>(null);
 
   const panelClass =
-    "rounded-3xl border border-[#e5e7eb] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.08)]";
+    "rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]";
   const inputClass =
-    "rounded-xl border border-[#d8dbe2] bg-white px-3 py-2 text-sm text-[#1f2937] outline-none placeholder:text-[#8b97a8] focus:border-[#b76a73] focus:ring-2 focus:ring-[rgba(183,106,115,0.18)]";
+    "rounded-xl border border-[#d8dbe2] bg-white px-3 py-2 text-sm text-[#1f2937] outline-none placeholder:text-[#8b97a8] focus:border-[#5a7ec0] focus:ring-2 focus:ring-[rgba(59,92,168,0.18)]";
   const selectClass =
-    "rounded-xl border border-[#d8dbe2] bg-white px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#b76a73] focus:ring-2 focus:ring-[rgba(183,106,115,0.18)]";
+    "rounded-xl border border-[#d8dbe2] bg-white px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#5a7ec0] focus:ring-2 focus:ring-[rgba(59,92,168,0.18)]";
   const ghostButtonClass =
-    "rounded-xl border border-[#d9c3c8] bg-[#f8ecee] px-3 py-2 text-sm font-semibold text-[#7b2f3b] hover:bg-[#f3dde1]";
+    "rounded-[14px] border border-[#d9e3fb] bg-[#eef4ff] px-3 py-2 text-sm font-bold text-[#3153a1] hover:bg-[#e4edff]";
 
   useEffect(() => {
     let alive = true;
@@ -291,6 +298,16 @@ export default function AdminDashboardPage() {
 
   const isAdmin = useMemo(() => role === "admin", [role]);
   const activeTab = useMemo(() => sectionToTab(section), [section]);
+
+  const filteredReservations = useMemo(() => {
+    if (!reservationSearch.trim()) return reservations;
+    const q = reservationSearch.trim().toLowerCase();
+    return reservations.filter((r) =>
+      [r.id, r.name, r.user_name, r.user_email, r.restaurant_name, r.phone, r.date, r.status]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(q))
+    );
+  }, [reservations, reservationSearch]);
 
   const loadOverview = useCallback(async () => {
     const data = await getAdminOverview();
@@ -405,6 +422,7 @@ export default function AdminDashboardPage() {
     } else if (activeTab === "restaurants") {
       jobs.push({ label: "restaurants", run: loadRestaurants });
       jobs.push({ label: "assignable vendors", run: loadAssignableVendors });
+      jobs.push({ label: "reservations for commissions", run: loadReservations });
     } else if (activeTab === "reservations") {
       jobs.push({ label: "reservations", run: loadReservations });
     } else if (activeTab === "audit") {
@@ -443,7 +461,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (!isAuthed || roleLoading || !isAdmin) return;
-    if (activeTab !== "overview") return;
+    if (activeTab !== "charts") return;
 
     if (!isValidDateKey(chartFrom) || !isValidDateKey(chartTo)) {
       setChartError("Invalid date format. Use YYYY-MM-DD.");
@@ -462,7 +480,7 @@ export default function AdminDashboardPage() {
     await refreshAll();
 
     if (
-      activeTab === "overview" &&
+      activeTab === "charts" &&
       isValidDateKey(chartFrom) &&
       isValidDateKey(chartTo) &&
       chartFrom <= chartTo
@@ -667,125 +685,138 @@ export default function AdminDashboardPage() {
 
   if (authLoading || roleLoading) {
     return (
-      <div className="inline-flex items-center gap-2 text-[#667085]">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Checking admin access...
+      <div className="p-7">
+        <div className="inline-flex items-center gap-2 text-[#667085]">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Checking admin access...
+        </div>
       </div>
     );
   }
 
   if (!isAuthed) {
     return (
-      <div className="rounded-3xl border border-[#e5e7eb] bg-white p-6 text-[#475467]">
-        Login is required to access admin dashboard.
+      <div className="p-7">
+        <div className="rounded-[24px] border border-[#e5e7eb] bg-white p-6 text-[#475467] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+          Login is required to access admin dashboard.
+        </div>
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="rounded-3xl border border-[#f3c3cc] bg-[#fff1f3] p-6 text-[#9f1239]">
-        You do not have admin access.
+      <div className="p-7">
+        <div className="rounded-[24px] border border-[#f3c3cc] bg-[#fff1f3] p-6 text-[#9f1239]">
+          You do not have admin access.
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8 text-[#1f2937]">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-5xl text-[#1f2937]">Admin Dashboard</h1>
-          <p className="mt-1 text-sm text-[#667085]">Platform overview and management</p>
-        </div>
+    <div className="p-7 text-[#1f2937]">
+      {/* Topbar */}
+      <header className="mb-5 rounded-[24px] bg-[linear-gradient(135deg,#1d2740,#334b7a)] px-6 py-6 text-white shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-[32px] font-extrabold">Admin Dashboard</h2>
+            <p className="mt-1 text-sm text-[#d9e4ff]">Monitor the complete RESEATO platform from one control center.</p>
+          </div>
 
-        <button
-          type="button"
-          onClick={handleRefresh}
-          disabled={loading}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#d9c3c8] bg-[#f8ecee] px-4 py-2.5 text-sm font-semibold text-[#7b2f3b] hover:bg-[#f3dde1] disabled:opacity-60"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
-          Refresh
-        </button>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-[14px] border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/20 disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+            Refresh
+          </button>
+        </div>
       </header>
 
       {message && (
-        <div className="mt-5 rounded-2xl border border-[#f3c3cc] bg-[#fff1f3] px-4 py-3 text-sm text-[#9f1239]">
+        <div className="mb-5 rounded-[18px] border border-[#f3c3cc] bg-[#fff1f3] px-4 py-3 text-sm text-[#9f1239]">
           {message}
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="rounded-xl border border-[#e5e7eb] bg-white p-1">
-          {([
-            ["overview", "Overview"],
-            ["reservations", "Reservations"],
-            ["restaurants", "Restaurants"],
-            ["users", "Users"],
-            ["audit", "Audit Logs"],
-          ] as Array<[TabKey, string]>).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => navigate(tabToPath(key))}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                activeTab === key
-                  ? "bg-[#f8ecee] text-[#7b2f3b]"
-                  : "text-[#667085] hover:bg-[#f3f4f6] hover:text-[#1f2937]"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {activeTab === "overview" && (
-        <section className="mt-5 space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="space-y-5">
+          {/* Stats Grid */}
+          <div className="grid gap-[18px] md:grid-cols-2 xl:grid-cols-4">
             {[
-              { label: "Restaurants", value: overview?.restaurants ?? 0, icon: Building2 },
-              { label: "Reservations", value: overview?.reservations ?? 0, icon: CalendarCheck2 },
-              { label: "Users", value: overview?.users ?? 0, icon: Users },
-              { label: "Total Revenue", value: toPeso(overview?.totalPaidAmountMinor ?? 0), icon: Wallet },
+              { label: "Total Users", value: overview?.users ?? 0, icon: Users, sub: `+${overview?.vendors ?? 0} vendors` },
+              { label: "Restaurants", value: overview?.restaurants ?? 0, icon: Building2, sub: "Active listings" },
+              { label: "Reservations", value: overview?.reservations ?? 0, icon: CalendarCheck2, sub: "Healthy weekly flow" },
+              { label: "Platform Revenue", value: toPeso(overview?.totalPaidAmountMinor ?? 0), icon: Wallet, sub: "Collected fees" },
             ].map((card) => {
-              const Icon = card.icon;
               return (
-                <article key={card.label} className={panelClass}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#667085]">{card.label}</span>
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-[#f8ecee] text-[#8b3d4a]">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                  </div>
-                  <div className="mt-3 text-3xl font-semibold text-[#1f2937]">{card.value}</div>
+                <article key={card.label} className="rounded-[22px] border border-[#e7e3e5] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcff_100%)] p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+                  <div className="text-xs font-semibold uppercase tracking-[1px] text-[#667085]">{card.label}</div>
+                  <div className="mt-2.5 text-[34px] font-extrabold text-[#1f2937]">{card.value}</div>
+                  <div className="mt-1 text-xs font-bold text-[#3153a1]">{card.sub}</div>
                 </article>
               );
             })}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
-            {[
-              { label: "Vendors", value: overview?.vendors ?? 0, icon: Shield },
-              { label: "Admins", value: overview?.admins ?? 0, icon: Shield },
-              { label: "Pending", value: overview?.pendingReservations ?? 0, icon: ClipboardList },
-              { label: "Paid", value: overview?.paidReservations ?? 0, icon: Wallet },
-            ].map((card) => {
-              const Icon = card.icon;
-              return (
-                <article key={card.label} className="rounded-2xl border border-[#e5e7eb] bg-white p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wide text-[#8b97a8]">{card.label}</span>
-                    <Icon className="h-4 w-4 text-[#b76a73]" />
+          {/* System Snapshot + Mini Cards */}
+          <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
+            <article className="rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-[18px]">
+                <div>
+                  <h3 className="text-[22px] font-extrabold text-[#1f2937]">System Snapshot</h3>
+                  <p className="text-[13px] text-[#667085]">Quick visibility of operational load and reservation movement.</p>
+                </div>
+                <button type="button" onClick={handleRefresh} className="rounded-[14px] border border-[#d9e3fb] bg-[#eef4ff] px-3.5 py-2.5 text-sm font-bold text-[#3153a1]">Refresh Data</button>
+              </div>
+
+              <div className="space-y-[14px]">
+                {[
+                  { title: `${overview?.users ?? 0} Registered Users`, desc: "Customers, vendors, and admin accounts across the platform.", status: "Stable", tone: "confirmed" as const },
+                  { title: `${overview?.restaurants ?? 0} Restaurant Listings`, desc: "Partner restaurants with varying reservation activity.", status: "Growing", tone: "confirmed" as const },
+                  { title: `${overview?.pendingReservations ?? 0} Pending Reservations`, desc: "Reservations awaiting vendor approval or system processing.", status: "Monitor", tone: "pending" as const },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-center justify-between gap-3 rounded-[18px] border border-[#e7e3e5] bg-[#fcfafb] p-4">
+                    <div>
+                      <h4 className="text-[15px] font-bold text-[#1f2937]">{item.title}</h4>
+                      <p className="mt-1 text-xs text-[#667085]">{item.desc}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1.5 text-xs font-extrabold ${
+                      item.tone === "confirmed" ? "bg-[#e8f7ef] text-[#1f7a4d]" : "bg-[#fff1d9] text-[#b7791f]"
+                    }`}>{item.status}</span>
                   </div>
-                  <div className="mt-2 text-xl font-semibold text-[#1f2937]">{card.value}</div>
+                ))}
+              </div>
+            </article>
+
+            <div className="grid gap-[14px]">
+              {[
+                { label: "Admin Alerts", value: overview?.admins ?? 0, sub: "Recent activities requiring review" },
+                { label: "New Vendors", value: overview?.vendors ?? 0, sub: "Applications this week" },
+                { label: "Paid Reservations", value: overview?.paidReservations ?? 0, sub: "Completed payment transactions" },
+              ].map((item) => (
+                <article key={item.label} className="rounded-[20px] border border-[#e7e3e5] bg-[linear-gradient(180deg,#fffaf9_0%,#fffdfd_100%)] p-[18px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+                  <div className="text-xs font-semibold uppercase tracking-[1px] text-[#667085]">{item.label}</div>
+                  <div className="mt-2 text-[28px] font-extrabold text-[#1f2937]">{item.value}</div>
+                  <div className="text-xs text-[#667085]">{item.sub}</div>
                 </article>
-              );
-            })}
+              ))}
+            </div>
           </div>
 
+        </section>
+      )}
+
+      {activeTab === "charts" && (
+        <section className="space-y-5">
           <article className={panelClass}>
-            <div className="flex flex-wrap items-end gap-3">
+            <h2 className="text-2xl font-extrabold text-[#1f2937]">Performance Charts</h2>
+            <p className="mt-1 text-sm text-[#667085]">Analyze reservation trends, completion rates, and revenue over time.</p>
+
+            <div className="mt-5 flex flex-wrap items-end gap-3">
               <div>
                 <p className="text-xs uppercase tracking-wide text-[#8b97a8]">Range preset</p>
                 <select
@@ -889,11 +920,10 @@ export default function AdminDashboardPage() {
               </div>
               <p className="text-xs text-[#8b97a8]">Bar chart comparing completed and cancelled reservations by day.</p>
               <div className="mt-3">
-                <CompletionBarChart points={chartData?.days ?? []} />
+                <CompletionLineChart points={chartData?.days ?? []} />
               </div>
             </article>
           </div>
-
         </section>
       )}
 
@@ -1297,8 +1327,9 @@ export default function AdminDashboardPage() {
                   <thead className="bg-[#f8fafc]">
                     <tr className="border-b border-[#e5e7eb] text-left text-xs uppercase tracking-wide text-[#8b97a8]">
                       <th className="px-3 py-2.5">Restaurant</th>
-                      <th className="px-3 py-2.5">Owner</th>
+                      <th className="px-3 py-2.5">Owner / Vendor</th>
                       <th className="px-3 py-2.5">Assign Vendor</th>
+                      <th className="px-3 py-2.5">Commissions</th>
                       <th className="px-3 py-2.5">Status</th>
                       <th className="px-3 py-2.5">Tables</th>
                       <th className="px-3 py-2.5">Rating</th>
@@ -1307,12 +1338,19 @@ export default function AdminDashboardPage() {
                   <tbody>
                     {restaurants.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-3 py-8 text-center text-sm text-[#8b97a8]">
+                        <td colSpan={7} className="px-3 py-8 text-center text-sm text-[#8b97a8]">
                           No restaurants found.
                         </td>
                       </tr>
                     ) : (
-                      restaurants.map((item) => (
+                      restaurants.map((item) => {
+                        const restoReservations = reservations.filter(
+                          (r) => r.restaurant_id === item.id && (r.payment_status === "paid"),
+                        );
+                        const totalCommission = restoReservations.reduce(
+                          (sum, r) => sum + (Number(r.payment_amount) || 0), 0,
+                        );
+                        return (
                         <tr key={item.id} className="border-b border-[#f1f5f9] align-top transition hover:bg-[#fcfdff]">
                           <td className="px-3 py-3">
                             <div className="font-semibold text-[#1f2937]">{item.name}</div>
@@ -1320,8 +1358,13 @@ export default function AdminDashboardPage() {
                               {item.cuisine} | {item.location}
                             </div>
                           </td>
-                          <td className="px-3 py-3 text-[#475467]">
-                            {item.ownerName || item.ownerEmail || (item.ownerId ? shortId(item.ownerId) : "-")}
+                          <td className="px-3 py-3">
+                            <div className="text-[#475467]">
+                              {item.ownerName || item.ownerEmail || (item.ownerId ? shortId(item.ownerId) : "-")}
+                            </div>
+                            {item.ownerName && item.ownerEmail && (
+                              <div className="mt-0.5 text-[11px] text-[#8b97a8]">{item.ownerEmail}</div>
+                            )}
                           </td>
                           <td className="px-3 py-3">
                             <div className="flex min-w-[280px] items-center gap-2">
@@ -1356,6 +1399,10 @@ export default function AdminDashboardPage() {
                             </div>
                           </td>
                           <td className="px-3 py-3">
+                            <div className="text-sm font-semibold text-[#7b2f3b]">{toPeso(totalCommission)}</div>
+                            <div className="mt-0.5 text-[11px] text-[#8b97a8]">{restoReservations.length} paid</div>
+                          </td>
+                          <td className="px-3 py-3">
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                               Active
                             </span>
@@ -1363,7 +1410,7 @@ export default function AdminDashboardPage() {
                           <td className="px-3 py-3 text-[#475467]">{item.totalTables}</td>
                           <td className="px-3 py-3 text-[#475467]">{item.rating.toFixed(1)}</td>
                         </tr>
-                      ))
+                      );})
                     )}
                   </tbody>
                 </table>
@@ -1376,7 +1423,18 @@ export default function AdminDashboardPage() {
         <section className={`mt-5 ${panelClass}`}>
           <h2 className="text-3xl text-[#1f2937]">All Reservations</h2>
 
-          <div className="mt-4 grid gap-3 sm:flex sm:flex-wrap">
+          <div className="relative mt-4">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b97a8]" />
+            <input
+              type="text"
+              value={reservationSearch}
+              onChange={(e) => setReservationSearch(e.target.value)}
+              placeholder="Search by name, email, restaurant, or ID..."
+              className={`${inputClass} w-full pl-9`}
+            />
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:flex sm:flex-wrap">
             <select
               value={reservationStatusFilter}
               onChange={(event) => setReservationStatusFilter(event.target.value)}
@@ -1416,12 +1474,12 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="mt-4 space-y-3 md:hidden">
-            {reservations.length === 0 ? (
+            {filteredReservations.length === 0 ? (
               <div className="rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] px-4 py-6 text-center text-sm text-[#667085]">
                 No reservations found.
               </div>
             ) : (
-              reservations.map((item) => (
+              filteredReservations.map((item) => (
                 <article
                   key={item.id}
                   className="rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] p-4 shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
@@ -1449,7 +1507,7 @@ export default function AdminDashboardPage() {
                     <div className="rounded-xl border border-[#ebedf1] bg-white p-2">
                       <div className="text-[10px] uppercase tracking-wide text-[#98a2b3]">Date/Time</div>
                       <div className="mt-1 text-xs font-medium text-[#344054]">
-                        {item.date} {item.time}
+                        {item.date} {to12Hour(item.time)}
                       </div>
                     </div>
                     <div className="rounded-xl border border-[#ebedf1] bg-white p-2">
@@ -1528,14 +1586,14 @@ export default function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {reservations.length === 0 ? (
+                  {filteredReservations.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="px-3 py-8 text-center text-sm text-[#8b97a8]">
                         No reservations found.
                       </td>
                     </tr>
                   ) : (
-                    reservations.map((item) => (
+                    filteredReservations.map((item) => (
                       <tr key={item.id} className="border-b border-[#f1f5f9] transition hover:bg-[#fcfdff]">
                         <td className="px-3 py-3 text-[#667085]">{shortId(item.id)}</td>
                         <td className="px-3 py-3 text-[#475467]">
@@ -1543,7 +1601,7 @@ export default function AdminDashboardPage() {
                         </td>
                         <td className="px-3 py-3 text-[#475467]">{item.restaurant_name || shortId(item.restaurant_id)}</td>
                         <td className="px-3 py-3 text-[#475467]">
-                          {item.date} {item.time}
+                          {item.date} {to12Hour(item.time)}
                         </td>
                         <td className="px-3 py-3 text-[#475467]">{item.guests}</td>
                         <td className="px-3 py-3">

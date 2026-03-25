@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  CalendarDays,
   CheckCircle2,
+  Clock3,
   CreditCard,
+  Eye,
   Loader2,
   Phone,
   Receipt,
   User,
+  UsersRound,
+  X,
   XCircle,
 } from "lucide-react";
 import {
@@ -49,6 +54,15 @@ function toPesoFromMinor(minor: number | null | undefined) {
   }).format(value / 100);
 }
 
+function to12Hour(raw: string) {
+  const hhmm = String(raw).slice(0, 5);
+  const [h, m] = hhmm.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`;
+}
+
 function normalizeStatus(status: string) {
   return String(status || "pending").toLowerCase();
 }
@@ -88,6 +102,7 @@ export default function VendorReservationsPage() {
   const [actingId, setActingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [restaurantIdFilter, setRestaurantIdFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("");
@@ -285,9 +300,9 @@ export default function VendorReservationsPage() {
               </div>
             </div>
           ) : (
-            <VendorPageReveal className="space-y-3">
+            <VendorPageReveal className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {reservations.length === 0 ? (
-            <div className="rounded-3xl border border-[#e8e2e3] bg-white p-6 text-[#6b7280] shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+            <div className="col-span-full rounded-2xl border border-[#e8e2e3] bg-white p-6 text-[#6b7280] shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
               No reservations found.
             </div>
           ) : (
@@ -300,113 +315,75 @@ export default function VendorReservationsPage() {
               return (
                 <article
                   key={reservation.id}
-                  className="rounded-3xl border border-[#e8e2e3] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+                  className="flex flex-col rounded-2xl border border-[#e8e2e3] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-2xl text-[#1f2937]">
-                        {reservation.restaurant?.name ?? reservation.restaurant_id}
-                      </h3>
-                      <p className="text-sm text-[#6b7280]">
-                        {toPrettyDate(reservation.date)} at {reservation.time}
-                      </p>
-                      <p className="mt-1 text-xs uppercase tracking-wide text-[#8b97a8]">
-                        Ref: {reservation.id}
-                      </p>
-                    </div>
+                  {/* Status badges */}
+                  <div className="flex items-center justify-between gap-2 px-4 pt-4">
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusClass(status)}`}>
+                      {status}
+                    </span>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${paymentStatusClass(paymentStatus)}`}>
+                      {paymentStatus}
+                    </span>
+                  </div>
 
-                    <div className="flex flex-col gap-2">
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusClass(status)}`}
-                      >
-                        {status}
-                      </span>
+                  {/* Card body */}
+                  <div className="flex-1 px-4 pt-3 pb-2">
+                    <h3 className="truncate text-base font-semibold text-[#1f2937]">
+                      {reservation.restaurant?.name ?? reservation.restaurant_id}
+                    </h3>
+                    <p className="mt-1 text-sm text-[#6b7280]">
+                      {toPrettyDate(reservation.date)}
+                    </p>
+                    <p className="text-sm font-medium text-[#374151]">
+                      {to12Hour(reservation.time)}
+                    </p>
 
-                      <span
-                        className={`rounded-full border px-3 py-1 text-center text-xs font-semibold uppercase tracking-wide ${paymentStatusClass(
-                          paymentStatus,
-                        )}`}
-                      >
-                        Payment: {paymentStatus}
-                      </span>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="rounded-lg border border-[#ece8e9] bg-[#fafafa] px-2.5 py-2">
+                        <div className="text-[10px] uppercase tracking-wide text-[#8b97a8]">Guest</div>
+                        <div className="mt-0.5 truncate text-xs font-medium text-[#1f2937]">{reservation.name}</div>
+                      </div>
+                      <div className="rounded-lg border border-[#ece8e9] bg-[#fafafa] px-2.5 py-2">
+                        <div className="text-[10px] uppercase tracking-wide text-[#8b97a8]">Guests</div>
+                        <div className="mt-0.5 text-xs font-medium text-[#1f2937]">{reservation.guests}</div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-2 sm:grid-cols-4">
-                    <div className="rounded-xl border border-[#e5e7eb] bg-[#fcfcfd] p-3 text-sm text-[#1f2937]">
-                      <div className="inline-flex items-center gap-2 text-xs text-[#6b7280]">
-                        <User className="h-3.5 w-3.5" />
-                        Guest
-                      </div>
-                      <div className="mt-1">{reservation.name}</div>
-                    </div>
-
-                    <div className="rounded-xl border border-[#e5e7eb] bg-[#fcfcfd] p-3 text-sm text-[#1f2937]">
-                      <div className="inline-flex items-center gap-2 text-xs text-[#6b7280]">
-                        <Phone className="h-3.5 w-3.5" />
-                        Phone
-                      </div>
-                      <div className="mt-1">{reservation.phone}</div>
-                    </div>
-
-                    <div className="rounded-xl border border-[#e5e7eb] bg-[#fcfcfd] p-3 text-sm text-[#1f2937]">
-                      <div className="text-xs text-[#6b7280]">Guests</div>
-                      <div className="mt-1">{reservation.guests}</div>
-                    </div>
-
-                    <div className="rounded-xl border border-[#e5e7eb] bg-[#fcfcfd] p-3 text-sm text-[#1f2937]">
-                      <div className="inline-flex items-center gap-2 text-xs text-[#6b7280]">
-                        <CreditCard className="h-3.5 w-3.5" />
-                        Amount
-                      </div>
-                      <div className="mt-1">{toPesoFromMinor(reservation.payment_amount)}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 rounded-xl border border-[#e5e7eb] bg-[#fcfcfd] p-3 text-sm text-[#4b5563]">
-                    <div className="inline-flex items-center gap-2 text-xs text-[#6b7280]">
-                      <Receipt className="h-3.5 w-3.5" />
-                      Transaction Reference
-                    </div>
-                    <div className="mt-1 break-all">
-                      {reservation.payment_reference || "Not available yet"}
-                    </div>
-                  </div>
-
-                  {reservation.decline_reason && (
-                    <div className="mt-3 rounded-xl border border-[#f2cccf] bg-[#fff6f7] px-3 py-2 text-sm text-[#9f1239]">
-                      Decline reason: {reservation.decline_reason}
-                    </div>
-                  )}
-
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  {/* Footer actions */}
+                  <div className="flex items-center gap-2 border-t border-[#ece8e9] px-4 py-3">
                     <button
                       type="button"
-                      onClick={() => handleDecision(reservation.id, "approve")}
-                      disabled={!isPending || isActing}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[#b7e4c7] bg-[#ecfdf3] px-3 py-2 text-sm font-semibold text-[#166534] hover:bg-[#ddf8e8] disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => setViewingId(reservation.id)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-[#d8dbe2] bg-white px-3 py-1.5 text-xs font-semibold text-[#374151] transition hover:bg-[#f3f4f6]"
                     >
-                      {isActing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="h-4 w-4" />
-                      )}
-                      Approve
+                      <Eye className="h-3 w-3" />
+                      View
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDecision(reservation.id, "decline")}
-                      disabled={!isPending || isActing}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[#f5c2c7] bg-[#fff1f2] px-3 py-2 text-sm font-semibold text-[#be123c] hover:bg-[#ffe4e8] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isActing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <XCircle className="h-4 w-4" />
-                      )}
-                      Decline
-                    </button>
+                    {isPending && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleDecision(reservation.id, "approve")}
+                          disabled={isActing}
+                          className="inline-flex items-center gap-1 rounded-lg border border-[#b7e4c7] bg-[#ecfdf3] px-3 py-1.5 text-xs font-semibold text-[#166534] hover:bg-[#ddf8e8] disabled:opacity-50"
+                        >
+                          {isActing ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDecision(reservation.id, "decline")}
+                          disabled={isActing}
+                          className="inline-flex items-center gap-1 rounded-lg border border-[#f5c2c7] bg-[#fff1f2] px-3 py-1.5 text-xs font-semibold text-[#be123c] hover:bg-[#ffe4e8] disabled:opacity-50"
+                        >
+                          {isActing ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+                          Decline
+                        </button>
+                      </>
+                    )}
                   </div>
                 </article>
               );
@@ -415,6 +392,108 @@ export default function VendorReservationsPage() {
             </VendorPageReveal>
           )}
         </section>
+
+        {/* Reservation Detail Modal */}
+        {viewingId && (() => {
+          const reservation = reservations.find((r) => r.id === viewingId);
+          if (!reservation) return null;
+          const status = normalizeStatus(reservation.status);
+          const isPending = status === "pending";
+          const isActing = actingId === reservation.id;
+          const paymentStatus = normalizePaymentStatus(reservation.payment_status);
+
+          return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setViewingId(null)}>
+              <div className="mx-4 w-full max-w-lg rounded-2xl border border-[#e8dfe2] bg-white shadow-[0_22px_48px_rgba(15,23,42,0.18)]" onClick={(e) => e.stopPropagation()}>
+                {/* Modal header */}
+                <div className="flex items-center justify-between border-b border-[#ece8e9] px-5 py-4">
+                  <h3 className="text-lg font-semibold text-[#1f2937]">Reservation Details</h3>
+                  <button type="button" onClick={() => setViewingId(null)} className="grid h-8 w-8 place-items-center rounded-lg text-[#6b7280] transition hover:bg-[#f3f4f6]">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Modal body */}
+                <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xl font-semibold text-[#1f2937]">{reservation.restaurant?.name ?? reservation.restaurant_id}</h4>
+                    <div className="flex gap-2">
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusClass(status)}`}>{status}</span>
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${paymentStatusClass(paymentStatus)}`}>{paymentStatus}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-3">
+                      <div className="inline-flex items-center gap-1.5 text-xs text-[#8b97a8]"><User className="h-3 w-3" />Guest Name</div>
+                      <div className="mt-1 text-sm font-medium text-[#1f2937]">{reservation.name}</div>
+                    </div>
+                    <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-3">
+                      <div className="inline-flex items-center gap-1.5 text-xs text-[#8b97a8]"><Phone className="h-3 w-3" />Phone</div>
+                      <div className="mt-1 text-sm font-medium text-[#1f2937]">{reservation.phone}</div>
+                    </div>
+                    <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-3">
+                      <div className="inline-flex items-center gap-1.5 text-xs text-[#8b97a8]"><CalendarDays className="h-3 w-3" />Date</div>
+                      <div className="mt-1 text-sm font-medium text-[#1f2937]">{toPrettyDate(reservation.date)}</div>
+                    </div>
+                    <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-3">
+                      <div className="inline-flex items-center gap-1.5 text-xs text-[#8b97a8]"><Clock3 className="h-3 w-3" />Time</div>
+                      <div className="mt-1 text-sm font-medium text-[#1f2937]">{to12Hour(reservation.time)}</div>
+                    </div>
+                    <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-3">
+                      <div className="inline-flex items-center gap-1.5 text-xs text-[#8b97a8]"><UsersRound className="h-3 w-3" />Guests</div>
+                      <div className="mt-1 text-sm font-medium text-[#1f2937]">{reservation.guests}</div>
+                    </div>
+                    <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-3">
+                      <div className="inline-flex items-center gap-1.5 text-xs text-[#8b97a8]"><CreditCard className="h-3 w-3" />Amount</div>
+                      <div className="mt-1 text-sm font-medium text-[#1f2937]">{toPesoFromMinor(reservation.payment_amount)}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 rounded-xl border border-[#ece8e9] bg-[#fafafa] p-3">
+                    <div className="inline-flex items-center gap-1.5 text-xs text-[#8b97a8]"><Receipt className="h-3 w-3" />Transaction Reference</div>
+                    <div className="mt-1 break-all text-sm text-[#374151]">{reservation.payment_reference || "Not available yet"}</div>
+                  </div>
+
+                  <div className="mt-3 rounded-xl border border-[#ece8e9] bg-[#fafafa] p-3">
+                    <div className="text-xs text-[#8b97a8]">Reservation ID</div>
+                    <div className="mt-1 break-all font-mono text-xs text-[#374151]">{reservation.id}</div>
+                  </div>
+
+                  {reservation.decline_reason && (
+                    <div className="mt-3 rounded-xl border border-[#f2cccf] bg-[#fff6f7] px-3 py-2 text-sm text-[#9f1239]">
+                      Decline reason: {reservation.decline_reason}
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal footer */}
+                {isPending && (
+                  <div className="flex items-center gap-3 border-t border-[#ece8e9] px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={() => { handleDecision(reservation.id, "approve"); setViewingId(null); }}
+                      disabled={isActing}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#b7e4c7] bg-[#ecfdf3] px-4 py-2.5 text-sm font-semibold text-[#166534] hover:bg-[#ddf8e8] disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { handleDecision(reservation.id, "decline"); setViewingId(null); }}
+                      disabled={isActing}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#f5c2c7] bg-[#fff1f2] px-4 py-2.5 text-sm font-semibold text-[#be123c] hover:bg-[#ffe4e8] disabled:opacity-50"
+                    >
+                      <XCircle className="h-4 w-4" />
+                      Decline
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

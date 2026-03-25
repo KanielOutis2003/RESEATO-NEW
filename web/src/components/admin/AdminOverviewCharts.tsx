@@ -172,7 +172,7 @@ export function ReservationsLineChart({ points }: { points: AdminChartPoint[] })
   );
 }
 
-export function CompletionBarChart({ points }: { points: AdminChartPoint[] }) {
+export function CompletionLineChart({ points }: { points: AdminChartPoint[] }) {
   const width = 780;
   const height = 280;
   const padX = 42;
@@ -182,33 +182,29 @@ export function CompletionBarChart({ points }: { points: AdminChartPoint[] }) {
   const bars = useMemo(() => {
     if (!points.length) return null;
 
-    const maxValue = Math.max(
-      1,
-      ...points.map((point) => Math.max(Number(point.completed ?? 0), Number(point.cancelled ?? 0))),
-    );
+    const completedValues = points.map((p) => Number(p.completed ?? 0));
+    const cancelledValues = points.map((p) => Number(p.cancelled ?? 0));
+    const maxValue = Math.max(1, ...completedValues, ...cancelledValues);
 
     const innerWidth = width - padX * 2;
     const innerHeight = height - padY * 2;
-    const groupStep = innerWidth / Math.max(1, points.length);
-    const barWidth = Math.max(3, Math.min(14, groupStep * 0.3));
-    const gap = Math.max(2, barWidth * 0.35);
+    const groupWidth = innerWidth / points.length;
+    const barWidth = Math.max(4, Math.min(20, groupWidth * 0.35));
+    const gap = Math.max(1, barWidth * 0.15);
+    const baseline = padY + innerHeight;
 
     const items = points.map((point, index) => {
-      const centerX = padX + index * groupStep + groupStep / 2;
-      const completed = Number(point.completed ?? 0);
-      const cancelled = Number(point.cancelled ?? 0);
-      const completedHeight = (completed / maxValue) * innerHeight;
-      const cancelledHeight = (cancelled / maxValue) * innerHeight;
+      const cx = padX + groupWidth * index + groupWidth / 2;
+      const cVal = completedValues[index];
+      const xVal = cancelledValues[index];
+      const cH = (cVal / maxValue) * innerHeight;
+      const xH = (xVal / maxValue) * innerHeight;
 
       return {
         point,
-        index,
-        completedX: centerX - barWidth - gap / 2,
-        cancelledX: centerX + gap / 2,
-        completedY: padY + innerHeight - completedHeight,
-        cancelledY: padY + innerHeight - cancelledHeight,
-        completedHeight,
-        cancelledHeight,
+        cx,
+        completedRect: { x: cx - barWidth - gap / 2, y: baseline - cH, w: barWidth, h: cH },
+        cancelledRect: { x: cx + gap / 2, y: baseline - xH, w: barWidth, h: xH },
       };
     });
 
@@ -218,12 +214,10 @@ export function CompletionBarChart({ points }: { points: AdminChartPoint[] }) {
 
     return {
       items,
-      tickValues,
       maxValue,
+      tickValues,
       innerHeight,
-      barWidth,
       labelStep: Math.max(1, Math.floor(points.length / 6)),
-      baselineY: padY + innerHeight,
     };
   }, [points]);
 
@@ -253,66 +247,54 @@ export function CompletionBarChart({ points }: { points: AdminChartPoint[] }) {
           );
         })}
 
-        {bars.items.map((item) => (
-          <g key={`bars-${item.point.date}`}>
+        {bars.items.map((bar, index) => (
+          <g
+            key={`bar-group-${bar.point.date}`}
+            onMouseEnter={() =>
+              setTooltip({ x: bar.cx, y: Math.min(bar.completedRect.y, bar.cancelledRect.y), point: bar.point })
+            }
+          >
             <motion.rect
-              x={item.completedX}
-              y={bars.baselineY}
-              width={bars.barWidth}
-              height={0}
-              rx={2}
+              x={bar.completedRect.x}
+              y={bar.completedRect.y}
+              width={bar.completedRect.w}
+              height={bar.completedRect.h}
+              rx={3}
               fill="#10b981"
-              initial={{ y: bars.baselineY, height: 0 }}
-              animate={{ y: item.completedY, height: item.completedHeight }}
-              transition={{ duration: 0.45, delay: item.index * 0.01 }}
-              onMouseEnter={() =>
-                setTooltip({
-                  x: item.completedX + bars.barWidth / 2,
-                  y: item.completedY,
-                  point: item.point,
-                })
-              }
-            >
-              <title>{`${item.point.date}: Completed ${item.point.completed}`}</title>
-            </motion.rect>
+              initial={{ scaleY: 0 }}
+              animate={{ scaleY: 1 }}
+              style={{ transformOrigin: `${bar.completedRect.x + bar.completedRect.w / 2}px ${padY + bars.innerHeight}px` }}
+              transition={{ duration: 0.4, delay: index * 0.02 }}
+            />
             <motion.rect
-              x={item.cancelledX}
-              y={bars.baselineY}
-              width={bars.barWidth}
-              height={0}
-              rx={2}
+              x={bar.cancelledRect.x}
+              y={bar.cancelledRect.y}
+              width={bar.cancelledRect.w}
+              height={bar.cancelledRect.h}
+              rx={3}
               fill="#fb7185"
-              initial={{ y: bars.baselineY, height: 0 }}
-              animate={{ y: item.cancelledY, height: item.cancelledHeight }}
-              transition={{ duration: 0.45, delay: item.index * 0.01 + 0.05 }}
-              onMouseEnter={() =>
-                setTooltip({
-                  x: item.cancelledX + bars.barWidth / 2,
-                  y: item.cancelledY,
-                  point: item.point,
-                })
-              }
-            >
-              <title>{`${item.point.date}: Cancelled ${item.point.cancelled}`}</title>
-            </motion.rect>
+              initial={{ scaleY: 0 }}
+              animate={{ scaleY: 1 }}
+              style={{ transformOrigin: `${bar.cancelledRect.x + bar.cancelledRect.w / 2}px ${padY + bars.innerHeight}px` }}
+              transition={{ duration: 0.4, delay: 0.05 + index * 0.02 }}
+            />
           </g>
         ))}
 
-        {bars.items.map((item, index) => {
+        {bars.items.map((bar, index) => {
           if (index !== 0 && index !== bars.items.length - 1 && index % bars.labelStep !== 0) {
             return null;
           }
-
           return (
             <text
-              key={`label-${item.point.date}`}
-              x={item.completedX + bars.barWidth + 2}
+              key={`label-${bar.point.date}`}
+              x={bar.cx}
               y={height - 8}
               textAnchor="middle"
               fontSize="10"
               fill="rgba(100,116,139,0.78)"
             >
-              {formatDayLabel(item.point.date)}
+              {formatDayLabel(bar.point.date)}
             </text>
           );
         })}
@@ -327,11 +309,11 @@ export function CompletionBarChart({ points }: { points: AdminChartPoint[] }) {
           }}
         >
           <div className="font-semibold text-[#1f2937]">{formatDayLabel(tooltip.point.date)}</div>
-          <div className="mt-1">Completed: {tooltip.point.completed}</div>
-          <div>Cancelled/Declined: {tooltip.point.cancelled}</div>
-          <div>Total Reservations: {tooltip.point.total}</div>
-          <div>Completion Share: {tooltip.point.total > 0 ? ((tooltip.point.completed / tooltip.point.total) * 100).toFixed(1) : "0.0"}%</div>
-          <div>Cancellation Share: {tooltip.point.total > 0 ? ((tooltip.point.cancelled / tooltip.point.total) * 100).toFixed(1) : "0.0"}%</div>
+          <div className="mt-1 flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#10b981]" /> Completed: {tooltip.point.completed}</div>
+          <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#fb7185]" /> Cancelled: {tooltip.point.cancelled}</div>
+          <div>Total: {tooltip.point.total}</div>
+          <div>Completion: {tooltip.point.total > 0 ? ((tooltip.point.completed / tooltip.point.total) * 100).toFixed(1) : "0.0"}%</div>
+          <div>Cancellation: {tooltip.point.total > 0 ? ((tooltip.point.cancelled / tooltip.point.total) * 100).toFixed(1) : "0.0"}%</div>
         </div>
       )}
     </div>

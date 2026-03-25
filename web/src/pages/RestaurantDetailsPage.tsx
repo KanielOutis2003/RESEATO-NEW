@@ -172,15 +172,6 @@ export default function RestaurantDetailsPage() {
     [slots],
   );
 
-  const morningSlots = useMemo(
-    () => availableTimes.filter((s) => Number(s.time.slice(0, 2)) < 12),
-    [availableTimes],
-  );
-  const afternoonSlots = useMemo(
-    () => availableTimes.filter((s) => Number(s.time.slice(0, 2)) >= 12),
-    [availableTimes],
-  );
-
   function decGuests() {
     setGuests((g) => Math.max(1, g - 1));
   }

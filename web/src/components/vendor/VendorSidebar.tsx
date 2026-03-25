@@ -11,7 +11,6 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
-  Mail,
   PencilLine,
   Phone,
   Settings,
@@ -211,6 +210,7 @@ export default function VendorSidebar() {
       if (alive) { setDetails(merged); setForm({ fullName: merged.fullName, phone: merged.phone }); }
     })();
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsOpen, user]);
 
   const initials = useMemo(() => {

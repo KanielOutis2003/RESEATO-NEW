@@ -1,7 +1,7 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import "dotenv/config";
 import { supabase } from "./supabase";
 import { requireUser } from "./auth";
 

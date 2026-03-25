@@ -1016,7 +1016,7 @@ export default function AdminDashboardPage() {
 
           <div className="mt-4 hidden overflow-x-auto md:block">
             <div className="overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
-              <table className="min-w-[760px] text-sm text-[#374151]">
+              <table className="w-full text-sm text-[#374151]">
                 <thead className="bg-[#f8fafc]">
                   <tr className="border-b border-[#e5e7eb] text-left text-xs uppercase tracking-wide text-[#8b97a8]">
                     <th className="px-3 py-2.5">User</th>
@@ -1323,7 +1323,7 @@ export default function AdminDashboardPage() {
 
             <div className="mt-4 hidden overflow-x-auto md:block">
               <div className="overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
-                <table className="min-w-[860px] text-sm text-[#374151]">
+                <table className="w-fulltext-sm text-[#374151]">
                   <thead className="bg-[#f8fafc]">
                     <tr className="border-b border-[#e5e7eb] text-left text-xs uppercase tracking-wide text-[#8b97a8]">
                       <th className="px-3 py-2.5">Restaurant</th>
@@ -1571,7 +1571,7 @@ export default function AdminDashboardPage() {
 
           <div className="mt-4 hidden overflow-x-auto md:block">
             <div className="overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
-              <table className="min-w-[980px] text-sm text-[#374151]">
+              <table className="w-full text-sm text-[#374151]">
                 <thead className="bg-[#f8fafc]">
                   <tr className="border-b border-[#e5e7eb] text-left text-xs uppercase tracking-wide text-[#8b97a8]">
                     <th className="px-3 py-2.5">ID</th>
@@ -1701,7 +1701,7 @@ export default function AdminDashboardPage() {
 
           <div className="mt-4 hidden overflow-x-auto md:block">
             <div className="overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
-              <table className="min-w-[980px] text-sm text-[#374151]">
+              <table className="w-full text-sm text-[#374151]">
                 <thead className="bg-[#f8fafc]">
                   <tr className="border-b border-[#e5e7eb] text-left text-xs uppercase tracking-wide text-[#8b97a8]">
                     <th className="px-3 py-2.5">Action</th>

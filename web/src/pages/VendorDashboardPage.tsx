@@ -271,7 +271,7 @@ const EMPTY_OVERVIEW: VendorOverview = {
 export default function VendorDashboardPage() {
   const { isAuthed, loading: authLoading, user } = useAuth();
   const [overview, setOverview] = useState<VendorOverview | null>(null);
-  const [restaurants, setRestaurants] = useState<VendorRestaurant[]>([]);
+  const [, setRestaurants] = useState<VendorRestaurant[]>([]);
   const [bestSellers, setBestSellers] = useState<VendorBestSeller[]>([]);
   const [chartData, setChartData] = useState<VendorChartsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -632,7 +632,7 @@ export default function VendorDashboardPage() {
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={handleExportInventoryCsv} className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56]"><Download className="mr-1 inline-block h-3.5 w-3.5" />Export</button>
-                  <Link to="/vendor/best" className="rounded-[14px] border border-[#d8dbe2] bg-white px-3.5 py-2.5 text-sm font-bold text-[#374151]"><Settings2 className="mr-1 inline-block h-3.5 w-3.5" />Manage</Link>
+                  <Link to="/vendor/tables" className="rounded-[14px] border border-[#d8dbe2] bg-white px-3.5 py-2.5 text-sm font-bold text-[#374151]"><Settings2 className="mr-1 inline-block h-3.5 w-3.5" />Manage</Link>
                 </div>
               </div>
 

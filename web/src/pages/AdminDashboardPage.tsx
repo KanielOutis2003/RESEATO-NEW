@@ -739,13 +739,12 @@ export default function AdminDashboardPage() {
 
     // Data rows
     for (const row of rows) {
-      xml += "<Row>";
-      row.forEach((cell, i) => {
+      const cells = row.map((cell, i) => {
         const type = i === 0 ? "String" : "Number";
         const style = i >= 8 ? ' ss:StyleID="num"' : "";
-        xml += `<Cell${style}><Data ss:Type="${type}">${escXml(cell)}</Data></Cell>`;
-      });
-      xml += "</Row>\n";
+        return `<Cell${style}><Data ss:Type="${type}">${escXml(cell)}</Data></Cell>`;
+      }).join("");
+      xml += `<Row>${cells}</Row>\n`;
     }
 
     xml += "</Table>\n</Worksheet>\n</Workbook>";

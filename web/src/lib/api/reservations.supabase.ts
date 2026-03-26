@@ -93,6 +93,7 @@ export type RestaurantLite = {
   name: string;
   cuisine?: string | null;
   location?: string | null;
+  rating?: number | null;
 };
 
 export type ReservationWithRestaurant = ReservationRow & {
@@ -123,7 +124,7 @@ export async function listMyReservationsSupabase() {
 
   const { data: restaurants, error: restErr } = await supabase
     .from("restaurants")
-    .select("id,name,cuisine,location")
+    .select("id,name,cuisine,location,rating")
     .in("id", ids);
 
   if (restErr) throw restErr;
@@ -136,6 +137,7 @@ export async function listMyReservationsSupabase() {
         name: x.name,
         cuisine: x.cuisine ?? null,
         location: x.location ?? null,
+        rating: x.rating ?? null,
       },
     ]),
   );

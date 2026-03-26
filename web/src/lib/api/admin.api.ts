@@ -146,6 +146,13 @@ export function updateAdminUserRole(targetUserId: string, role: "customer" | "ve
   );
 }
 
+export function deleteAdminUser(targetUserId: string) {
+  return adminApi<{ ok: boolean; targetUserId: string }>(
+    `/admin/users/${targetUserId}`,
+    { method: "DELETE" },
+  );
+}
+
 export function listAdminRestaurants(params?: {
   search?: string;
   ownerId?: string;
@@ -185,6 +192,13 @@ export function createAdminRestaurant(payload: AdminRestaurantInput) {
     method: "POST",
     body: payload,
   });
+}
+
+export function deleteAdminRestaurant(restaurantId: string) {
+  return adminApi<{ ok: boolean; restaurantId: string }>(
+    `/admin/restaurants/${restaurantId}`,
+    { method: "DELETE" },
+  );
 }
 
 export function assignAdminRestaurantOwner(restaurantId: string, ownerId?: string | null) {

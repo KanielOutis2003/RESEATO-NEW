@@ -225,11 +225,22 @@ export default function ProfilePage() {
 
       if (!alive || !profile) return;
 
+      // Resolve role: prefer profiles table, then user_metadata, then fallback
+      const profileRole = profile.role?.trim().toLowerCase();
+      const metaRole = fallback.role.toLowerCase();
+      // Use whichever is non-customer if available (admin/vendor takes priority)
+      const resolvedRole =
+        profileRole && profileRole !== "customer"
+          ? profileRole
+          : metaRole && metaRole !== "customer"
+            ? metaRole
+            : profileRole || metaRole || "customer";
+
       const merged: PersonalInfo = {
         fullName: profile.full_name?.trim() || fallback.fullName,
         email: user.email ?? "",
         phone: profile.phone?.trim() || fallback.phone,
-        role: capitalize(profile.role?.trim() || fallback.role),
+        role: capitalize(resolvedRole),
         memberSince: formatDate(profile.created_at || user.created_at || ""),
         avatarUrl: profile.avatar_url?.trim() || fallback.avatarUrl,
       };

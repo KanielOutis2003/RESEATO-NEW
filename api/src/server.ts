@@ -20,6 +20,29 @@ const WEB_ORIGINS = Array.from(
       ),
   ),
 );
+
+function isAllowedOrigin(origin: string): boolean {
+  if (WEB_ORIGINS.includes(origin)) return true;
+  // Allow any local network origin in non-production (LAN IPs, localhost on any port)
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const url = new URL(origin);
+      const host = url.hostname;
+      if (
+        host === "localhost" ||
+        host === "127.0.0.1" ||
+        host.startsWith("192.168.") ||
+        host.startsWith("10.") ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+      ) {
+        return true;
+      }
+    } catch {
+      // ignore malformed origins
+    }
+  }
+  return false;
+}
 const APP_BASE_URL = (process.env.APP_BASE_URL ?? WEB_ORIGIN).replace(
   /\/+$/,
   "",
@@ -35,7 +58,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || WEB_ORIGINS.includes(origin)) {
+      if (!origin || isAllowedOrigin(origin)) {
         callback(null, true);
         return;
       }
@@ -2949,6 +2972,66 @@ app.patch("/admin/users/:targetUserId/role", requireUser, async (req: any, res) 
   }
 });
 
+app.delete("/admin/users/:targetUserId", requireUser, async (req: any, res) => {
+  const actorId = req.user.id;
+  const targetUserId = String(req.params.targetUserId ?? "").trim();
+
+  if (!targetUserId) {
+    return res.status(400).json({ message: "targetUserId is required" });
+  }
+
+  if (targetUserId === actorId) {
+    return res.status(400).json({ message: "You cannot delete your own account." });
+  }
+
+  try {
+    await ensureAdminRole(actorId);
+
+    // Check user exists
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("id, role, full_name")
+      .eq("id", targetUserId)
+      .maybeSingle();
+
+    // Delete user's reservations
+    await supabase.from("reservations").delete().eq("user_id", targetUserId);
+
+    // Unassign restaurants owned by this user
+    await supabase
+      .from("restaurants")
+      .update({ owner_id: null })
+      .eq("owner_id", targetUserId);
+
+    // Delete profile
+    await supabase.from("profiles").delete().eq("id", targetUserId);
+
+    // Delete auth user via admin API
+    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(targetUserId);
+    if (authDeleteError) {
+      return res.status(500).json({ message: authDeleteError.message });
+    }
+
+    await writeAdminAuditLog({
+      actorId,
+      action: "user_delete",
+      targetType: "user",
+      targetId: targetUserId,
+      payload: {
+        fullName: (targetProfile as any)?.full_name ?? null,
+        role: (targetProfile as any)?.role ?? null,
+      },
+    });
+
+    return res.json({ ok: true, targetUserId });
+  } catch (error: any) {
+    const status = Number(error?.status ?? 500);
+    return res.status(status).json({
+      message: error?.message ?? "Failed to delete user",
+    });
+  }
+});
+
 app.get("/admin/restaurants", requireUser, async (req: any, res) => {
   const userId = req.user.id;
 
@@ -3082,6 +3165,62 @@ app.post("/admin/restaurants", requireUser, async (req: any, res) => {
   } catch (error: any) {
     const status = Number(error?.status ?? 500);
     return res.status(status).json({ message: error?.message ?? "Failed to create restaurant" });
+  }
+});
+
+app.delete("/admin/restaurants/:restaurantId", requireUser, async (req: any, res) => {
+  const actorId = req.user.id;
+  const restaurantId = String(req.params.restaurantId ?? "").trim();
+
+  if (!restaurantId) {
+    return res.status(400).json({ message: "restaurantId is required" });
+  }
+
+  try {
+    await ensureAdminRole(actorId);
+
+    // Check restaurant exists
+    const { data: existing, error: fetchError } = await supabase
+      .from("restaurants")
+      .select("id, name")
+      .eq("id", restaurantId)
+      .single();
+
+    if (fetchError || !existing) {
+      return res.status(404).json({ message: "Restaurant not found" });
+    }
+
+    // Delete related records first to avoid FK violations
+    await supabase.from("restaurant_slot_configs").delete().eq("restaurant_id", restaurantId);
+    await supabase.from("best_sellers").delete().eq("restaurant_id", restaurantId);
+
+    // Delete reservations for this restaurant
+    await supabase.from("reservations").delete().eq("restaurant_id", restaurantId);
+
+    // Delete the restaurant
+    const { error: deleteError } = await supabase
+      .from("restaurants")
+      .delete()
+      .eq("id", restaurantId);
+
+    if (deleteError) {
+      return res.status(500).json({ message: deleteError.message });
+    }
+
+    await writeAdminAuditLog({
+      actorId,
+      action: "restaurant_delete",
+      targetType: "restaurant",
+      targetId: restaurantId,
+      payload: { name: (existing as any).name },
+    });
+
+    return res.json({ ok: true, restaurantId });
+  } catch (error: any) {
+    const status = Number(error?.status ?? 500);
+    return res.status(status).json({
+      message: error?.message ?? "Failed to delete restaurant",
+    });
   }
 });
 

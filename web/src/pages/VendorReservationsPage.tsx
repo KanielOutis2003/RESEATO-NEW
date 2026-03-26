@@ -114,7 +114,7 @@ export default function VendorReservationsPage() {
     }
 
     listVendorRestaurants()
-      .then((data) => setRestaurants(data))
+      .then((data) => setRestaurants(Array.isArray(data) ? data : []))
       .catch((error) =>
         setMessage(getErrorMessage(error, "Unable to load restaurants filter.")),
       );
@@ -140,7 +140,7 @@ export default function VendorReservationsPage() {
         });
 
         if (!alive) return;
-        setReservations(data);
+        setReservations(Array.isArray(data) ? data : []);
       } catch (error) {
         if (!alive) return;
         setMessage(getErrorMessage(error, "Unable to load reservations."));

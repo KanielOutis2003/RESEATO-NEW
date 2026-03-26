@@ -133,7 +133,7 @@ export default function VendorBestSellersPage() {
         if (!alive) return;
 
         setRestaurant(restaurantData);
-        setItems(bestSellerData);
+        setItems(Array.isArray(bestSellerData) ? bestSellerData : []);
       } catch (error) {
         if (!alive) return;
         setMessage(getErrorMessage(error, "Unable to load best sellers."));

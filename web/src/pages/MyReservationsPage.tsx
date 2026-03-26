@@ -6,6 +6,7 @@ import {
   Clock3,
   Filter,
   MapPin,
+  Star,
   UsersRound,
   X,
   ArrowLeft,
@@ -185,19 +186,44 @@ function HelpModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSubmit: (subject: string, message: string) => void;
+  onSubmit: (subject: string, message: string) => Promise<boolean>;
 }) {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset form state when modal re-opens
+  useEffect(() => {
+    if (open) {
+      setSubject("");
+      setMessage("");
+      setSent(false);
+      setSending(false);
+      setError(null);
+    }
+  }, [open]);
 
   if (!open) return null;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!subject.trim() || !message.trim()) return;
-    onSubmit(subject.trim(), message.trim());
-    setSent(true);
+    setSending(true);
+    setError(null);
+    try {
+      const ok = await onSubmit(subject.trim(), message.trim());
+      if (ok) {
+        setSent(true);
+      } else {
+        setError("Failed to send report. Please try again.");
+      }
+    } catch {
+      setError("Something went wrong. Please try again later.");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -256,12 +282,19 @@ function HelpModal({
                   Having an issue? Send a report to our admin team and we&apos;ll help you out.
                 </p>
 
+                {error && (
+                  <div className="rounded-xl border border-[#f0cdd4] bg-[#fff6f7] px-3 py-2 text-sm text-[#9f1239]">
+                    {error}
+                  </div>
+                )}
+
                 <label className="block space-y-1">
                   <span className="text-sm font-medium text-[#4b5563]">Subject</span>
                   <select
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="w-full rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5 text-sm text-[#111827]"
+                    disabled={sending}
+                    className="w-full rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5 text-sm text-[#111827] disabled:opacity-60"
                   >
                     <option value="">Select a topic...</option>
                     <option value="Reservation Issue">Reservation Issue</option>
@@ -279,18 +312,28 @@ function HelpModal({
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     rows={4}
+                    disabled={sending}
                     placeholder="Describe your issue in detail..."
-                    className="w-full resize-none rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5 text-sm text-[#111827] placeholder:text-[#9ca3af]"
+                    className="w-full resize-none rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5 text-sm text-[#111827] placeholder:text-[#9ca3af] disabled:opacity-60"
                   />
                 </label>
 
                 <button
                   type="submit"
-                  disabled={!subject.trim() || !message.trim()}
+                  disabled={!subject.trim() || !message.trim() || sending}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Send className="h-4 w-4" />
-                  Send Report
+                  {sending ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Send Report
+                    </>
+                  )}
                 </button>
               </form>
             )}
@@ -538,25 +581,22 @@ export default function MyReservationsPage() {
     }
   }
 
-  function onHelpSubmit(subject: string, message: string) {
-    // Store the support ticket in Supabase (support_tickets table)
-    // For now, we store it via a direct insert
-    void (async () => {
-      try {
-        const { supabase } = await import("../lib/supabase");
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        await supabase.from("support_tickets").insert({
-          user_id: user.id,
-          email: user.email,
-          subject,
-          message,
-          status: "open",
-        });
-      } catch {
-        // Silently fail - the UI already shows success
-      }
-    })();
+  async function onHelpSubmit(subject: string, message: string): Promise<boolean> {
+    try {
+      const { supabase } = await import("../lib/supabase");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      const { error } = await supabase.from("support_tickets").insert({
+        user_id: user.id,
+        email: user.email,
+        subject,
+        message,
+        status: "open",
+      });
+      return !error;
+    } catch {
+      return false;
+    }
   }
 
   return (
@@ -685,6 +725,12 @@ export default function MyReservationsPage() {
                       <h3 className="text-2xl font-semibold text-[#1f2937]">
                         {row.restaurant?.name ?? `Restaurant ${row.restaurant_id}`}
                       </h3>
+                      {row.restaurant?.rating != null && Number(row.restaurant.rating) > 0 && (
+                        <div className="mt-1 inline-flex items-center gap-1 rounded-full border border-[#f0d5a5] bg-[#fff9ef] px-2.5 py-0.5 text-xs font-semibold text-[#9a6a19]">
+                          <Star className="h-3 w-3 fill-[#f59e0b] text-[#f59e0b]" />
+                          {Number(row.restaurant.rating).toFixed(1)}
+                        </div>
+                      )}
                       <p className="mt-1 text-sm text-[#6b7280]">
                         Booking ID: {row.id}
                       </p>

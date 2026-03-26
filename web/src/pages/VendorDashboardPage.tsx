@@ -10,6 +10,7 @@ import {
   Download,
   Loader2,
   Settings2,
+  Star,
   UtensilsCrossed,
 } from "lucide-react";
 import {
@@ -506,7 +507,15 @@ export default function VendorDashboardPage() {
                     </div>
                   )}
                   <div>
-                    <h4 className="text-2xl font-extrabold text-[#1f2937]">{firstRestaurant?.name ?? "No Restaurant"}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-2xl font-extrabold text-[#1f2937]">{firstRestaurant?.name ?? "No Restaurant"}</h4>
+                      {firstRestaurant?.rating != null && Number(firstRestaurant.rating) > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-[#f0d5a5] bg-[#fff9ef] px-2.5 py-1 text-xs font-bold text-[#9a6a19]">
+                          <Star className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b]" />
+                          {Number(firstRestaurant.rating).toFixed(1)}
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-1 text-[13px] leading-[1.7] text-[#667085]">
                       {firstRestaurant?.cuisine ?? "Restaurant"} &bull; Cebu City, Philippines
                     </p>

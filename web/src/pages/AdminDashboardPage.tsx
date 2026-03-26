@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
+  AlertTriangle,
   Building2,
   CalendarCheck2,
+  Download,
+  FileSpreadsheet,
   Loader2,
   RefreshCcw,
   Search,
+  Star,
+  Trash2,
   Users,
   Wallet,
+  X,
+  Plus,
 } from "lucide-react";
 import { useAuth } from "../lib/auth/useAuth";
 import { CompletionLineChart, ReservationsLineChart } from "../components/admin/AdminOverviewCharts";
@@ -21,6 +28,8 @@ import {
   AdminUser,
   assignAdminRestaurantOwner,
   createAdminRestaurant,
+  deleteAdminRestaurant,
+  deleteAdminUser,
   getAdminCharts,
   getAdminOverview,
   listAdminAuditLogs,
@@ -171,6 +180,89 @@ function parsePositiveInt(
   if (parsed > max) return max;
   return parsed;
 }
+/* ─── Reusable Confirmation Modal ─── */
+function ConfirmModal({
+  open,
+  title,
+  description,
+  confirmLabel,
+  confirmColor,
+  loading,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  confirmColor?: "red" | "rose";
+  loading: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+
+  const btnClass =
+    confirmColor === "rose"
+      ? "bg-[#8b3d4a] hover:bg-[#6f2f3b] text-white"
+      : "bg-[#d14d5b] hover:bg-[#be3a48] text-white";
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+      <div
+        className="relative mx-4 w-full max-w-md rounded-[24px] border border-[#e8e2e3] bg-white p-6 shadow-[0_28px_60px_rgba(15,23,42,0.18)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#fff5f5] text-[#d14d5b]">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-[#1f2937]">{title}</h3>
+            <p className="text-sm text-[#667085]">This action cannot be undone.</p>
+          </div>
+        </div>
+
+        <p className="mt-4 text-sm text-[#475467]">{description}</p>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="rounded-xl border border-[#d8dbe2] bg-white px-4 py-2.5 text-sm font-semibold text-[#475467] transition hover:bg-[#f8fafc] disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-60 ${btnClass}`}
+          >
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Loading Overlay ─── */
+function LoadingOverlay({ visible, label }: { visible: boolean; label?: string }) {
+  if (!visible) return null;
+  return (
+    <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-black/30 backdrop-blur-sm">
+      <div className="rounded-2xl border border-[#e7e3e5] bg-white px-8 py-6 shadow-[0_24px_60px_rgba(15,23,42,0.2)]">
+        <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#8b3d4a]" />
+        <p className="mt-3 text-sm font-semibold text-[#1f2937]">{label || "Processing..."}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
   const { section } = useParams<{ section?: string }>();
   const { isAuthed, loading: authLoading, user } = useAuth();
@@ -221,12 +313,27 @@ export default function AdminDashboardPage() {
     contactPhone: "",
     contactEmail: "",
     description: "",
+    rating: "",
   });
 
 
   const [ownerDraftByRestaurantId, setOwnerDraftByRestaurantId] = useState<Record<string, string>>({});
   const [creatingRestaurant, setCreatingRestaurant] = useState(false);
   const [assigningRestaurantId, setAssigningRestaurantId] = useState<string | null>(null);
+  const [deletingRestaurantId, setDeletingRestaurantId] = useState<string | null>(null);
+  const [showAddRestaurantModal, setShowAddRestaurantModal] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [globalLoading, setGlobalLoading] = useState<string | null>(null);
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    description: string;
+    confirmLabel: string;
+    confirmColor?: "red" | "rose";
+    onConfirm: () => void;
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const panelClass =
     "rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]";
@@ -310,8 +417,12 @@ export default function AdminDashboardPage() {
   }, [reservations, reservationSearch]);
 
   const loadOverview = useCallback(async () => {
-    const data = await getAdminOverview();
-    setOverview(data);
+    try {
+      const data = await getAdminOverview();
+      setOverview(data);
+    } catch (err) {
+      console.error("Failed to load overview:", err);
+    }
   }, []);
 
   const loadCharts = useCallback(async (from: string, to: string) => {
@@ -329,80 +440,109 @@ export default function AdminDashboardPage() {
   }, []);
 
   const loadUsers = useCallback(async () => {
-    const data = await listAdminUsers({
-      search: userSearch.trim() || undefined,
-      role: userRoleFilter,
-      limit: 80,
-      offset: 0,
-    });
+    try {
+      const data = await listAdminUsers({
+        search: userSearch.trim() || undefined,
+        role: userRoleFilter,
+        limit: 80,
+        offset: 0,
+      });
 
-    setUsers(data);
-    setRoleDraftByUserId((prev) => {
-      const next = { ...prev };
-      for (const item of data) {
-        if (!next[item.id]) {
-          next[item.id] = item.role;
+      const rows = Array.isArray(data) ? data : [];
+      setUsers(rows);
+      setRoleDraftByUserId((prev) => {
+        const next = { ...prev };
+        for (const item of rows) {
+          if (!next[item.id]) {
+            next[item.id] = item.role;
+          }
         }
-      }
-      return next;
-    });
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to load users:", err);
+      setUsers([]);
+    }
   }, [userRoleFilter, userSearch]);
   const loadAssignableVendors = useCallback(async () => {
-    const data = await listAdminUsers({
-      role: "all",
-      limit: 300,
-      offset: 0,
-    });
+    try {
+      const data = await listAdminUsers({
+        role: "all",
+        limit: 300,
+        offset: 0,
+      });
 
-    const vendors = data.filter((item) => {
-      const roleValue = normalizeRole(item.role);
-      return roleValue === "vendor" || roleValue === "owner" || roleValue === "manager";
-    });
+      const rows = Array.isArray(data) ? data : [];
+      const vendors = rows.filter((item) => {
+        const roleValue = normalizeRole(item.role);
+        return roleValue === "vendor" || roleValue === "owner" || roleValue === "manager";
+      });
 
-    setAssignableVendors(vendors);
+      setAssignableVendors(vendors);
+    } catch (err) {
+      console.error("Failed to load assignable vendors:", err);
+      setAssignableVendors([]);
+    }
   }, []);
 
   const loadRestaurants = useCallback(async () => {
-    const data = await listAdminRestaurants({
-      search: restaurantSearch.trim() || undefined,
-      limit: 80,
-      offset: 0,
-    });
+    try {
+      const data = await listAdminRestaurants({
+        search: restaurantSearch.trim() || undefined,
+        limit: 80,
+        offset: 0,
+      });
 
-    setRestaurants(data);
-    setOwnerDraftByRestaurantId((prev) => {
-      const next = { ...prev };
-      for (const item of data) {
-        next[item.id] = item.ownerId ?? "";
-      }
-      return next;
-    });
+      const rows = Array.isArray(data) ? data : [];
+      setRestaurants(rows);
+      setOwnerDraftByRestaurantId((prev) => {
+        const next = { ...prev };
+        for (const item of rows) {
+          next[item.id] = item.ownerId ?? "";
+        }
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to load restaurants:", err);
+      setRestaurants([]);
+    }
   }, [restaurantSearch]);
 
   const loadReservations = useCallback(async () => {
-    const data = await listAdminReservations({
-      status: reservationStatusFilter,
-      paymentStatus: reservationPaymentFilter,
-      date: reservationDateFilter || undefined,
-      limit: 100,
-      offset: 0,
-    });
+    try {
+      const data = await listAdminReservations({
+        status: reservationStatusFilter,
+        paymentStatus: reservationPaymentFilter,
+        date: reservationDateFilter || undefined,
+        limit: 100,
+        offset: 0,
+      });
 
-    setReservations(data);
-    setStatusDraftByReservationId((prev) => {
-      const next = { ...prev };
-      for (const item of data) {
-        if (!next[item.id]) {
-          next[item.id] = item.status;
+      const rows = Array.isArray(data) ? data : [];
+      setReservations(rows);
+      setStatusDraftByReservationId((prev) => {
+        const next = { ...prev };
+        for (const item of rows) {
+          if (!next[item.id]) {
+            next[item.id] = item.status;
+          }
         }
-      }
-      return next;
-    });
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to load reservations:", err);
+      setReservations([]);
+    }
   }, [reservationDateFilter, reservationPaymentFilter, reservationStatusFilter]);
 
   const loadAuditLogs = useCallback(async () => {
-    const data = await listAdminAuditLogs({ limit: 80 });
-    setAuditLogs(data);
+    try {
+      const data = await listAdminAuditLogs({ limit: 80 });
+      setAuditLogs(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load audit logs:", err);
+      setAuditLogs([]);
+    }
   }, []);
 
   function extractErrorMessage(error: any, fallback: string) {
@@ -546,6 +686,81 @@ export default function AdminDashboardPage() {
     URL.revokeObjectURL(url);
   }
 
+  function handleExportChartExcel() {
+    if (!chartData?.days?.length) return;
+
+    const headers = [
+      "Date", "Total", "Completed", "Cancelled", "Pending",
+      "Confirmed", "Paid", "Revenue (minor)", "Revenue (PHP)",
+      "Completion %", "Cancellation %",
+    ];
+
+    const rows = chartData.days.map((day) => {
+      const total = Number(day.total ?? 0);
+      const completionRate = total > 0 ? (Number(day.completed ?? 0) / total) * 100 : 0;
+      const cancellationRate = total > 0 ? (Number(day.cancelled ?? 0) / total) * 100 : 0;
+      const revenueMinor = Number(day.revenueMinor ?? 0);
+      return [
+        day.date, total, Number(day.completed ?? 0), Number(day.cancelled ?? 0),
+        Number(day.pending ?? 0), Number(day.confirmed ?? 0), Number(day.paid ?? 0),
+        revenueMinor, (revenueMinor / 100).toFixed(2),
+        completionRate.toFixed(2), cancellationRate.toFixed(2),
+      ];
+    });
+
+    // Build XML Spreadsheet (opens natively in Excel, no library needed)
+    const escXml = (v: string | number) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    let xml = '<?xml version="1.0"?>\n';
+    xml += '<?mso-application progid="Excel.Sheet"?>\n';
+    xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n';
+    xml += '<Styles><Style ss:ID="hdr"><Font ss:Bold="1"/><Interior ss:Color="#F8ECEE" ss:Pattern="Solid"/></Style>';
+    xml += '<Style ss:ID="num"><NumberFormat ss:Format="#,##0.00"/></Style></Styles>\n';
+    xml += '<Worksheet ss:Name="Performance Charts">\n<Table>\n';
+
+    // Header row
+    xml += "<Row>";
+    for (const h of headers) xml += `<Cell ss:StyleID="hdr"><Data ss:Type="String">${escXml(h)}</Data></Cell>`;
+    xml += "</Row>\n";
+
+    // Summary row
+    xml += "<Row>";
+    xml += `<Cell><Data ss:Type="String">SUMMARY</Data></Cell>`;
+    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalReservations}</Data></Cell>`;
+    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalCompleted}</Data></Cell>`;
+    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalCancelled}</Data></Cell>`;
+    xml += `<Cell><Data ss:Type="String">-</Data></Cell>`;
+    xml += `<Cell><Data ss:Type="String">-</Data></Cell>`;
+    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalPaid}</Data></Cell>`;
+    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalRevenueMinor}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${chartData.summary.completionRate.toFixed(2)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${chartData.summary.cancellationRate.toFixed(2)}</Data></Cell>`;
+    xml += "</Row>\n";
+
+    // Data rows
+    for (const row of rows) {
+      xml += "<Row>";
+      row.forEach((cell, i) => {
+        const type = i === 0 ? "String" : "Number";
+        const style = i >= 8 ? ' ss:StyleID="num"' : "";
+        xml += `<Cell${style}><Data ss:Type="${type}">${escXml(cell)}</Data></Cell>`;
+      });
+      xml += "</Row>\n";
+    }
+
+    xml += "</Table>\n</Worksheet>\n</Workbook>";
+
+    const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `admin-charts-${chartData.from}-to-${chartData.to}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   async function handleUpdateUserRole(targetUserId: string) {
     const nextRole = String(roleDraftByUserId[targetUserId] ?? "").toLowerCase();
     if (!["customer", "vendor", "admin"].includes(nextRole)) {
@@ -580,14 +795,17 @@ export default function AdminDashboardPage() {
 
     try {
       setCreatingRestaurant(true);
+      setGlobalLoading("Creating restaurant...");
       setMessage(null);
 
+      const ratingValue = Number(restaurantForm.rating);
       const created = await createAdminRestaurant({
         name,
         cuisine,
         location,
         totalTables: parsePositiveInt(restaurantForm.totalTables, 10, 1, 999),
         priceLevel: parsePositiveInt(restaurantForm.priceLevel, 1, 1, 4),
+        rating: Number.isFinite(ratingValue) ? ratingValue : undefined,
         ownerId: restaurantForm.ownerId.trim() || null,
         imageUrl: restaurantForm.imageUrl.trim() || undefined,
         contactPhone: restaurantForm.contactPhone.trim() || undefined,
@@ -614,6 +832,7 @@ export default function AdminDashboardPage() {
         contactPhone: "",
         contactEmail: "",
         description: "",
+        rating: "",
       });
 
       setMessage("Restaurant added successfully.");
@@ -621,6 +840,7 @@ export default function AdminDashboardPage() {
       setMessage(error?.payload?.message ?? error?.message ?? "Failed to create restaurant.");
     } finally {
       setCreatingRestaurant(false);
+      setGlobalLoading(null);
     }
   }
 
@@ -648,6 +868,68 @@ export default function AdminDashboardPage() {
     } finally {
       setAssigningRestaurantId(null);
     }
+  }
+
+  function handleDeleteRestaurant(restaurantId: string, restaurantName: string) {
+    setConfirmModal({
+      title: "Delete Restaurant",
+      description: `Are you sure you want to delete "${restaurantName}"? This will also remove all related reservations, slot configs, and best sellers.`,
+      confirmLabel: "Delete Restaurant",
+      confirmColor: "red",
+      onConfirm: async () => {
+        try {
+          setConfirmLoading(true);
+          setDeletingRestaurantId(restaurantId);
+          setMessage(null);
+
+          await deleteAdminRestaurant(restaurantId);
+
+          setRestaurants((prev) => prev.filter((item) => item.id !== restaurantId));
+          setOwnerDraftByRestaurantId((prev) => {
+            const next = { ...prev };
+            delete next[restaurantId];
+            return next;
+          });
+
+          await loadOverview();
+          setMessage(`Restaurant "${restaurantName}" has been deleted.`);
+        } catch (error: any) {
+          setMessage(error?.payload?.message ?? error?.message ?? "Failed to delete restaurant.");
+        } finally {
+          setDeletingRestaurantId(null);
+          setConfirmLoading(false);
+          setConfirmModal(null);
+        }
+      },
+    });
+  }
+
+  function handleDeleteUser(userId: string, userName: string) {
+    setConfirmModal({
+      title: "Delete User",
+      description: `Are you sure you want to delete user "${userName}"? This will remove their profile, reservations, and unassign any restaurants they manage.`,
+      confirmLabel: "Delete User",
+      confirmColor: "red",
+      onConfirm: async () => {
+        try {
+          setConfirmLoading(true);
+          setDeletingUserId(userId);
+          setMessage(null);
+
+          await deleteAdminUser(userId);
+
+          setUsers((prev) => prev.filter((item) => item.id !== userId));
+          await Promise.all([loadOverview(), loadAuditLogs()]);
+          setMessage(`User "${userName}" has been deleted.`);
+        } catch (error: any) {
+          setMessage(error?.payload?.message ?? error?.message ?? "Failed to delete user.");
+        } finally {
+          setDeletingUserId(null);
+          setConfirmLoading(false);
+          setConfirmModal(null);
+        }
+      },
+    });
   }
 
   async function handleUpdateReservationStatus(reservationId: string) {
@@ -715,6 +997,19 @@ export default function AdminDashboardPage() {
   }
 
   return (
+    <>
+    <ConfirmModal
+      open={Boolean(confirmModal)}
+      title={confirmModal?.title ?? ""}
+      description={confirmModal?.description ?? ""}
+      confirmLabel={confirmModal?.confirmLabel ?? "Confirm"}
+      confirmColor={confirmModal?.confirmColor}
+      loading={confirmLoading}
+      onConfirm={() => confirmModal?.onConfirm()}
+      onCancel={() => { if (!confirmLoading) setConfirmModal(null); }}
+    />
+    <LoadingOverlay visible={Boolean(globalLoading)} label={globalLoading ?? undefined} />
+
     <div className="p-7 text-[#1f2937]">
       {/* Topbar */}
       <header className="mb-5 rounded-[24px] bg-[linear-gradient(135deg,#1d2740,#334b7a)] px-6 py-6 text-white shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
@@ -866,13 +1161,23 @@ export default function AdminDashboardPage() {
                 type="button"
                 onClick={handleExportChartCsv}
                 disabled={!chartData?.days?.length}
-                className={`${ghostButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`${ghostButtonClass} inline-flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50`}
               >
+                <Download className="h-3.5 w-3.5" />
                 Export CSV
+              </button>
+              <button
+                type="button"
+                onClick={handleExportChartExcel}
+                disabled={!chartData?.days?.length}
+                className="inline-flex items-center gap-1.5 rounded-[14px] border border-[#c8dcc8] bg-[#eef7ee] px-3 py-2 text-sm font-bold text-[#2d6a2e] hover:bg-[#e0f0e0] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                Export Excel
               </button>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
               <div className="rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-3 py-2 text-sm text-[#5b6374]">
                 Range: <span className="font-semibold text-[#1f2937]">{chartData?.from ?? chartFrom}</span> to <span className="font-semibold text-[#1f2937]">{chartData?.to ?? chartTo}</span>
               </div>
@@ -884,6 +1189,20 @@ export default function AdminDashboardPage() {
               </div>
               <div className="rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-3 py-2 text-sm text-[#5b6374]">
                 Revenue in range: <span className="font-semibold text-[#1f2937]">{toPeso(chartData?.summary.totalRevenueMinor ?? 0)}</span>
+              </div>
+              <div className="rounded-xl border border-[#f0d5a5] bg-[#fff9ef] px-3 py-2 text-sm text-[#5b6374]">
+                <span className="inline-flex items-center gap-1">
+                  <Star className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b]" />
+                  Avg Rating:
+                </span>{" "}
+                <span className="font-semibold text-[#1f2937]">
+                  {(() => {
+                    const rated = restaurants.filter((r) => r.rating != null && Number(r.rating) > 0);
+                    if (rated.length === 0) return "N/A";
+                    return (rated.reduce((sum, r) => sum + Number(r.rating), 0) / rated.length).toFixed(1);
+                  })()}
+                </span>
+                <span className="ml-1 text-xs text-[#8b97a8]">({restaurants.filter((r) => r.rating != null && Number(r.rating) > 0).length} restaurants)</span>
               </div>
             </div>
 
@@ -1001,14 +1320,25 @@ export default function AdminDashboardPage() {
                     </select>
                   </label>
 
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateUserRole(item.id)}
-                    disabled={updatingUserId === item.id}
-                    className="mt-3 w-full rounded-xl border border-[#d9c3c8] bg-[#f8ecee] px-3 py-2 text-xs font-semibold text-[#7b2f3b] disabled:opacity-60"
-                  >
-                    {updatingUserId === item.id ? "Saving..." : "Update role"}
-                  </button>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateUserRole(item.id)}
+                      disabled={updatingUserId === item.id}
+                      className="rounded-xl border border-[#d9c3c8] bg-[#f8ecee] px-3 py-2 text-xs font-semibold text-[#7b2f3b] disabled:opacity-60"
+                    >
+                      {updatingUserId === item.id ? "Saving..." : "Update role"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteUser(item.id, item.fullName || item.email || shortId(item.id))}
+                      disabled={deletingUserId === item.id}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#f3c3cc] bg-[#fff1f2] px-3 py-2 text-xs font-semibold text-[#be123c] transition hover:bg-[#ffe4e6] disabled:opacity-60"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {deletingUserId === item.id ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
                 </article>
               ))
             )}
@@ -1061,14 +1391,25 @@ export default function AdminDashboardPage() {
                         </td>
                         <td className="px-3 py-3 text-[#667085]">{toDateTime(item.createdAt)}</td>
                         <td className="px-3 py-3">
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateUserRole(item.id)}
-                            disabled={updatingUserId === item.id}
-                            className="rounded-lg border border-[#d9c3c8] bg-[#f8ecee] px-2.5 py-1 text-xs font-semibold text-[#7b2f3b] disabled:opacity-60"
-                          >
-                            {updatingUserId === item.id ? "Saving..." : "Update"}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateUserRole(item.id)}
+                              disabled={updatingUserId === item.id}
+                              className="rounded-lg border border-[#d9c3c8] bg-[#f8ecee] px-2.5 py-1 text-xs font-semibold text-[#7b2f3b] disabled:opacity-60"
+                            >
+                              {updatingUserId === item.id ? "Saving..." : "Update"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(item.id, item.fullName || item.email || shortId(item.id))}
+                              disabled={deletingUserId === item.id}
+                              className="inline-flex items-center gap-1 rounded-lg border border-[#f3c3cc] bg-[#fff1f2] px-2.5 py-1 text-xs font-semibold text-[#be123c] transition hover:bg-[#ffe4e6] disabled:opacity-60"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              {deletingUserId === item.id ? "..." : "Delete"}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1080,19 +1421,29 @@ export default function AdminDashboardPage() {
         </section>
       )}
 
-      {activeTab === "restaurants" && (
-        <section className="mt-5 space-y-4">
-          <article className={panelClass}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
+      {showAddRestaurantModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !creatingRestaurant && setShowAddRestaurantModal(false)}
+          />
+          <div className="relative mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[24px] border border-[#e7e3e5] bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-3xl text-[#1f2937]">Add Restaurant</h2>
+                <h2 className="text-2xl font-extrabold text-[#1f2937]">Add Restaurant</h2>
                 <p className="mt-1 text-sm text-[#8b97a8]">Create restaurant details and optionally assign a vendor manager.</p>
               </div>
-              <div className="rounded-full border border-[#e7d5d8] bg-[#f8ecee] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#7b2f3b]">Admin only</div>
+              <button
+                type="button"
+                onClick={() => !creatingRestaurant && setShowAddRestaurantModal(false)}
+                className="rounded-xl border border-[#e5e7eb] p-1.5 text-[#667085] transition hover:bg-[#f3f4f6]"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="mt-6 grid gap-5 rounded-2xl border border-[#eceff4] bg-[#fbfcfe] p-5 md:grid-cols-2 xl:grid-cols-12">
-              <label className="space-y-1.5 xl:col-span-6">
+            <div className="mt-5 grid gap-4 rounded-2xl border border-[#eceff4] bg-[#fbfcfe] p-5 sm:grid-cols-2">
+              <label className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Name *</span>
                 <input
                   value={restaurantForm.name}
@@ -1103,7 +1454,7 @@ export default function AdminDashboardPage() {
                   className={`${inputClass} h-11 w-full`}
                 />
               </label>
-              <label className="space-y-1.5 xl:col-span-6">
+              <label className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Cuisine *</span>
                 <input
                   value={restaurantForm.cuisine}
@@ -1114,7 +1465,7 @@ export default function AdminDashboardPage() {
                   className={`${inputClass} h-11 w-full`}
                 />
               </label>
-              <label className="space-y-1.5 md:col-span-2 xl:col-span-12">
+              <label className="space-y-1.5 sm:col-span-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Location *</span>
                 <input
                   value={restaurantForm.location}
@@ -1125,7 +1476,7 @@ export default function AdminDashboardPage() {
                   className={`${inputClass} h-11 w-full`}
                 />
               </label>
-              <label className="space-y-1.5 xl:col-span-3">
+              <label className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Total tables</span>
                 <input
                   type="number"
@@ -1138,7 +1489,7 @@ export default function AdminDashboardPage() {
                   className={`${inputClass} h-11 w-full`}
                 />
               </label>
-              <label className="space-y-1.5 xl:col-span-3">
+              <label className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Price level</span>
                 <select
                   value={restaurantForm.priceLevel}
@@ -1153,7 +1504,7 @@ export default function AdminDashboardPage() {
                   <option value="4">4</option>
                 </select>
               </label>
-              <label className="space-y-1.5 xl:col-span-6">
+              <label className="space-y-1.5 sm:col-span-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Assign vendor</span>
                 <select
                   value={restaurantForm.ownerId}
@@ -1170,7 +1521,7 @@ export default function AdminDashboardPage() {
                   ))}
                 </select>
               </label>
-              <label className="space-y-1.5 xl:col-span-6">
+              <label className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Image URL</span>
                 <input
                   value={restaurantForm.imageUrl}
@@ -1181,7 +1532,7 @@ export default function AdminDashboardPage() {
                   className={`${inputClass} h-11 w-full`}
                 />
               </label>
-              <label className="space-y-1.5 xl:col-span-6">
+              <label className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Contact phone</span>
                 <input
                   value={restaurantForm.contactPhone}
@@ -1192,7 +1543,7 @@ export default function AdminDashboardPage() {
                   className={`${inputClass} h-11 w-full`}
                 />
               </label>
-              <label className="space-y-1.5 xl:col-span-6">
+              <label className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Contact email</span>
                 <input
                   value={restaurantForm.contactEmail}
@@ -1203,7 +1554,22 @@ export default function AdminDashboardPage() {
                   className={`${inputClass} h-11 w-full`}
                 />
               </label>
-              <label className="space-y-1.5 md:col-span-2 xl:col-span-12">
+              <label className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Rating</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  value={restaurantForm.rating ?? ""}
+                  onChange={(event) =>
+                    setRestaurantForm((prev) => ({ ...prev, rating: event.target.value }))
+                  }
+                  placeholder="0.0 - 5.0"
+                  className={`${inputClass} h-11 w-full`}
+                />
+              </label>
+              <label className="space-y-1.5 sm:col-span-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Description</span>
                 <textarea
                   value={restaurantForm.description}
@@ -1212,27 +1578,54 @@ export default function AdminDashboardPage() {
                   }
                   placeholder="Short restaurant description"
                   rows={3}
-                  className={`${inputClass} min-h-[110px] w-full resize-y py-3`}
+                  className={`${inputClass} min-h-[100px] w-full resize-y py-3`}
                 />
               </label>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-5 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={handleCreateRestaurant}
+                onClick={() => !creatingRestaurant && setShowAddRestaurantModal(false)}
+                className="rounded-xl border border-[#d8dbe2] bg-white px-4 py-2.5 text-sm font-semibold text-[#667085] transition hover:bg-[#f3f4f6] disabled:opacity-60"
+                disabled={creatingRestaurant}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleCreateRestaurant();
+                  if (restaurantForm.name.trim() === "") {
+                    setShowAddRestaurantModal(false);
+                  }
+                }}
                 disabled={creatingRestaurant}
                 className="rounded-xl border border-[#d9c3c8] bg-[#f8ecee] px-5 py-2.5 text-sm font-semibold text-[#7b2f3b] shadow-sm transition hover:bg-[#f3dde1] disabled:opacity-60"
               >
                 {creatingRestaurant ? "Creating..." : "Create Restaurant"}
               </button>
             </div>
-          </article>
+          </div>
+        </div>
+      )}
 
+      {activeTab === "restaurants" && (
+        <section className="mt-5 space-y-4">
           <article className={panelClass}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-3xl text-[#1f2937]">Restaurant Management</h2>
-              <div className="text-xs text-[#8b97a8]">Assign restaurant owners from vendor accounts</div>
+              <div>
+                <h2 className="text-3xl text-[#1f2937]">Restaurant Management</h2>
+                <p className="mt-1 text-xs text-[#8b97a8]">Assign restaurant owners from vendor accounts</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddRestaurantModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-[#d9c3c8] bg-[#f8ecee] px-4 py-2.5 text-sm font-semibold text-[#7b2f3b] shadow-sm transition hover:bg-[#f3dde1]"
+              >
+                <Plus className="h-4 w-4" />
+                Add Restaurant
+              </button>
             </div>
 
             <div className="mt-4 grid gap-3 sm:flex sm:flex-wrap">
@@ -1261,9 +1654,15 @@ export default function AdminDashboardPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h3 className="text-base font-semibold text-[#1f2937]">{item.name}</h3>
-                        <p className="mt-1 break-words text-xs text-[#667085]">
-                          {item.cuisine} | {item.location}
-                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#667085]">
+                          <span>{item.cuisine} | {item.location}</span>
+                          {item.rating != null && Number(item.rating) > 0 && (
+                            <span className="inline-flex items-center gap-0.5 rounded-full border border-[#f0d5a5] bg-[#fff9ef] px-2 py-0.5 text-[11px] font-semibold text-[#9a6a19]">
+                              <Star className="h-2.5 w-2.5 fill-[#f59e0b] text-[#f59e0b]" />
+                              {Number(item.rating).toFixed(1)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                         Active
@@ -1308,14 +1707,24 @@ export default function AdminDashboardPage() {
                       </select>
                     </label>
 
-                    <button
-                      type="button"
-                      onClick={() => handleAssignRestaurantOwner(item.id)}
-                      disabled={assigningRestaurantId === item.id}
-                      className="mt-3 w-full rounded-xl border border-[#d9c3c8] bg-[#f8ecee] px-3 py-2 text-xs font-semibold text-[#7b2f3b] disabled:opacity-60"
-                    >
-                      {assigningRestaurantId === item.id ? "Saving..." : "Save assignment"}
-                    </button>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleAssignRestaurantOwner(item.id)}
+                        disabled={assigningRestaurantId === item.id}
+                        className="flex-1 rounded-xl border border-[#d9c3c8] bg-[#f8ecee] px-3 py-2 text-xs font-semibold text-[#7b2f3b] disabled:opacity-60"
+                      >
+                        {assigningRestaurantId === item.id ? "Saving..." : "Save assignment"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRestaurant(item.id, item.name)}
+                        disabled={deletingRestaurantId === item.id}
+                        className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                      >
+                        {deletingRestaurantId === item.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
                   </article>
                 ))
               )}
@@ -1323,7 +1732,7 @@ export default function AdminDashboardPage() {
 
             <div className="mt-4 hidden overflow-x-auto md:block">
               <div className="overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
-                <table className="w-fulltext-sm text-[#374151]">
+                <table className="w-full text-[#374151]">
                   <thead className="bg-[#f8fafc]">
                     <tr className="border-b border-[#e5e7eb] text-left text-xs uppercase tracking-wide text-[#8b97a8]">
                       <th className="px-3 py-2.5">Restaurant</th>
@@ -1333,12 +1742,13 @@ export default function AdminDashboardPage() {
                       <th className="px-3 py-2.5">Status</th>
                       <th className="px-3 py-2.5">Tables</th>
                       <th className="px-3 py-2.5">Rating</th>
+                      <th className="px-3 py-2.5">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {restaurants.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-3 py-8 text-center text-sm text-[#8b97a8]">
+                        <td colSpan={8} className="px-3 py-8 text-center text-sm text-[#8b97a8]">
                           No restaurants found.
                         </td>
                       </tr>
@@ -1353,7 +1763,15 @@ export default function AdminDashboardPage() {
                         return (
                         <tr key={item.id} className="border-b border-[#f1f5f9] align-top transition hover:bg-[#fcfdff]">
                           <td className="px-3 py-3">
-                            <div className="font-semibold text-[#1f2937]">{item.name}</div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-[#1f2937]">{item.name}</span>
+                              {item.rating != null && Number(item.rating) > 0 && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full border border-[#f0d5a5] bg-[#fff9ef] px-1.5 py-0.5 text-[10px] font-semibold text-[#9a6a19]">
+                                  <Star className="h-2.5 w-2.5 fill-[#f59e0b] text-[#f59e0b]" />
+                                  {Number(item.rating).toFixed(1)}
+                                </span>
+                              )}
+                            </div>
                             <div className="mt-0.5 text-xs text-[#8b97a8]">
                               {item.cuisine} | {item.location}
                             </div>
@@ -1409,6 +1827,21 @@ export default function AdminDashboardPage() {
                           </td>
                           <td className="px-3 py-3 text-[#475467]">{item.totalTables}</td>
                           <td className="px-3 py-3 text-[#475467]">{item.rating.toFixed(1)}</td>
+                          <td className="px-3 py-3">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRestaurant(item.id, item.name)}
+                              disabled={deletingRestaurantId === item.id}
+                              className="rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                              title="Delete restaurant"
+                            >
+                              {deletingRestaurantId === item.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
+                          </td>
                         </tr>
                       );})
                     )}
@@ -1747,7 +2180,6 @@ export default function AdminDashboardPage() {
         </section>
       )}
     </div>
+    </>
   );
   }
-
-

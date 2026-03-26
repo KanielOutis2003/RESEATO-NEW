@@ -563,8 +563,12 @@ export default function AuthPage() {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("[Signup Error]", error.message, "status:", error.status);
+          throw error;
+        }
 
+        // Auto-confirmed (no email verification required)
         if (data.session) {
           setMsgType("success");
           setMsg("Account created. You are now logged in.");
@@ -574,44 +578,74 @@ export default function AuthPage() {
           return;
         }
 
+        // Email already registered (identities is empty array)
         const identities = data.user?.identities ?? [];
         if (Array.isArray(identities) && identities.length === 0) {
+          setMsgType("error");
           setMode("login");
-          setMsg("This email is already registered. If not confirmed yet, resend the confirmation email below.");
+          setMsg("This email is already registered. Please sign in instead.");
           setShowResendConfirmation(true);
           return;
         }
 
+        // No user returned at all — signup silently failed
+        if (!data.user) {
+          setMsgType("error");
+          setMsg("Signup failed — no account was created. Please try again or contact support.");
+          return;
+        }
+
+        // Success — email confirmation required, go to confirmation page
         setMsg(null);
+        setMsgType("error");
         setConfirmationCardMsg(null);
         setShowResendConfirmation(false);
         setSignupConfirmationEmail(cleanEmail);
       }
     } catch (err: any) {
       const parsed = parseAuthError(err, "Auth failed");
+      console.error(`[Auth ${mode}]`, parsed.message, "status:", parsed.status);
 
-      if (parsed.lower.includes("invalid login credentials") || parsed.lower.includes("invalid credentials")) {
-        setMsg("Incorrect email or password. Please check your credentials and try again.");
-      } else if (parsed.lower.includes("email not confirmed")) {
-        setMsg("Email not confirmed yet. Check your inbox, or resend the confirmation link below.");
-        setShowResendConfirmation(true);
-      } else if (parsed.lower.includes("rate limit")) {
-        setMsg("Too many attempts. Please wait a moment before trying again.");
-        setShowResendConfirmation(false);
-      } else if (parsed.lower.includes("error sending confirmation email")) {
-        const resent = await resendConfirmationEmail(cleanEmail, "form");
-        if (!resent) {
+      setMsgType("error");
+      setShowResendConfirmation(false);
+
+      if (mode === "signup") {
+        // Signup errors — never resend, always show clear error
+        if (parsed.lower.includes("user already registered")) {
+          setMsg("This email is already registered. Please sign in instead.");
           setShowResendConfirmation(true);
+        } else if (parsed.lower.includes("rate limit")) {
+          setMsg("Too many signup attempts. Please wait a moment and try again.");
+        } else if (parsed.lower.includes("error sending confirmation email") || parsed.lower.includes("email")) {
+          setMsg("Signup failed — unable to send confirmation email. Check Supabase email/SMTP settings or try again later.");
+        } else if (parsed.lower.includes("network") || parsed.lower.includes("fetch")) {
+          setMsg("Unable to connect. Please check your internet connection.");
+        } else if (parsed.status === 400 || parsed.status === 500) {
+          setMsg(`Signup failed: ${parsed.message}`);
+        } else {
+          setMsg(parsed.message || "Signup failed. Please try again.");
         }
-      } else if (parsed.lower.includes("user already registered")) {
-        setMsg("This email is already registered. If not confirmed yet, resend the confirmation email below.");
-        setShowResendConfirmation(true);
-      } else if (parsed.lower.includes("user not found") || parsed.lower.includes("no user found")) {
-        setMsg("No account found with this email. Please sign up first.");
-      } else if (parsed.lower.includes("network") || parsed.lower.includes("fetch")) {
-        setMsg("Unable to connect. Please check your internet connection and try again.");
       } else {
-        setMsg("Something went wrong. Please try again.");
+        // Login errors
+        if (parsed.lower.includes("invalid login credentials") || parsed.lower.includes("invalid credentials")) {
+          setMsg("Incorrect email or password. Please check your credentials and try again.");
+        } else if (parsed.lower.includes("email not confirmed")) {
+          setMsg("Email not confirmed yet. Check your inbox, or resend the confirmation link below.");
+          setShowResendConfirmation(true);
+        } else if (parsed.lower.includes("rate limit")) {
+          setMsg("Too many attempts. Please wait a moment before trying again.");
+        } else if (parsed.lower.includes("error sending confirmation email")) {
+          const resent = await resendConfirmationEmail(cleanEmail, "form");
+          if (!resent) {
+            setShowResendConfirmation(true);
+          }
+        } else if (parsed.lower.includes("user not found") || parsed.lower.includes("no user found")) {
+          setMsg("No account found with this email. Please sign up first.");
+        } else if (parsed.lower.includes("network") || parsed.lower.includes("fetch")) {
+          setMsg("Unable to connect. Please check your internet connection.");
+        } else {
+          setMsg(parsed.message || "Something went wrong. Please try again.");
+        }
       }
     } finally {
       setLoading(false);

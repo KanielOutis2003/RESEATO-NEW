@@ -94,7 +94,7 @@ export default function VendorRestaurantsPage() {
       setLoading(true);
       setMessage(null);
       const data = await listVendorRestaurants();
-      setRestaurants(data);
+      setRestaurants(Array.isArray(data) ? data : []);
     } catch (error) {
       setMessage(getErrorMessage(error, "Unable to load restaurants."));
     } finally {

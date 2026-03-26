@@ -10,8 +10,6 @@ import {
   Download,
   Loader2,
   Settings2,
-  Star,
-  UtensilsCrossed,
 } from "lucide-react";
 import {
   getVendorCharts,
@@ -271,7 +269,7 @@ const EMPTY_OVERVIEW: VendorOverview = {
 };
 
 export default function VendorDashboardPage() {
-  const { isAuthed, loading: authLoading } = useAuth();
+  const { isAuthed, loading: authLoading, user } = useAuth();
   const [overview, setOverview] = useState<VendorOverview | null>(null);
   const [restaurants, setRestaurants] = useState<VendorRestaurant[]>([]);
   const [bestSellers, setBestSellers] = useState<VendorBestSeller[]>([]);
@@ -435,7 +433,10 @@ export default function VendorDashboardPage() {
     downloadCsv(`vendor-inventory-${new Date().toISOString().slice(0, 10)}.csv`, ["restaurant", "item", "price_minor", "price_php", "stock", "sold", "estimated_sales_php"], rows);
   }
 
-  const firstRestaurant = restaurants[0] ?? null;
+  const displayName = user?.user_metadata?.full_name
+    || user?.user_metadata?.first_name
+    || user?.email?.split("@")[0]
+    || "Vendor";
 
   if (authLoading) {
     return <div className="min-h-screen w-full bg-[#f5f3f4] text-[#1f2937]" />;
@@ -455,8 +456,8 @@ export default function VendorDashboardPage() {
         {/* Topbar */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
           <div>
-            <h2 className="text-[32px] font-extrabold text-[#1f2937]">Vendor Dashboard</h2>
-            <p className="text-sm text-[#667085]">Refined reservation management for premium hospitality operations.</p>
+            <h2 className="text-[32px] font-extrabold text-[#1f2937]">👋 Welcome, {displayName}!</h2>
+            <p className="text-sm text-[#667085]">Here's an overview of your restaurant's performance.</p>
           </div>
         </div>
 
@@ -483,81 +484,13 @@ export default function VendorDashboardPage() {
               })}
             </section>
 
-            {/* Panel Grid: Featured Restaurant + Mini Cards */}
+            {/* Calendar + Revenue Cards */}
             <section className="grid gap-5 lg:grid-cols-[1.3fr_1fr] mb-5">
-              {/* Featured Restaurant / Calendar Panel */}
-              <article className="rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-[18px]">
-                  <div>
-                    <h3 className="text-[22px] font-extrabold text-[#1f2937]">Featured Restaurant</h3>
-                    <p className="text-[13px] text-[#667085]">Main assigned restaurant and quick management controls.</p>
-                  </div>
-                  <Link to="/vendor/tables" className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56] transition hover:bg-[#f4dfe3]">
-                    Manage Tables
-                  </Link>
-                </div>
-
-                {/* Restaurant Feature Card */}
-                <div className="grid gap-4 rounded-[20px] border border-[#f0dde1] bg-[linear-gradient(180deg,#fffafc_0%,#fff5f6_100%)] p-4 md:grid-cols-[120px_1fr_auto] md:items-center">
-                  {firstRestaurant?.imageUrl ? (
-                    <img src={firstRestaurant.imageUrl} alt={firstRestaurant.name} className="h-[110px] w-full rounded-[18px] object-cover md:w-[120px]" />
-                  ) : (
-                    <div className="grid h-[110px] w-full place-items-center rounded-[18px] bg-[linear-gradient(135deg,#f7ebee,#f5f7fb)] text-[#8b3d4a] md:w-[120px]">
-                      <UtensilsCrossed className="h-7 w-7" />
-                    </div>
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-2xl font-extrabold text-[#1f2937]">{firstRestaurant?.name ?? "No Restaurant"}</h4>
-                      {firstRestaurant?.rating != null && Number(firstRestaurant.rating) > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-[#f0d5a5] bg-[#fff9ef] px-2.5 py-1 text-xs font-bold text-[#9a6a19]">
-                          <Star className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b]" />
-                          {Number(firstRestaurant.rating).toFixed(1)}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-[13px] leading-[1.7] text-[#667085]">
-                      {firstRestaurant?.cuisine ?? "Restaurant"} &bull; Cebu City, Philippines
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-[#f8ecee] px-2.5 py-[7px] text-xs font-bold text-[#8f3d56]">Best Sellers Enabled</span>
-                      <span className="rounded-full bg-[#f8ecee] px-2.5 py-[7px] text-xs font-bold text-[#8f3d56]">Premium Listing</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Link to="/vendor/tables" className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3 py-2.5 text-sm font-bold text-[#8f3d56]">Edit Info</Link>
-                    <Link to="/vendor/tables" className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3 py-2.5 text-sm font-bold text-[#8f3d56]">Best Sellers</Link>
-                  </div>
-                </div>
-              </article>
-
-              {/* Stack of Mini Cards */}
-              <div className="grid gap-[14px]">
-                <article className="rounded-[20px] border border-[#e7e3e5] bg-[linear-gradient(180deg,#fffaf9_0%,#fffdfd_100%)] p-[18px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-                  <div className="text-xs font-semibold uppercase tracking-[1px] text-[#667085]">Paid Reservations</div>
-                  <div className="mt-2 text-[28px] font-extrabold text-[#1f2937]">{overview?.paidCount ?? 0}</div>
-                  <div className="text-xs text-[#667085]">Guests who completed payments</div>
-                </article>
-                <article className="rounded-[20px] border border-[#e7e3e5] bg-[linear-gradient(180deg,#fffaf9_0%,#fffdfd_100%)] p-[18px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-                  <div className="text-xs font-semibold uppercase tracking-[1px] text-[#667085]">Collected Fees</div>
-                  <div className="mt-2 text-[28px] font-extrabold text-[#1f2937]">{toCurrency(overview?.totalPaidAmountMinor ?? 0)}</div>
-                  <div className="text-xs text-[#667085]">Estimated monthly revenue</div>
-                </article>
-                <article className="rounded-[20px] border border-[#e7e3e5] bg-[linear-gradient(180deg,#fffaf9_0%,#fffdfd_100%)] p-[18px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-                  <div className="text-xs font-semibold uppercase tracking-[1px] text-[#667085]">Inventory Value</div>
-                  <div className="mt-2 text-[28px] font-extrabold text-[#1f2937]">{toCurrency(inventoryValueMinor)}</div>
-                  <div className="text-xs text-[#667085]">Current restaurant stock estimate</div>
-                </article>
-              </div>
-            </section>
-
-            {/* Calendar + Revenue Snapshot Row */}
-            <section className="grid gap-5 lg:grid-cols-2 mb-5">
               {/* Calendar + Booking Trends */}
               <article className="rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-[18px]">
                   <div>
-                    <h3 className="text-[22px] font-extrabold text-[#1f2937]">Calendar</h3>
+                    <h3 className="text-[22px] font-extrabold text-[#1f2937]">📅 Calendar</h3>
                     <p className="text-[13px] text-[#667085]">Click a date to view day snapshot.</p>
                   </div>
                   <button type="button" onClick={handleExportTrendsCsv} className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56] transition hover:bg-[#f4dfe3]">
@@ -608,92 +541,98 @@ export default function VendorDashboardPage() {
                     Selected: <span className="font-medium text-[#1f2937]">{formatDayLabel(selectedDate)}</span>
                   </div>
                 )}
-
-                {/* Booking Trends Line Graph */}
-                <div className="mt-5 border-t border-[#e8e2e3] pt-5">
-                  <div className="flex flex-wrap items-end justify-between gap-2 mb-3">
-                    <h4 className="text-lg font-bold text-[#1f2937]">Booking Trends</h4>
-                    <div className="flex flex-wrap items-end gap-2">
-                      <select value={chartPreset} onChange={(event) => setChartPreset(event.target.value as ChartPreset)} className="rounded-lg border border-[#ddd8da] bg-white px-2 py-1 text-xs text-[#1f2937]"><option value="7d">7d</option><option value="30d">30d</option><option value="90d">90d</option><option value="custom">Custom</option></select>
-                      <input type="date" value={chartFrom} onChange={(event) => { setChartPreset("custom"); setChartFrom(event.target.value); }} className="rounded-lg border border-[#ddd8da] bg-white px-2 py-1 text-xs text-[#1f2937]" />
-                      <input type="date" value={chartTo} onChange={(event) => { setChartPreset("custom"); setChartTo(event.target.value); }} className="rounded-lg border border-[#ddd8da] bg-white px-2 py-1 text-xs text-[#1f2937]" />
-                    </div>
-                  </div>
-                  <div>{chartLoading ? <div className="grid h-[260px] place-items-center rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] text-sm text-[#5b6374]"><Loader2 className="h-4 w-4 animate-spin" /></div> : <VendorLineChart points={chartData?.days ?? []} />}</div>
-                </div>
               </article>
 
-              {/* Revenue Snapshot */}
-              <article className="rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-[18px]">
-                  <div>
-                    <h3 className="text-[22px] font-extrabold text-[#1f2937]">Revenue Snapshot</h3>
-                    <p className="text-[13px] text-[#667085]">
-                      {selectedDate && daySnapshot ? formatDayLabel(selectedDate) : selectedDate && dayLoading ? "Loading..." : "All time overview"}
-                    </p>
+              {/* Revenue & Quick Stats */}
+              <div className="grid gap-[14px] content-start">
+                {/* Day snapshot or all-time stats */}
+                <article className="rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-extrabold text-[#1f2937]">💰 Revenue Snapshot</h3>
+                    <span className="text-[13px] text-[#667085]">
+                      {selectedDate && daySnapshot ? formatDayLabel(selectedDate) : selectedDate && dayLoading ? "Loading..." : "All time"}
+                    </span>
                   </div>
-                  <Link to="/vendor/reservations" className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56] transition hover:bg-[#f4dfe3]">
-                    Open List
-                  </Link>
-                </div>
 
-                {dayLoading ? (
-                  <div className="grid place-items-center py-14"><Loader2 className="h-5 w-5 animate-spin text-[#8b3d4a]" /></div>
-                ) : selectedDate && daySnapshot ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: "Total", value: daySnapshot.total },
-                        { label: "Pending", value: daySnapshot.pending },
-                        { label: "Confirmed", value: daySnapshot.confirmed },
-                        { label: "Completed", value: daySnapshot.completed },
-                        { label: "Cancelled", value: daySnapshot.cancelled },
-                        { label: "Paid", value: daySnapshot.paid },
-                      ].map((item) => (
-                        <div key={item.label} className="rounded-[18px] border border-[#e7e3e5] bg-[#fcfafb] p-4">
-                          <div className="text-xs text-[#667085]">{item.label}</div>
-                          <div className="mt-1 text-xl font-extrabold text-[#1f2937]">{item.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="rounded-[18px] border border-[#e7e3e5] bg-[#fcfafb] p-4">
-                      <div className="text-[#667085]">Revenue</div>
-                      <div className="mt-2 text-3xl font-extrabold text-[#7b2f3b]">{toCurrency(daySnapshot.revenueMinor)}</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-[14px]">
-                    {[
-                      { label: "Reservations Today", value: String(overview?.reservationCount ?? 0), sub: "Total active bookings" },
-                      { label: "Pending Requests", value: String(overview?.pendingCount ?? 0), sub: "Needs response" },
-                      { label: "Collected Fees", value: toCurrency(overview?.totalPaidAmountMinor ?? 0), sub: "Estimated monthly" },
-                    ].map((item) => (
-                      <div key={item.label} className="rounded-[18px] border border-[#e7e3e5] bg-[#fcfafb] p-4">
-                        <div className="flex items-center justify-between text-[#667085]"><span>{item.label}</span></div>
-                        <div className="mt-2 text-2xl font-extrabold text-[#1f2937]">{item.value}</div>
-                        <div className="mt-1 text-xs text-[#667085]">{item.sub}</div>
+                  {dayLoading ? (
+                    <div className="grid place-items-center py-8"><Loader2 className="h-5 w-5 animate-spin text-[#8b3d4a]" /></div>
+                  ) : selectedDate && daySnapshot ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: "Total", value: daySnapshot.total },
+                          { label: "Pending", value: daySnapshot.pending },
+                          { label: "Confirmed", value: daySnapshot.confirmed },
+                          { label: "Completed", value: daySnapshot.completed },
+                          { label: "Cancelled", value: daySnapshot.cancelled },
+                          { label: "Paid", value: daySnapshot.paid },
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
+                            <div className="text-[11px] text-[#667085]">{item.label}</div>
+                            <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{item.value}</div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
+                        <div className="text-[11px] text-[#667085]">Revenue</div>
+                        <div className="mt-1 text-2xl font-extrabold text-[#7b2f3b]">{toCurrency(daySnapshot.revenueMinor)}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
+                        <div className="text-[11px] text-[#667085]">Collected Fees</div>
+                        <div className="mt-1 text-2xl font-extrabold text-[#7b2f3b]">{toCurrency(overview?.totalPaidAmountMinor ?? 0)}</div>
+                        <div className="mt-0.5 text-[11px] text-[#667085]">Estimated monthly revenue</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
+                          <div className="text-[11px] text-[#667085]">Paid</div>
+                          <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{overview?.paidCount ?? 0}</div>
+                        </div>
+                        <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
+                          <div className="text-[11px] text-[#667085]">Inventory</div>
+                          <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{toCurrency(inventoryValueMinor)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </article>
 
-                <div className="mt-5 space-y-2">
-                  <Link to="/vendor/reservations" className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-[#c98d98] bg-[#f8ecee] px-4 py-2.5 text-sm font-bold text-[#7b2f3b]"><Settings2 className="h-4 w-4" />Open Reservation List</Link>
-                  <Link to="/vendor/tables" className="flex w-full items-center justify-center rounded-[14px] border border-[#d8dbe2] bg-white px-4 py-2.5 text-sm font-bold text-[#374151]">Manage Tables & Best Sellers</Link>
+                {/* Quick Actions */}
+                <div className="space-y-2">
+                  <Link to="/vendor/reservations" className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-[#c98d98] bg-[#f8ecee] px-4 py-2.5 text-sm font-bold text-[#7b2f3b] transition hover:bg-[#f3dde1]"><CalendarClock className="h-4 w-4" />Open Reservation List</Link>
+                  <Link to="/vendor/tables" className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-[#d8dbe2] bg-white px-4 py-2.5 text-sm font-bold text-[#374151] transition hover:bg-[#f8fafc]"><Settings2 className="h-4 w-4" />Manage Tables</Link>
                 </div>
-              </article>
+              </div>
+            </section>
+
+            {/* Booking Trends Chart */}
+            <section className="rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)] mb-5">
+              <div className="flex flex-wrap items-end justify-between gap-2 mb-3">
+                <div>
+                  <h3 className="text-[22px] font-extrabold text-[#1f2937]">📈 Booking Trends</h3>
+                  <p className="text-[13px] text-[#667085]">Reservation activity over time.</p>
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <select value={chartPreset} onChange={(event) => setChartPreset(event.target.value as ChartPreset)} className="rounded-lg border border-[#ddd8da] bg-white px-2 py-1 text-xs text-[#1f2937]"><option value="7d">7d</option><option value="30d">30d</option><option value="90d">90d</option><option value="custom">Custom</option></select>
+                  <input type="date" value={chartFrom} onChange={(event) => { setChartPreset("custom"); setChartFrom(event.target.value); }} className="rounded-lg border border-[#ddd8da] bg-white px-2 py-1 text-xs text-[#1f2937]" />
+                  <input type="date" value={chartTo} onChange={(event) => { setChartPreset("custom"); setChartTo(event.target.value); }} className="rounded-lg border border-[#ddd8da] bg-white px-2 py-1 text-xs text-[#1f2937]" />
+                </div>
+              </div>
+              <div>{chartLoading ? <div className="grid h-[260px] place-items-center rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] text-sm text-[#5b6374]"><Loader2 className="h-4 w-4 animate-spin" /></div> : <VendorLineChart points={chartData?.days ?? []} />}</div>
             </section>
 
             {/* Best Sellers Table Panel */}
             <section className="rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                 <div>
-                  <h3 className="text-[22px] font-extrabold text-[#1f2937]">Best Sellers</h3>
+                  <h3 className="text-[22px] font-extrabold text-[#1f2937]">🏆 Best Sellers</h3>
                   <p className="text-[13px] text-[#667085]">Top performing menu items across your restaurant.</p>
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={handleExportInventoryCsv} className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56]"><Download className="mr-1 inline-block h-3.5 w-3.5" />Export</button>
-                  <Link to="/vendor/tables" className="rounded-[14px] border border-[#d8dbe2] bg-white px-3.5 py-2.5 text-sm font-bold text-[#374151]"><Settings2 className="mr-1 inline-block h-3.5 w-3.5" />Manage</Link>
+                  <Link to="/vendor/best" className="rounded-[14px] border border-[#d8dbe2] bg-white px-3.5 py-2.5 text-sm font-bold text-[#374151]"><Settings2 className="mr-1 inline-block h-3.5 w-3.5" />Manage</Link>
                 </div>
               </div>
 

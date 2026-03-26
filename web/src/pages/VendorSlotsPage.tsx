@@ -257,10 +257,11 @@ export default function VendorSlotsPage() {
 
   async function loadSlots(targetRestaurantId: string, targetDay: number) {
     const data = await getVendorRestaurantSlots(targetRestaurantId, targetDay);
-    setDefaultMaxTables(data.defaultMaxTables || 10);
+    setDefaultMaxTables(data?.defaultMaxTables || 10);
 
-    if (data.slots.length > 0) {
-      setSlots(sortSlots(data.slots));
+    const slotsArr = Array.isArray(data?.slots) ? data.slots : [];
+    if (slotsArr.length > 0) {
+      setSlots(sortSlots(slotsArr));
       return;
     }
 
@@ -418,10 +419,10 @@ export default function VendorSlotsPage() {
 
         <div className="mt-4">
           <Link
-            to="/vendor/tables"
+            to="/vendor"
             className="inline-flex rounded-xl border border-[#ddd8da] bg-white px-3 py-2 text-sm text-[#374151] hover:bg-[#f8fafc]"
           >
-            Back to Tables
+            Back to Dashboard
           </Link>
         </div>
 

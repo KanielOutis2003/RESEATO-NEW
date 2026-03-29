@@ -12,10 +12,8 @@ import {
   ArrowLeft,
   CreditCard,
   AlertTriangle,
-  MessageSquare,
   Receipt,
   Download,
-  Send,
 } from "lucide-react";
 import {
   listMyReservationsSupabase,
@@ -179,171 +177,6 @@ function CancelConfirmModal({
   );
 }
 
-function HelpModal({
-  open,
-  onClose,
-  onSubmit,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (subject: string, message: string) => Promise<boolean>;
-}) {
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Reset form state when modal re-opens
-  useEffect(() => {
-    if (open) {
-      setSubject("");
-      setMessage("");
-      setSent(false);
-      setSending(false);
-      setError(null);
-    }
-  }, [open]);
-
-  if (!open) return null;
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!subject.trim() || !message.trim()) return;
-    setSending(true);
-    setError(null);
-    try {
-      const ok = await onSubmit(subject.trim(), message.trim());
-      if (ok) {
-        setSent(true);
-      } else {
-        setError("Failed to send report. Please try again.");
-      }
-    } catch {
-      setError("Something went wrong. Please try again later.");
-    } finally {
-      setSending(false);
-    }
-  }
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 12 }}
-            transition={{ duration: 0.22 }}
-            className="relative w-full max-w-lg rounded-[24px] border border-[#e8e2e3] bg-white p-6 shadow-[0_28px_60px_rgba(15,23,42,0.18)] md:p-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-[#e5e7eb] bg-[#f8fafc] text-[#6b7280] transition hover:bg-[#f1f1f3]"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#f8ecee] text-[#8b3d4a]">
-                <MessageSquare className="h-5 w-5" />
-              </div>
-              <h2 className="text-xl font-semibold text-[#1f2937]">Help &amp; Support</h2>
-            </div>
-
-            {sent ? (
-              <div className="mt-6 text-center">
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#ecfdf3] text-[#16a34a]">
-                  <Send className="h-7 w-7" />
-                </div>
-                <h3 className="mt-4 text-lg font-semibold text-[#1f2937]">Report Sent!</h3>
-                <p className="mt-2 text-sm text-[#667085]">
-                  Our admin team will review your report and get back to you via email.
-                </p>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="mt-6 w-full rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-                <p className="text-sm text-[#667085]">
-                  Having an issue? Send a report to our admin team and we&apos;ll help you out.
-                </p>
-
-                {error && (
-                  <div className="rounded-xl border border-[#f0cdd4] bg-[#fff6f7] px-3 py-2 text-sm text-[#9f1239]">
-                    {error}
-                  </div>
-                )}
-
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-[#4b5563]">Subject</span>
-                  <select
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    disabled={sending}
-                    className="w-full rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5 text-sm text-[#111827] disabled:opacity-60"
-                  >
-                    <option value="">Select a topic...</option>
-                    <option value="Reservation Issue">Reservation Issue</option>
-                    <option value="Payment Problem">Payment Problem</option>
-                    <option value="Restaurant Complaint">Restaurant Complaint</option>
-                    <option value="Account Issue">Account Issue</option>
-                    <option value="Bug Report">Bug Report</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </label>
-
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-[#4b5563]">Message</span>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={4}
-                    disabled={sending}
-                    placeholder="Describe your issue in detail..."
-                    className="w-full resize-none rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5 text-sm text-[#111827] placeholder:text-[#9ca3af] disabled:opacity-60"
-                  />
-                </label>
-
-                <button
-                  type="submit"
-                  disabled={!subject.trim() || !message.trim() || sending}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {sending ? (
-                    <>
-                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4" />
-                      Send Report
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
 function ReceiptModal({
   open,
   onClose,
@@ -488,7 +321,6 @@ export default function MyReservationsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [cancelTarget, setCancelTarget] = useState<ReservationWithRestaurant | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
   const [receiptTarget, setReceiptTarget] = useState<ReservationWithRestaurant | null>(null);
 
   useEffect(() => {
@@ -581,24 +413,6 @@ export default function MyReservationsPage() {
     }
   }
 
-  async function onHelpSubmit(subject: string, message: string): Promise<boolean> {
-    try {
-      const { supabase } = await import("../lib/supabase");
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
-      const { error } = await supabase.from("support_tickets").insert({
-        user_id: user.id,
-        email: user.email,
-        subject,
-        message,
-        status: "open",
-      });
-      return !error;
-    } catch {
-      return false;
-    }
-  }
-
   return (
     <>
     <CancelConfirmModal
@@ -607,11 +421,6 @@ export default function MyReservationsPage() {
       loading={cancelling}
       onConfirm={onCancelConfirm}
       onCancel={() => setCancelTarget(null)}
-    />
-    <HelpModal
-      open={showHelp}
-      onClose={() => setShowHelp(false)}
-      onSubmit={onHelpSubmit}
     />
     <ReceiptModal
       open={Boolean(receiptTarget)}
@@ -629,13 +438,6 @@ export default function MyReservationsPage() {
             Back
           </button>
 
-          <button
-            onClick={() => setShowHelp(true)}
-            className="inline-flex items-center gap-2 rounded-full border border-[#d8c0c6] bg-white px-4 py-2 text-sm font-medium text-[#7b2f3b] shadow-[0_6px_16px_rgba(15,23,42,0.06)] transition hover:bg-[#f8ecee]"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Help &amp; Support
-          </button>
         </div>
 
         <div className="mt-5 flex items-start gap-4">

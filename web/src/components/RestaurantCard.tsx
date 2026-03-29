@@ -1,34 +1,25 @@
-import { Star } from "lucide-react";
+import { Clock, MapPin, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Restaurant } from "../lib/types/restaurants";
 
-const price = (level: number) => {
-  const normalized = Math.min(4, Math.max(1, Number(level) || 1));
-  return "P".repeat(normalized);
+const PRICE_LABELS: Record<number, string> = {
+  1: "Budget Friendly",
+  2: "Moderate",
+  3: "Upscale",
+  4: "Fine Dining",
 };
 
-function RatingBadge({ value }: { value: number }) {
-  const label = Number.isFinite(value) ? value.toFixed(1) : "0.0";
-  return (
-    <div
-      className="
-        inline-flex items-center gap-1
-        rounded-full border border-[#e4d2d7] bg-[#fff4f6] px-2.5 py-1
-        text-[11px] font-semibold text-[#8b3d4a]
-      "
-      title={`Rating ${label}`}
-    >
-      <Star className="h-3.5 w-3.5 fill-[#f4c430] text-[#f4c430]" />
-      <span>{label}</span>
-    </div>
-  );
-}
+const price = (level: number) => {
+  const normalized = Math.min(4, Math.max(1, Number(level) || 1));
+  return PRICE_LABELS[normalized] ?? "Budget Friendly";
+};
 
 const FALLBACK_IMG =
   "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80";
 
 export default function RestaurantCard({ r }: { r: Restaurant }) {
   const navigate = useNavigate();
+  const ratingLabel = Number.isFinite(r.rating) ? r.rating.toFixed(1) : "0.0";
 
   return (
     <div
@@ -41,49 +32,72 @@ export default function RestaurantCard({ r }: { r: Restaurant }) {
         }
       }}
       className="
-        group w-full min-w-0 max-w-full overflow-hidden rounded-2xl
-        border border-[#e8e2e3]
-        bg-white
-        shadow-[0_14px_34px_rgba(15,23,42,0.08)]
-        transition-all duration-300
-        hover:-translate-y-1 hover:border-[#d7b8bf] hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)]
+        group relative w-full min-w-0 max-w-full overflow-hidden rounded-[20px]
+        bg-[#1a1215]
+        shadow-[0_8px_30px_rgba(30,10,15,0.18)]
+        transition-all duration-500 ease-out
+        hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(30,10,15,0.28)]
         focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b46d73]
+        cursor-pointer
       "
     >
-      <div className="relative h-40 w-full overflow-hidden">
+      {/* ── Image area ── */}
+      <div className="relative h-[200px] w-full overflow-hidden">
         <img
           src={r.imageUrl || FALLBACK_IMG}
           alt={r.name}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
           onError={(event) => {
             (event.currentTarget as HTMLImageElement).src = FALLBACK_IMG;
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#2a1518]/58 via-[#2a1518]/14 to-transparent" />
 
-        <div className="absolute bottom-3 left-3 flex min-w-0 max-w-[calc(100%-1.5rem)] items-center gap-2">
-          <RatingBadge value={r.rating} />
-          <span className="min-w-0 max-w-full truncate rounded-full border border-[#eadde1] bg-[rgba(91,42,49,0.72)] px-2.5 py-1 text-[11px] text-white/95 backdrop-blur">
-            {r.cuisine}
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1215] via-[#1a1215]/40 to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-90" />
+
+        {/* Top badges */}
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md border border-white/10">
+            {price(r.priceLevel)}
           </span>
         </div>
 
-        <div className="absolute right-3 top-3 min-w-0 max-w-full truncate rounded-full border border-[#eadde1] bg-[rgba(91,42,49,0.72)] px-2.5 py-1 text-[11px] text-white/95 backdrop-blur">
-          {price(r.priceLevel)}
-        </div>
-      </div>
-
-      <div className="p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 w-full">
-            <h3 className="truncate text-[19px] font-semibold text-[#1f2937]">{r.name}</h3>
-            <p className="mt-1 w-full truncate text-sm text-[#6b7280]">{r.location}</p>
+        {/* Rating - top left with glow */}
+        <div className="absolute top-3 left-3">
+          <div className="inline-flex items-center gap-1 rounded-full bg-[#f59e0b]/90 px-2.5 py-1 text-[11px] font-bold text-white shadow-[0_2px_12px_rgba(245,158,11,0.4)]">
+            <Star className="h-3 w-3 fill-white text-white" />
+            {ratingLabel}
           </div>
         </div>
 
-        <div className="mt-3 flex items-center justify-between">
-          <div className="text-xs text-[#98a2b3]">10:00 - 21:00</div>
+        {/* Restaurant name overlay on image */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
+          <span className="mb-2 inline-block rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md border border-white/10">
+            {r.cuisine}
+          </span>
+          <h3 className="text-[22px] font-bold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+            {r.name}
+          </h3>
+        </div>
+      </div>
+
+      {/* ── Info area ── */}
+      <div className="relative bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] px-4 py-3.5">
+        {/* Decorative top accent line */}
+        <div className="absolute top-0 left-4 right-4 h-[2px] rounded-full bg-gradient-to-r from-transparent via-[#d4878f]/40 to-transparent" />
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[12px] text-[#7b6d70]">
+              <MapPin className="h-3 w-3 shrink-0 text-[#b46d73]" />
+              <span className="truncate">{r.location}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[12px] text-[#9b8e91]">
+              <Clock className="h-3 w-3 shrink-0 text-[#c49098]" />
+              <span>10:00 - 21:00</span>
+            </div>
+          </div>
 
           <button
             onClick={(event) => {
@@ -91,8 +105,13 @@ export default function RestaurantCard({ r }: { r: Restaurant }) {
               navigate(`/restaurants/${r.id}`);
             }}
             className="
-              rounded-xl border border-[#d5bcc2] bg-[#f8ecee] px-3 py-2 text-xs font-semibold text-[#7b2f3b]
-              transition hover:bg-[#f2dde2]
+              shrink-0 rounded-xl
+              bg-gradient-to-br from-[#8b3d4a] to-[#6b2a35]
+              px-4 py-2 text-xs font-bold text-white
+              shadow-[0_4px_14px_rgba(139,61,74,0.35)]
+              transition-all duration-300
+              hover:shadow-[0_6px_20px_rgba(139,61,74,0.5)] hover:brightness-110
+              active:scale-95
             "
           >
             View
@@ -102,4 +121,3 @@ export default function RestaurantCard({ r }: { r: Restaurant }) {
     </div>
   );
 }
-

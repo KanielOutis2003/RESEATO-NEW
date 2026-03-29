@@ -25,19 +25,13 @@ import VendorPageReveal from "../components/vendor/VendorPageReveal";
 
 type FormState = {
   name: string;
-  pricePhp: string;
   imageUrl: string;
-  stockQuantity: string;
-  soldCount: string;
   isActive: boolean;
 };
 
 const EMPTY_FORM: FormState = {
   name: "",
-  pricePhp: "",
   imageUrl: "",
-  stockQuantity: "0",
-  soldCount: "0",
   isActive: true,
 };
 
@@ -51,27 +45,6 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function toPeso(minor: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 2,
-  }).format((Number(minor) || 0) / 100);
-}
-
-function parsePriceMinor(pricePhp: string) {
-  const value = Number(String(pricePhp || "").trim());
-  if (!Number.isFinite(value)) return null;
-  const minor = Math.round(value * 100);
-  if (minor <= 0) return null;
-  return minor;
-}
-
-function parseNonNegativeInt(value: string, fallback = 0) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.max(0, Math.floor(parsed));
-}
 
 function csvCell(value: string | number | boolean) {
   const text = String(value ?? "");
@@ -152,19 +125,7 @@ export default function VendorBestSellersPage() {
 
   const summary = useMemo(() => {
     const activeCount = items.filter((item) => item.isActive).length;
-    const stock = items.reduce((sum, item) => sum + Math.max(0, Number(item.stockQuantity) || 0), 0);
-    const sold = items.reduce((sum, item) => sum + Math.max(0, Number(item.soldCount) || 0), 0);
-    const estimatedRevenueMinor = items.reduce(
-      (sum, item) => sum + (Number(item.priceMinor) || 0) * (Number(item.soldCount) || 0),
-      0,
-    );
-
-    return {
-      activeCount,
-      stock,
-      sold,
-      estimatedRevenueMinor,
-    };
+    return { activeCount };
   }, [items]);
 
   async function handleUploadImage(file: File) {
@@ -195,14 +156,8 @@ export default function VendorBestSellersPage() {
     event.preventDefault();
 
     const name = form.name.trim();
-    const priceMinor = parsePriceMinor(form.pricePhp);
     if (!name) {
       setMessage("Best seller name is required.");
-      return;
-    }
-
-    if (!priceMinor) {
-      setMessage("Price must be greater than 0.");
       return;
     }
 
@@ -212,10 +167,10 @@ export default function VendorBestSellersPage() {
 
       const created = await createVendorBestSeller(restaurantId, {
         name,
-        priceMinor,
+        priceMinor: 0,
         imageUrl: form.imageUrl.trim() || undefined,
-        stockQuantity: parseNonNegativeInt(form.stockQuantity, 0),
-        soldCount: parseNonNegativeInt(form.soldCount, 0),
+        stockQuantity: 0,
+        soldCount: 0,
         isActive: form.isActive,
       });
 
@@ -369,22 +324,14 @@ export default function VendorBestSellersPage() {
           </div>
         )}
 
-        <section className="mt-6 grid gap-4 sm:grid-cols-4">
-          <article className="rounded-2xl border border-[#e8e2e3] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
-            <div className="text-xs uppercase tracking-[0.16em] text-[#8b97a8]">Items</div>
-            <div className="mt-2 text-3xl font-semibold text-[#1f2937]">{items.length}</div>
+        <section className="mt-6 grid gap-4 sm:grid-cols-2">
+          <article className="rounded-2xl border border-[#e8e2e3] bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+            <div className="text-xs uppercase tracking-[0.16em] text-[#8b97a8]">Total Items</div>
+            <div className="mt-2 text-4xl font-bold text-[#1f2937]">{items.length}</div>
           </article>
-          <article className="rounded-2xl border border-[#e8e2e3] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+          <article className="rounded-2xl border border-[#e8e2e3] bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
             <div className="text-xs uppercase tracking-[0.16em] text-[#8b97a8]">Active</div>
-            <div className="mt-2 text-3xl font-semibold text-[#1f2937]">{summary.activeCount}</div>
-          </article>
-          <article className="rounded-2xl border border-[#e8e2e3] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
-            <div className="text-xs uppercase tracking-[0.16em] text-[#8b97a8]">Stock Units</div>
-            <div className="mt-2 text-3xl font-semibold text-[#1f2937]">{summary.stock}</div>
-          </article>
-          <article className="rounded-2xl border border-[#e8e2e3] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
-            <div className="text-xs uppercase tracking-[0.16em] text-[#8b97a8]">Estimated Revenue</div>
-            <div className="mt-2 text-3xl font-semibold text-[#7b2f3b]">{toPeso(summary.estimatedRevenueMinor)}</div>
+            <div className="mt-2 text-4xl font-bold text-[#1f7a4d]">{summary.activeCount}</div>
           </article>
         </section>
 
@@ -403,48 +350,6 @@ export default function VendorBestSellersPage() {
                   required
                 />
               </label>
-
-              <label className="block text-sm text-[#4b5563]">
-                Price (PHP)
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.pricePhp}
-                  onChange={(event) => setForm((prev) => ({ ...prev, pricePhp: event.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-[#ddd8da] bg-white px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#b46d73]"
-                  placeholder="150.00"
-                  required
-                />
-              </label>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-sm text-[#4b5563]">
-                  Stock Quantity
-                  <input
-                    type="number"
-                    min={0}
-                    value={form.stockQuantity}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, stockQuantity: event.target.value }))
-                    }
-                    className="mt-1 w-full rounded-xl border border-[#ddd8da] bg-white px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#b46d73]"
-                  />
-                </label>
-
-                <label className="text-sm text-[#4b5563]">
-                  Sold Count
-                  <input
-                    type="number"
-                    min={0}
-                    value={form.soldCount}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, soldCount: event.target.value }))
-                    }
-                    className="mt-1 w-full rounded-xl border border-[#ddd8da] bg-white px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#b46d73]"
-                  />
-                </label>
-              </div>
 
               <label className="block text-sm text-[#4b5563]">
                 Image URL
@@ -487,6 +392,7 @@ export default function VendorBestSellersPage() {
                   onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
                   className="h-4 w-4 rounded border-[#d1d5db]"
                 />
+
                 Active item
               </label>
 
@@ -551,10 +457,6 @@ export default function VendorBestSellersPage() {
 
                           <div>
                             <div className="text-sm font-semibold text-[#1f2937]">{item.name}</div>
-                            <div className="text-xs text-[#6b7280]">{toPeso(item.priceMinor)}</div>
-                            <div className="mt-1 text-xs text-[#6b7280]">
-                              Stock: {item.stockQuantity} | Sold: {item.soldCount}
-                            </div>
                           </div>
                         </div>
 
@@ -577,37 +479,6 @@ export default function VendorBestSellersPage() {
                           className="rounded-lg border border-[#d8dbe2] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#374151] hover:bg-[#f8fafc] disabled:opacity-60"
                         >
                           {itemSaving ? "Saving..." : item.isActive ? "Set Inactive" : "Set Active"}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={itemSaving}
-                          onClick={() => patchItem(item, { soldCount: item.soldCount + 1 })}
-                          className="rounded-lg border border-[#d8dbe2] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#374151] hover:bg-[#f8fafc] disabled:opacity-60"
-                        >
-                          + Sold
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={itemSaving}
-                          onClick={() => patchItem(item, { stockQuantity: item.stockQuantity + 1 })}
-                          className="rounded-lg border border-[#d8dbe2] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#374151] hover:bg-[#f8fafc] disabled:opacity-60"
-                        >
-                          + Stock
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={itemSaving || item.stockQuantity <= 0}
-                          onClick={() =>
-                            patchItem(item, {
-                              stockQuantity: Math.max(0, item.stockQuantity - 1),
-                            })
-                          }
-                          className="rounded-lg border border-[#d8dbe2] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#374151] hover:bg-[#f8fafc] disabled:opacity-60"
-                        >
-                          - Stock
                         </button>
 
                         <button

@@ -26,6 +26,7 @@ export type VendorRestaurant = {
   ownerId: string | null;
   totalTables: number;
   createdAt: string | null;
+  galleryImages?: string[];
 };
 
 export type VendorRestaurantInput = {
@@ -39,6 +40,7 @@ export type VendorRestaurantInput = {
   rating?: number;
   priceLevel?: number;
   totalTables?: number;
+  galleryImages?: string[];
 };
 
 export type VendorSlotConfig = {

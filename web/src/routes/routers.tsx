@@ -9,7 +9,7 @@ import ResetPasswordPage from "../pages/ResetPasswordPage";
 import AboutPage from "../pages/AboutPage";
 import TermsPage from "../pages/TermsPage";
 import MyReservationsPage from "../pages/MyReservationsPage";
-import ProfilePage from "../pages/ProfilePage";
+
 import PaymentPage from "../pages/PaymentPage";
 import VendorDashboardPage from "../pages/VendorDashboardPage";
 import VendorTablesPage from "../pages/VendorTablesPage";
@@ -31,7 +31,7 @@ export const router = createBrowserRouter([
       { path: "/about", element: <AboutPage /> },
       { path: "/terms", element: <TermsPage /> },
       { path: "/my-reservations", element: <MyReservationsPage /> },
-      { path: "/profile", element: <ProfilePage /> },
+
       { path: "/payment/:reservationId", element: <PaymentPage /> },
       { path: "/vendor", element: <VendorDashboardPage /> },
       { path: "/vendor/tables", element: <VendorTablesPage /> },

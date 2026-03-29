@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Eye,
   EyeOff,
+  Headphones,
   KeyRound,
   LayoutDashboard,
   LogOut,
@@ -334,6 +335,10 @@ export default function AdminSidebar() {
           <NavLink to="/admin/audit" className={sidebarLinkClass}>
             <ClipboardList className="h-4 w-4" />
             Audit Logs
+          </NavLink>
+          <NavLink to="/admin/support" className={sidebarLinkClass}>
+            <Headphones className="h-4 w-4" />
+            Customer Service
           </NavLink>
           <button type="button" onClick={() => setSettingsOpen(true)} className={sidebarButtonClass}>
             <Settings className="h-4 w-4" />

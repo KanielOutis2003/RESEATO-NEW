@@ -210,7 +210,11 @@ function getMissingColumnName(error: any) {
   if (quoted) return quoted;
 
   const plain = /column\s+([a-zA-Z0-9_]+)\s+does\s+not\s+exist/i.exec(message)?.[1];
-  return plain ?? null;
+  if (plain) return plain;
+
+  // PostgREST PGRST204: "Could not find the 'gallery_images' column of 'restaurants' in the schema cache"
+  const pgrst = /the\s+'([a-zA-Z0-9_]+)'\s+column/i.exec(message)?.[1];
+  return pgrst ?? null;
 }
 
 function normalizeEmail(value: unknown) {
@@ -414,6 +418,7 @@ function mapRestaurantRow(
     ownerEmail: owner?.email ?? null,
     totalTables: Number(row.total_tables ?? 1),
     createdAt: row.created_at ?? null,
+    galleryImages: Array.isArray(row.gallery_images) ? row.gallery_images.filter((u: unknown) => typeof u === "string" && (u as string).trim()) : [],
   };
 }
 
@@ -795,15 +800,26 @@ async function updateRestaurantWithFallback(
     const missingColumn = getMissingColumnName(result.error);
     if (missingColumn && missingColumn in currentPayload) {
       delete currentPayload[missingColumn];
+      // If payload is now empty after stripping, just fetch the current row
+      if (Object.keys(currentPayload).length === 0) {
+        return supabase.from("restaurants").select("*").eq("id", restaurantId).eq("owner_id", userId).single();
+      }
       continue;
     }
 
     if ("total_tables" in currentPayload) {
       delete currentPayload.total_tables;
+      if (Object.keys(currentPayload).length === 0) {
+        return supabase.from("restaurants").select("*").eq("id", restaurantId).eq("owner_id", userId).single();
+      }
       continue;
     }
 
     return result;
+  }
+
+  if (Object.keys(currentPayload).length === 0) {
+    return supabase.from("restaurants").select("*").eq("id", restaurantId).eq("owner_id", userId).single();
   }
 
   return supabase
@@ -970,6 +986,15 @@ app.get("/restaurants/:id", async (req, res) => {
     console.warn("Failed to load public best sellers:", bestSellerResult.error.message);
   }
 
+  // Parse gallery_images — may be text[], jsonb, or absent
+  let galleryImages: string[] = [];
+  const rawGallery = (data as any).gallery_images;
+  if (Array.isArray(rawGallery)) {
+    galleryImages = rawGallery.filter((u: unknown) => typeof u === "string" && u.trim());
+  } else if (typeof rawGallery === "string") {
+    try { const parsed = JSON.parse(rawGallery); if (Array.isArray(parsed)) galleryImages = parsed.filter((u: unknown) => typeof u === "string" && u.trim()); } catch { /* ignore */ }
+  }
+
   res.json({
     id: data.id,
     name: data.name,
@@ -981,6 +1006,7 @@ app.get("/restaurants/:id", async (req, res) => {
     imageUrl: data.image_url,
     contactPhone: data.contact_phone ?? null,
     contactEmail: data.contact_email ?? null,
+    galleryImages,
     bestSellers,
   });
 });
@@ -1705,6 +1731,16 @@ app.patch("/vendor/restaurants/:restaurantId", requireUser, async (req: any, res
         body.totalTables === undefined
           ? undefined
           : parsePositiveInt(body.totalTables, 10, 1, 999),
+      rating:
+        body.rating === undefined
+          ? undefined
+          : Math.min(5, Math.max(0, parseFloat(body.rating) || 0)),
+      gallery_images:
+        body.galleryImages === undefined
+          ? undefined
+          : Array.isArray(body.galleryImages)
+            ? body.galleryImages.filter((u: unknown) => typeof u === "string" && (u as string).trim())
+            : undefined,
     };
 
     Object.keys(payload).forEach((key) => {
@@ -1722,7 +1758,13 @@ app.patch("/vendor/restaurants/:restaurantId", requireUser, async (req: any, res
     );
 
     if (error) {
+      console.error("[PATCH restaurant] error:", error.message, (error as any).details, (error as any).hint, (error as any).code);
       return res.status(500).json({ message: error.message });
+    }
+
+    if (!data) {
+      console.error("[PATCH restaurant] no data returned");
+      return res.status(404).json({ message: "Restaurant not found or not owned by you" });
     }
 
     return res.json(mapRestaurantRow(data));

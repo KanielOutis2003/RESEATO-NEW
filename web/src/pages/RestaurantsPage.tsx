@@ -440,34 +440,24 @@ export default function RestaurantsPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.05 }}
-          className="flex gap-3 overflow-x-auto pb-2"
+          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
         >
           {CATEGORIES.map((c) => {
             const active = c.key === activeCategory;
             const Icon = c.icon;
-            const tone = cuisineTone(c.key, active);
             return (
               <button
                 key={c.key}
                 onClick={() => setActiveCategory(c.key)}
                 className={cx(
-                  "group flex min-w-[98px] flex-col items-center gap-2 rounded-2xl border px-4 py-3 transition",
+                  "inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all duration-200",
                   active
-                    ? "border-[#c98d98] bg-[#f8ecee] text-[#7b2f3b] shadow-[0_8px_16px_rgba(139,61,74,0.14)]"
-                    : "border-[#e7e1e3] bg-white text-[#5b6374] hover:border-[#d8c6cb] hover:bg-[#fcf8f9]",
+                    ? "bg-[#1f2937] text-white shadow-[0_4px_12px_rgba(31,41,55,0.25)]"
+                    : "border border-[#e5e2e3] bg-white text-[#5b6374] hover:border-[#cdb8bd] hover:bg-[#faf7f8] hover:text-[#7b2f3b]",
                 )}
               >
-                <div
-                  className="grid h-10 w-10 place-items-center rounded-2xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.42)]"
-                  style={{
-                    backgroundColor: tone.backgroundColor,
-                    borderColor: tone.borderColor,
-                    color: tone.color,
-                  }}
-                >
-                  <Icon className="h-4.5 w-4.5" />
-                </div>
-                <div className="text-[10px] font-semibold uppercase tracking-wider">{c.label}</div>
+                <Icon className="h-4 w-4" />
+                {c.label}
               </button>
             );
           })}

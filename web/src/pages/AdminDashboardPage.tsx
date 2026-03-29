@@ -40,7 +40,18 @@ import {
   updateAdminUserRole,
 } from "../lib/api/admin.api";
 
-type TabKey = "overview" | "users" | "restaurants" | "reservations" | "audit" | "charts";
+type TabKey = "overview" | "users" | "restaurants" | "reservations" | "audit" | "charts" | "support";
+
+type SupportTicket = {
+  id: string;
+  user_id: string;
+  email: string | null;
+  subject: string;
+  message: string;
+  attachment_url: string | null;
+  status: string;
+  created_at: string;
+};
 type ChartPreset = "7d" | "14d" | "30d" | "90d" | "custom";
 
 function toPeso(minor: number) {
@@ -75,6 +86,7 @@ function sectionToTab(section?: string): TabKey {
   if (value === "reservations") return "reservations";
   if (value === "audit") return "audit";
   if (value === "charts") return "charts";
+  if (value === "support") return "support";
   return "overview";
   }
 
@@ -335,6 +347,11 @@ export default function AdminDashboardPage() {
   } | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
+  // Support tickets state
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportStatusFilter, setSupportStatusFilter] = useState("all");
+
   const panelClass =
     "rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]";
   const inputClass =
@@ -545,6 +562,37 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
+  const loadSupportTickets = useCallback(async () => {
+    setSupportLoading(true);
+    try {
+      const { supabase } = await import("../lib/supabase");
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      setSupportTickets(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load support tickets:", err);
+      setSupportTickets([]);
+    } finally {
+      setSupportLoading(false);
+    }
+  }, []);
+
+  async function updateTicketStatus(ticketId: string, newStatus: string) {
+    try {
+      const { supabase } = await import("../lib/supabase");
+      const { error } = await supabase.from("support_tickets").update({ status: newStatus }).eq("id", ticketId);
+      if (error) throw error;
+      setSupportTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, status: newStatus } : t));
+    } catch (err) {
+      console.error("Failed to update ticket:", err);
+      setMessage("Failed to update ticket status.");
+    }
+  }
+
   function extractErrorMessage(error: any, fallback: string) {
     return error?.payload?.message ?? error?.message ?? fallback;
   }
@@ -567,6 +615,8 @@ export default function AdminDashboardPage() {
       jobs.push({ label: "reservations", run: loadReservations });
     } else if (activeTab === "audit") {
       jobs.push({ label: "audit logs", run: loadAuditLogs });
+    } else if (activeTab === "support") {
+      jobs.push({ label: "support tickets", run: loadSupportTickets });
     }
 
     const results = await Promise.allSettled(jobs.map((job) => job.run()));
@@ -589,7 +639,7 @@ export default function AdminDashboardPage() {
     }
 
     setLoading(false);
-  }, [activeTab, loadAuditLogs, loadAssignableVendors, loadOverview, loadReservations, loadRestaurants, loadUsers]);
+  }, [activeTab, loadAuditLogs, loadAssignableVendors, loadOverview, loadReservations, loadRestaurants, loadUsers, loadSupportTickets]);
   useEffect(() => {
     if (!isAuthed || roleLoading || !isAdmin) {
       setLoading(false);
@@ -2176,6 +2226,130 @@ export default function AdminDashboardPage() {
               </table>
             </div>
           </div>
+        </section>
+      )}
+      {activeTab === "support" && (
+        <section className={`mt-5 ${panelClass}`}>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-3xl text-[#1f2937]">Customer Service</h2>
+              <p className="text-[13px] text-[#667085]">Support tickets submitted by customers.</p>
+            </div>
+            <div className="flex gap-2">
+              {(["all", "open", "in_progress", "resolved", "closed"] as const).map((s) => (
+                <button key={s} type="button" onClick={() => setSupportStatusFilter(s)} className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${supportStatusFilter === s ? "bg-[#1f2937] text-white" : "border border-[#d8dbe2] bg-white text-[#374151] hover:bg-[#f3f4f6]"}`}>
+                  {s === "all" ? "All" : s === "in_progress" ? "In Progress" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {supportLoading ? (
+            <div className="py-8 text-center text-sm text-[#667085]">Loading tickets...</div>
+          ) : (
+            <>
+              {/* Mobile cards */}
+              <div className="space-y-3 md:hidden">
+                {supportTickets
+                  .filter((t) => supportStatusFilter === "all" || t.status === supportStatusFilter)
+                  .map((ticket) => (
+                  <article key={ticket.id} className="rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="text-sm font-semibold text-[#1f2937]">{ticket.subject}</div>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${ticket.status === "open" ? "bg-[#fef3c7] text-[#92400e]" : ticket.status === "resolved" ? "bg-[#d1fae5] text-[#065f46]" : ticket.status === "closed" ? "bg-[#f3f4f6] text-[#6b7280]" : "bg-[#dbeafe] text-[#1e40af]"}`}>
+                        {ticket.status === "in_progress" ? "In Progress" : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs text-[#6b7280]">{ticket.email || "No email"}</div>
+                    <div className="mt-2 rounded-xl border border-[#ebedf1] bg-white p-3 text-sm text-[#475467]">
+                      {ticket.message}
+                      {ticket.attachment_url && (
+                        <a href={ticket.attachment_url} target="_blank" rel="noopener noreferrer" className="mt-2 block">
+                          <img src={ticket.attachment_url} alt="Attachment" className="h-20 w-auto rounded-lg border border-[#e8dfe2] object-cover hover:opacity-80 transition" />
+                        </a>
+                      )}
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="text-[11px] text-[#8b97a8]">{toDateTime(ticket.created_at)}</div>
+                      <select
+                        value={ticket.status}
+                        onChange={(e) => updateTicketStatus(ticket.id, e.target.value)}
+                        className="rounded-lg border border-[#d8dbe2] bg-white px-2 py-1 text-xs text-[#374151]"
+                      >
+                        <option value="open">Open</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </div>
+                  </article>
+                ))}
+                {supportTickets.filter((t) => supportStatusFilter === "all" || t.status === supportStatusFilter).length === 0 && (
+                  <div className="rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] p-4 text-sm text-[#667085]">No support tickets found.</div>
+                )}
+              </div>
+
+              {/* Desktop table */}
+              <div className="mt-4 hidden overflow-x-auto md:block">
+                <div className="overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
+                  <table className="w-full text-sm text-[#374151]">
+                    <thead className="bg-[#f8fafc]">
+                      <tr className="border-b border-[#e5e7eb] text-left text-xs uppercase tracking-wide text-[#8b97a8]">
+                        <th className="px-3 py-2.5">Subject</th>
+                        <th className="px-3 py-2.5">Email</th>
+                        <th className="px-3 py-2.5">Message</th>
+                        <th className="px-3 py-2.5">Status</th>
+                        <th className="px-3 py-2.5">Date</th>
+                        <th className="px-3 py-2.5">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {supportTickets
+                        .filter((t) => supportStatusFilter === "all" || t.status === supportStatusFilter)
+                        .length === 0 ? (
+                        <tr><td colSpan={6} className="px-3 py-8 text-center text-sm text-[#8b97a8]">No support tickets found.</td></tr>
+                      ) : (
+                        supportTickets
+                          .filter((t) => supportStatusFilter === "all" || t.status === supportStatusFilter)
+                          .map((ticket) => (
+                          <tr key={ticket.id} className="border-b border-[#f1f5f9] transition hover:bg-[#fcfdff]">
+                            <td className="px-3 py-3 font-semibold text-[#1f2937]">{ticket.subject}</td>
+                            <td className="px-3 py-3 text-[#475467]">{ticket.email || "—"}</td>
+                            <td className="max-w-xs px-3 py-3 text-[#475467]">
+                              <div className="truncate">{ticket.message}</div>
+                              {ticket.attachment_url && (
+                                <a href={ticket.attachment_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block">
+                                  <img src={ticket.attachment_url} alt="Attachment" className="h-10 w-auto rounded border border-[#e8dfe2] object-cover hover:opacity-80 transition" />
+                                </a>
+                              )}
+                            </td>
+                            <td className="px-3 py-3">
+                              <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${ticket.status === "open" ? "bg-[#fef3c7] text-[#92400e]" : ticket.status === "resolved" ? "bg-[#d1fae5] text-[#065f46]" : ticket.status === "closed" ? "bg-[#f3f4f6] text-[#6b7280]" : "bg-[#dbeafe] text-[#1e40af]"}`}>
+                                {ticket.status === "in_progress" ? "In Progress" : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 text-[#667085]">{toDateTime(ticket.created_at)}</td>
+                            <td className="px-3 py-3">
+                              <select
+                                value={ticket.status}
+                                onChange={(e) => updateTicketStatus(ticket.id, e.target.value)}
+                                className="rounded-lg border border-[#d8dbe2] bg-white px-2 py-1.5 text-xs text-[#374151]"
+                              >
+                                <option value="open">Open</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="closed">Closed</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </section>
       )}
     </div>

@@ -8,22 +8,29 @@ import {
   Camera,
   Eye,
   EyeOff,
+  ImageIcon,
   KeyRound,
   LayoutDashboard,
   LogOut,
+  MapPin,
   PencilLine,
   Phone,
+  Save,
   Settings,
   Shield,
   Star,
+  Store,
   Table2,
+  Trash2,
+  Plus,
   User,
   UtensilsCrossed,
   X,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth/useAuth";
-import { listVendorRestaurants } from "../../lib/api/vendor.api";
+import { listVendorRestaurants, updateVendorRestaurant, uploadVendorRestaurantImage } from "../../lib/api/vendor.api";
+import type { VendorRestaurant } from "../../lib/api/vendor.api";
 
 /* ── types ── */
 type ProfileRow = {
@@ -144,6 +151,143 @@ export default function VendorSidebar() {
     return () => { alive = false; };
   }, []);
 
+  /* ── My Restaurant modal state ── */
+  const [restaurantModalOpen, setRestaurantModalOpen] = useState(false);
+  const [restaurantData, setRestaurantData] = useState<VendorRestaurant | null>(null);
+  const [restaurantLoading, setRestaurantLoading] = useState(false);
+  const [restaurantSaving, setRestaurantSaving] = useState(false);
+  const [restaurantMsg, setRestaurantMsg] = useState<string | null>(null);
+  const [restForm, setRestForm] = useState({
+    name: "", cuisine: "", location: "", description: "", imageUrl: "",
+    contactPhone: "", contactEmail: "", rating: 0, priceLevel: 1,
+  });
+  const [restUploadingImg, setRestUploadingImg] = useState(false);
+  const restImageRef = useRef<HTMLInputElement | null>(null);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+
+  /* auto-dismiss restaurant toast */
+  useEffect(() => {
+    if (!restaurantMsg) return;
+    const t = setTimeout(() => setRestaurantMsg(null), 3500);
+    return () => clearTimeout(t);
+  }, [restaurantMsg]);
+
+  /* load restaurant data when modal opens */
+  useEffect(() => {
+    if (!restaurantModalOpen) return;
+    let alive = true;
+    (async () => {
+      setRestaurantLoading(true);
+      setRestaurantMsg(null);
+      try {
+        const list = await listVendorRestaurants();
+        if (!alive) return;
+        if (list.length === 0) {
+          setRestaurantData(null);
+          setRestaurantMsg("No restaurant found. Contact admin to set up your restaurant.");
+        } else {
+          const r = list[0];
+          setRestaurantData(r);
+          setRestForm({
+            name: r.name || "",
+            cuisine: r.cuisine || "",
+            location: r.location || "",
+            description: r.description || "",
+            imageUrl: r.imageUrl || "",
+            contactPhone: r.contactPhone || "",
+            contactEmail: r.contactEmail || "",
+            rating: r.rating ?? 0,
+            priceLevel: r.priceLevel ?? 1,
+          });
+          setGalleryImages(r.galleryImages ?? []);
+        }
+      } catch { setRestaurantMsg("Failed to load restaurant data."); }
+      finally { if (alive) setRestaurantLoading(false); }
+    })();
+    return () => { alive = false; };
+  }, [restaurantModalOpen]);
+
+  async function onSaveRestaurant(e: FormEvent) {
+    e.preventDefault();
+    if (!restaurantData) return;
+    setRestaurantSaving(true);
+    setRestaurantMsg(null);
+    try {
+      await updateVendorRestaurant(restaurantData.id, {
+        name: restForm.name.trim(),
+        cuisine: restForm.cuisine.trim(),
+        location: restForm.location.trim(),
+        description: restForm.description.trim() || undefined,
+        imageUrl: restForm.imageUrl.trim() || undefined,
+        contactPhone: restForm.contactPhone.trim() || undefined,
+        contactEmail: restForm.contactEmail.trim() || undefined,
+        rating: Math.min(5, Math.max(0, restForm.rating)),
+        priceLevel: Math.min(4, Math.max(1, restForm.priceLevel)),
+      });
+      setRestaurantData((p) => p ? { ...p, ...restForm } : p);
+      setRestaurantMsg("Restaurant details updated successfully!");
+    } catch (err: any) {
+      setRestaurantMsg(err?.message ?? "Failed to save changes.");
+    } finally {
+      setRestaurantSaving(false);
+    }
+  }
+
+  async function onRestaurantImageUpload(file: File) {
+    if (!restaurantData) return;
+    setRestUploadingImg(true);
+    setRestaurantMsg(null);
+    try {
+      const url = await uploadVendorRestaurantImage(file);
+      await updateVendorRestaurant(restaurantData.id, { imageUrl: url });
+      setRestForm((p) => ({ ...p, imageUrl: url }));
+      setRestaurantData((p) => p ? { ...p, imageUrl: url } : p);
+      setRestaurantMsg("Image uploaded successfully!");
+    } catch (err: any) {
+      setRestaurantMsg(err?.message ?? "Failed to upload image.");
+    } finally {
+      setRestUploadingImg(false);
+    }
+  }
+
+  async function onGalleryUpload(file: File) {
+    if (!restaurantData) return;
+    setGalleryUploading(true);
+    setRestaurantMsg(null);
+    try {
+      const url = await uploadVendorRestaurantImage(file);
+      const updated = [...galleryImages, url];
+      await updateVendorRestaurant(restaurantData.id, { galleryImages: updated });
+      setGalleryImages(updated);
+      setRestaurantMsg("Gallery photo added!");
+    } catch (err: any) {
+      setRestaurantMsg(err?.message ?? "Failed to upload gallery image.");
+    } finally {
+      setGalleryUploading(false);
+    }
+  }
+
+  async function onGalleryRemove(idx: number) {
+    if (!restaurantData) return;
+    const updated = galleryImages.filter((_, i) => i !== idx);
+    try {
+      await updateVendorRestaurant(restaurantData.id, { galleryImages: updated });
+      setGalleryImages(updated);
+      setRestaurantMsg("Gallery photo removed.");
+    } catch (err: any) {
+      setRestaurantMsg(err?.message ?? "Failed to remove gallery image.");
+    }
+  }
+
+  function closeRestaurantModal() {
+    setRestaurantModalOpen(false);
+    setRestaurantData(null);
+    setRestaurantMsg(null);
+    setGalleryImages([]);
+  }
+
   /* ── settings modal state ── */
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<"account" | "security" | "notifications">("account");
@@ -168,6 +312,7 @@ export default function VendorSidebar() {
   const [notifCancellation, setNotifCancellation] = useState(true);
   const [notifPayment, setNotifPayment] = useState(true);
   const [notifReminder, setNotifReminder] = useState(false);
+
 
   /* load profile when settings modal opens */
   useEffect(() => {
@@ -341,6 +486,10 @@ export default function VendorSidebar() {
               Best Sellers
             </button>
           )}
+          <button type="button" onClick={() => setRestaurantModalOpen(true)} className={sidebarButtonClass}>
+            <Store className="h-4 w-4" />
+            My Restaurant
+          </button>
           <button type="button" onClick={() => setSettingsOpen(true)} className={sidebarButtonClass}>
             <Settings className="h-4 w-4" />
             Settings
@@ -574,6 +723,328 @@ export default function VendorSidebar() {
                   </div>
                 </div>
               </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* ── My Restaurant Modal ── */}
+      {restaurantModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-[#e8dfe2] bg-white p-7 shadow-[0_24px_52px_rgba(15,23,42,0.18)]" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,#b76a73,#8f3d56)] text-white shadow-md">
+                  <Store className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-[#1f2937]">My Restaurant</h2>
+                  <p className="mt-0.5 text-sm text-[#6b7280]">Edit details visible to customers</p>
+                </div>
+              </div>
+              <button type="button" onClick={closeRestaurantModal} className="rounded-full border border-[#e8dfe2] p-2 text-[#6b7280] transition hover:text-[#7b2f3b]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* toast rendered as fixed overlay — visible regardless of scroll */}
+            {restaurantMsg && (
+              <div className="fixed top-6 left-1/2 z-[9999] -translate-x-1/2 animate-[slideDown_0.3s_ease-out]">
+                <div className={`flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-medium shadow-lg backdrop-blur-sm ${
+                  restaurantMsg.toLowerCase().includes("success") || restaurantMsg.toLowerCase().includes("updated") || restaurantMsg.toLowerCase().includes("uploaded") || restaurantMsg.toLowerCase().includes("added") || restaurantMsg.toLowerCase().includes("removed")
+                    ? "border-[#bbf7d0] bg-[#f0fdf4]/95 text-[#166534]"
+                    : "border-[#f0cdd4] bg-[#fff6f7]/95 text-[#9f1239]"
+                }`}>
+                  {restaurantMsg}
+                  <button type="button" onClick={() => setRestaurantMsg(null)} className="ml-2 rounded-full p-0.5 opacity-60 hover:opacity-100 transition">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {restaurantLoading ? (
+              <div className="py-16 text-center text-sm text-[#6b7280]">Loading restaurant data...</div>
+            ) : !restaurantData ? (
+              <div className="py-16 text-center text-sm text-[#6b7280]">No restaurant found. Contact admin to set up your restaurant.</div>
+            ) : (
+              <form onSubmit={onSaveRestaurant} className="space-y-5">
+                {/* Restaurant Image */}
+                <div className="rounded-2xl border border-[#ece8e9] bg-[#faf8f9] p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <ImageIcon className="h-5 w-5 text-[#8b3d4a]" />
+                    <h3 className="text-base font-bold text-[#1f2937]">Display Image</h3>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="relative shrink-0">
+                      {restForm.imageUrl ? (
+                        <img src={restForm.imageUrl} alt="Restaurant" className="h-32 w-44 rounded-xl border border-[#e8dfe2] object-cover" />
+                      ) : (
+                        <div className="grid h-32 w-44 place-items-center rounded-xl border border-dashed border-[#d1d5db] bg-white text-[#9ca3af]">
+                          <ImageIcon className="h-10 w-10" />
+                        </div>
+                      )}
+                      {restUploadingImg && (
+                        <div className="absolute inset-0 grid place-items-center rounded-xl bg-black/40">
+                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <input
+                        ref={restImageRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) onRestaurantImageUpload(f);
+                          e.target.value = "";
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => restImageRef.current?.click()}
+                        disabled={restUploadingImg}
+                        className="inline-flex items-center gap-2 rounded-xl border border-[#d8c0c6] bg-[#f8ecee] px-4 py-2.5 text-sm font-semibold text-[#7b2f3b] transition hover:bg-[#f2dde2] disabled:opacity-60"
+                      >
+                        <Camera className="h-4 w-4" />
+                        {restForm.imageUrl ? "Change Image" : "Upload Image"}
+                      </button>
+                      <p className="text-xs text-[#9ca3af]">JPG, PNG, or WEBP. Max 8 MB.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Basic Info */}
+                <div className="rounded-2xl border border-[#ece8e9] bg-[#faf8f9] p-5 space-y-4">
+                  <div className="flex items-center gap-3 mb-1">
+                    <PencilLine className="h-5 w-5 text-[#8b3d4a]" />
+                    <h3 className="text-base font-bold text-[#1f2937]">Basic Information</h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="block">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">Restaurant Name</div>
+                      <input
+                        value={restForm.name}
+                        onChange={(e) => setRestForm((p) => ({ ...p, name: e.target.value }))}
+                        className="mt-2 w-full rounded-xl border border-[#ddd8da] bg-white px-4 py-3 text-sm text-[#111827] outline-none focus:border-[#b46d73]"
+                        placeholder="Restaurant name"
+                        required
+                      />
+                    </label>
+                    <label className="block">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">Cuisine</div>
+                      <input
+                        value={restForm.cuisine}
+                        onChange={(e) => setRestForm((p) => ({ ...p, cuisine: e.target.value }))}
+                        className="mt-2 w-full rounded-xl border border-[#ddd8da] bg-white px-4 py-3 text-sm text-[#111827] outline-none focus:border-[#b46d73]"
+                        placeholder="e.g. Filipino, Japanese"
+                        required
+                      />
+                    </label>
+                  </div>
+                  <label className="block">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">Location</div>
+                    <div className="relative mt-2">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9ca3af]" />
+                      <input
+                        value={restForm.location}
+                        onChange={(e) => setRestForm((p) => ({ ...p, location: e.target.value }))}
+                        className="w-full rounded-xl border border-[#ddd8da] bg-white pl-10 pr-4 py-3 text-sm text-[#111827] outline-none focus:border-[#b46d73]"
+                        placeholder="City or address"
+                        required
+                      />
+                    </div>
+                  </label>
+                  <label className="block">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">Description</div>
+                    <textarea
+                      value={restForm.description}
+                      onChange={(e) => setRestForm((p) => ({ ...p, description: e.target.value }))}
+                      rows={3}
+                      className="mt-2 w-full resize-none rounded-xl border border-[#ddd8da] bg-white px-4 py-3 text-sm text-[#111827] outline-none focus:border-[#b46d73]"
+                      placeholder="Describe your restaurant..."
+                    />
+                  </label>
+                </div>
+
+                {/* Contact Info */}
+                <div className="rounded-2xl border border-[#ece8e9] bg-[#faf8f9] p-5 space-y-4">
+                  <div className="flex items-center gap-3 mb-1">
+                    <Phone className="h-5 w-5 text-[#8b3d4a]" />
+                    <h3 className="text-base font-bold text-[#1f2937]">Contact Information</h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="block">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">Contact Phone</div>
+                      <input
+                        value={restForm.contactPhone}
+                        onChange={(e) => setRestForm((p) => ({ ...p, contactPhone: e.target.value }))}
+                        className="mt-2 w-full rounded-xl border border-[#ddd8da] bg-white px-4 py-3 text-sm text-[#111827] outline-none focus:border-[#b46d73]"
+                        placeholder="09XXXXXXXXX"
+                      />
+                    </label>
+                    <label className="block">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">Contact Email</div>
+                      <input
+                        type="email"
+                        value={restForm.contactEmail}
+                        onChange={(e) => setRestForm((p) => ({ ...p, contactEmail: e.target.value }))}
+                        className="mt-2 w-full rounded-xl border border-[#ddd8da] bg-white px-4 py-3 text-sm text-[#111827] outline-none focus:border-[#b46d73]"
+                        placeholder="restaurant@email.com"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Rating & Price Level */}
+                <div className="rounded-2xl border border-[#ece8e9] bg-[#faf8f9] p-5 space-y-4">
+                  <div className="flex items-center gap-3 mb-1">
+                    <Star className="h-5 w-5 text-[#8b3d4a]" />
+                    <h3 className="text-base font-bold text-[#1f2937]">Rating & Price Level</h3>
+                  </div>
+
+                  {/* Star rating */}
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-[#6b7280] mb-2">Rating</div>
+                    <div className="flex items-center gap-1 mb-2">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const filled = restForm.rating >= star;
+                        const half = !filled && restForm.rating >= star - 0.5;
+                        return (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setRestForm((p) => ({ ...p, rating: star }))}
+                            className="transition hover:scale-110"
+                          >
+                            <Star
+                              className={`h-7 w-7 ${filled ? "fill-[#f59e0b] text-[#f59e0b]" : half ? "fill-[#f59e0b]/50 text-[#f59e0b]" : "fill-transparent text-[#d1d5db]"}`}
+                            />
+                          </button>
+                        );
+                      })}
+                      <span className="ml-2 text-lg font-bold text-[#1f2937]">{restForm.rating.toFixed(1)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      value={restForm.rating}
+                      onChange={(e) => setRestForm((p) => ({ ...p, rating: parseFloat(e.target.value) }))}
+                      className="w-full accent-[#8b3d4a]"
+                    />
+                    <div className="flex justify-between text-xs text-[#9ca3af]">
+                      <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                    </div>
+                  </div>
+
+                  {/* Price level */}
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-[#6b7280] mb-2">Price Level</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {([
+                        [1, "Budget Friendly"],
+                        [2, "Moderate"],
+                        [3, "Upscale"],
+                        [4, "Fine Dining"],
+                      ] as [number, string][]).map(([lvl, label]) => (
+                        <button
+                          key={lvl}
+                          type="button"
+                          onClick={() => setRestForm((p) => ({ ...p, priceLevel: lvl }))}
+                          className={`rounded-xl px-3 py-2 text-xs font-bold transition ${
+                            restForm.priceLevel === lvl
+                              ? "bg-[#8b3d4a] text-white shadow-md"
+                              : "border border-[#ddd8da] bg-white text-[#6b7280] hover:border-[#b46d73] hover:text-[#8b3d4a]"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gallery Photos */}
+                <div className="rounded-2xl border border-[#ece8e9] bg-[#faf8f9] p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ImageIcon className="h-5 w-5 text-[#8b3d4a]" />
+                      <h3 className="text-base font-bold text-[#1f2937]">Gallery Photos</h3>
+                    </div>
+                    <span className="text-xs text-[#9ca3af]">{galleryImages.length} photo{galleryImages.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  <p className="text-xs text-[#667085]">Upload photos of your menu, interior, and ambiance. These are shown to customers on your restaurant page.</p>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {galleryImages.map((url, i) => (
+                      <div key={i} className="group relative overflow-hidden rounded-xl border border-[#e8dfe2]">
+                        <img src={url} alt={`Gallery ${i + 1}`} className="h-24 w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => onGalleryRemove(i)}
+                          className="absolute top-1 right-1 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-white opacity-0 transition group-hover:opacity-100 hover:bg-red-600"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Add button */}
+                    <button
+                      type="button"
+                      onClick={() => galleryInputRef.current?.click()}
+                      disabled={galleryUploading}
+                      className="flex h-24 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[#d1d5db] bg-white text-[#9ca3af] transition hover:border-[#b46d73] hover:text-[#8b3d4a] disabled:opacity-60"
+                    >
+                      {galleryUploading ? (
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#8b3d4a] border-t-transparent" />
+                      ) : (
+                        <>
+                          <Plus className="h-5 w-5" />
+                          <span className="text-[10px] font-medium">Add Photo</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onGalleryUpload(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+
+                {/* Save button */}
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeRestaurantModal}
+                    className="rounded-xl border border-[#e8dfe2] bg-white px-5 py-2.5 text-sm font-semibold text-[#6b7280] transition hover:bg-[#f9fafb]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={restaurantSaving}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,#8b3d4a,#6b2a35)] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(139,61,74,0.35)] transition hover:brightness-110 disabled:opacity-60"
+                  >
+                    <Save className="h-4 w-4" />
+                    {restaurantSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>

@@ -14,6 +14,7 @@ export type RestaurantDetails = Restaurant & {
   description: string;
   contactPhone?: string | null;
   contactEmail?: string | null;
+  galleryImages?: string[];
   bestSellers?: RestaurantBestSeller[];
 };
 

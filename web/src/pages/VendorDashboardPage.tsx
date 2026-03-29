@@ -271,7 +271,7 @@ const EMPTY_OVERVIEW: VendorOverview = {
 export default function VendorDashboardPage() {
   const { isAuthed, loading: authLoading, user } = useAuth();
   const [overview, setOverview] = useState<VendorOverview | null>(null);
-  const [, setRestaurants] = useState<VendorRestaurant[]>([]);
+  const [restaurants, setRestaurants] = useState<VendorRestaurant[]>([]);
   const [bestSellers, setBestSellers] = useState<VendorBestSeller[]>([]);
   const [chartData, setChartData] = useState<VendorChartsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -632,38 +632,30 @@ export default function VendorDashboardPage() {
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={handleExportInventoryCsv} className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56]"><Download className="mr-1 inline-block h-3.5 w-3.5" />Export</button>
-                  <Link to="/vendor/tables" className="rounded-[14px] border border-[#d8dbe2] bg-white px-3.5 py-2.5 text-sm font-bold text-[#374151]"><Settings2 className="mr-1 inline-block h-3.5 w-3.5" />Manage</Link>
+                  {restaurants[0]?.id && <Link to={`/vendor/restaurants/${restaurants[0].id}/best-sellers`} className="rounded-[14px] border border-[#d8dbe2] bg-white px-3.5 py-2.5 text-sm font-bold text-[#374151]"><Settings2 className="mr-1 inline-block h-3.5 w-3.5" />Manage</Link>}
                 </div>
               </div>
 
               {topBestSellers.length === 0 ? (
                 <div className="rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] p-4 text-sm text-[#5b6374]">No best sellers added yet.</div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr>
-                        <th className="border-b border-[#e7e3e5] px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-[1px] text-[#8d8d98]">Item</th>
-                        <th className="border-b border-[#e7e3e5] px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-[1px] text-[#8d8d98]">Restaurant</th>
-                        <th className="border-b border-[#e7e3e5] px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-[1px] text-[#8d8d98]">Price</th>
-                        <th className="border-b border-[#e7e3e5] px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-[1px] text-[#8d8d98]">Sold</th>
-                        <th className="border-b border-[#e7e3e5] px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-[1px] text-[#8d8d98]">Stock</th>
-                        <th className="border-b border-[#e7e3e5] px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-[1px] text-[#8d8d98]">Est. Sales</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topBestSellers.slice(0, 10).map((item) => (
-                        <tr key={item.id}>
-                          <td className="border-b border-[#efedf0] px-3 py-4 text-sm font-bold text-[#1f2937]">{item.name}</td>
-                          <td className="border-b border-[#efedf0] px-3 py-4 text-sm text-[#667085]">{item.restaurantName || "—"}</td>
-                          <td className="border-b border-[#efedf0] px-3 py-4 text-sm text-[#1f2937]">{toCurrency(item.priceMinor)}</td>
-                          <td className="border-b border-[#efedf0] px-3 py-4 text-sm font-bold text-[#1f2937]">{item.soldCount}</td>
-                          <td className="border-b border-[#efedf0] px-3 py-4 text-sm text-[#1f2937]">{item.stockQuantity}</td>
-                          <td className="border-b border-[#efedf0] px-3 py-4 text-sm font-bold text-[#7b2f3b]">{toCurrency(item.priceMinor * item.soldCount)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {topBestSellers.slice(0, 9).map((item, idx) => (
+                    <div key={item.id} className="group relative flex items-center gap-3 rounded-[16px] border border-[#e7e3e5] bg-[#fcfcfd] p-3 transition-all hover:border-[#d4b8be] hover:shadow-md">
+                      {idx < 3 && (
+                        <div className="absolute -top-2 -right-2 grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-[#f59e0b] to-[#f97316] text-[10px] font-bold text-white shadow">
+                          {idx + 1}
+                        </div>
+                      )}
+                      <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,#f7ebee,#f5f0fb)] text-lg">
+                        {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "🍽️"}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-bold text-[#1f2937]">{item.name}</div>
+                        <div className="truncate text-xs text-[#667085]">{item.restaurantName || "—"}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </section>

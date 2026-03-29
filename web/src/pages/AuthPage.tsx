@@ -285,6 +285,13 @@ export default function AuthPage() {
   const [showResendConfirmation, setShowResendConfirmation] = useState(false);
   const [confirmationCardMsg, setConfirmationCardMsg] = useState<string | null>(null);
 
+  /* auto-dismiss toast after 6 seconds */
+  useEffect(() => {
+    if (!msg) return;
+    const t = setTimeout(() => setMsg(null), 6000);
+    return () => clearTimeout(t);
+  }, [msg]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -744,6 +751,37 @@ export default function AuthPage() {
       }}
     />
     <div className="fixed inset-0 overflow-hidden bg-[#f3f3f4] px-6 text-[#1f2937]">
+      {/* Toast popup for errors/success */}
+      <AnimatePresence>
+        {msg && (
+          <motion.div
+            initial={{ opacity: 0, y: -40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -30, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="fixed inset-x-0 top-5 z-[200] mx-auto w-fit max-w-md px-4"
+          >
+            <div className={`flex items-center gap-3 rounded-2xl border px-5 py-3.5 text-sm font-medium shadow-[0_12px_32px_rgba(0,0,0,0.12)] backdrop-blur-sm ${
+              msgType === "success"
+                ? "border-[#b7e4c7] bg-[#ecfdf3]/95 text-[#166534]"
+                : msgType === "info"
+                  ? "border-[#bdd8f2] bg-[#eaf4ff]/95 text-[#1d5f93]"
+                  : "border-[#ead9dd] bg-[#fff7f8]/95 text-[#7b2f3b]"
+            }`}>
+              <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
+                msgType === "success" ? "bg-[#d1fae5]" : msgType === "info" ? "bg-[#dbeafe]" : "bg-[#ffe4e6]"
+              }`}>
+                {msgType === "success" ? <CheckCircle2 className="h-4 w-4" /> : msgType === "info" ? <Info className="h-4 w-4" /> : <X className="h-4 w-4" />}
+              </div>
+              <span className="flex-1">{msg}</span>
+              <button type="button" onClick={() => setMsg(null)} className="ml-2 rounded-full p-1 transition hover:bg-black/5">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="mx-auto flex h-full max-w-6xl flex-col py-6">
         <div className="z-10">
           <Link
@@ -1041,17 +1079,7 @@ export default function AuthPage() {
                 )}
               </div>
 
-              {msg && (
-                <div className={`rounded-xl border px-4 py-3 text-sm ${
-                  msgType === "success"
-                    ? "border-[#b7e4c7] bg-[#ecfdf3] text-[#166534]"
-                    : msgType === "info"
-                      ? "border-[#bdd8f2] bg-[#eaf4ff] text-[#1d5f93]"
-                      : "border-[#ead9dd] bg-[#fff7f8] text-[#7b2f3b]"
-                }`}>
-                  {msg}
-                </div>
-              )}
+              {/* error/success popup is rendered as a fixed toast at top */}
 
               {showResendConfirmation && (
                 <div className="rounded-xl border border-[#ead9dd] bg-[#fff7f8] px-4 py-3">

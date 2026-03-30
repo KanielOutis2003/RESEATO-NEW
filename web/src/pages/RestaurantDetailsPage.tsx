@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -20,7 +20,6 @@ import {
   Star,
   UtensilsCrossed,
   X,
-  Image as ImageIcon,
 } from "lucide-react";
 
 function todayISO() {
@@ -100,8 +99,8 @@ function priceLabel(level: number | undefined) {
 /* ── Gallery Lightbox ── */
 function GalleryLightbox({ images, startIndex, onClose }: { images: string[]; startIndex: number; onClose: () => void }) {
   const [idx, setIdx] = useState(startIndex);
-  const prev = () => setIdx((i) => (i - 1 + images.length) % images.length);
-  const next = () => setIdx((i) => (i + 1) % images.length);
+  const prev = useCallback(() => setIdx((i) => (i - 1 + images.length) % images.length), [images.length]);
+  const next = useCallback(() => setIdx((i) => (i + 1) % images.length), [images.length]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -111,7 +110,7 @@ function GalleryLightbox({ images, startIndex, onClose }: { images: string[]; st
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [onClose, next, prev]);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
@@ -358,12 +357,19 @@ export default function RestaurantDetailsPage() {
             </div>
 
             {/* Gallery */}
-            {gallery.length > 0 && (
-              <div className="rounded-3xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-6 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-[#1f2937]">Gallery</h2>
-                  <span className="text-xs text-[#98a2b3]">{gallery.length} photo{gallery.length !== 1 ? "s" : ""}</span>
+            <div className="rounded-3xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-6 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-[#1f2937]">Gallery</h2>
+                <span className="rounded-full border border-[#e5e7eb] bg-[#f8fafc] px-3 py-1 text-xs font-medium text-[#6b7280]">
+                  {gallery.length} {gallery.length === 1 ? "item" : "items"}
+                </span>
+              </div>
+              {gallery.length === 0 ? (
+                <div className="mt-4 flex items-center gap-3 rounded-2xl border border-[#ece8e9] bg-[#fafafa] px-4 py-5 text-sm text-[#667085]">
+                  <UtensilsCrossed className="h-5 w-5 text-[#c9b5b9]" />
+                  No gallery items available yet.
                 </div>
+              ) : (
                 <div className={cx(
                   "mt-4 grid gap-2",
                   gallery.length === 1 && "grid-cols-1",
@@ -382,15 +388,15 @@ export default function RestaurantDetailsPage() {
                     >
                       <img
                         src={url}
-                        alt={`${data.name} photo ${i + 1}`}
+                        alt={`${data.name} gallery ${i + 1}`}
                         className="h-44 w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Best Sellers */}
             <div className="rounded-3xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-6 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">

@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   BadgeCheck,
   CalendarDays,
-  CreditCard,
+  CheckCircle,
+  Download,
   Loader2,
-  Lock,
+  Receipt,
   UtensilsCrossed,
   Wallet,
+  X,
 } from "lucide-react";
 import {
-  cancelReservationPayment,
-  confirmReservationPayment,
   createCheckoutSession,
   getReservationPaymentDetails,
   ReservationPaymentDetails,
@@ -46,7 +46,7 @@ function prettyDate(date: string) {
   });
 }
 
-type Method = "card" | "wallet";
+type Method = "gcash" | "paymaya" | "gotyme";
 
 function paymentStatusTone(paymentStatus: string) {
   const value = paymentStatus.trim().toLowerCase();
@@ -69,18 +69,13 @@ function paymentStatusTone(paymentStatus: string) {
 export default function PaymentPage() {
   const navigate = useNavigate();
   const { reservationId } = useParams<{ reservationId: string }>();
-  const [searchParams] = useSearchParams();
-
   const [details, setDetails] = useState<ReservationPaymentDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<Method>("card");
+  const [selectedMethod, setSelectedMethod] = useState<Method>("gcash");
   const [agreed, setAgreed] = useState(false);
-
-  const hasHandledReturn = useRef(false);
-
-  const statusQuery = searchParams.get("status");
+  const [showReceipt, setShowReceipt] = useState(false);
 
   const loadDetails = useCallback(async () => {
     if (!reservationId) return;
@@ -100,33 +95,6 @@ export default function PaymentPage() {
     loadDetails();
   }, [loadDetails]);
 
-  useEffect(() => {
-    if (!reservationId) return;
-    if (!statusQuery) return;
-    if (hasHandledReturn.current) return;
-
-    hasHandledReturn.current = true;
-
-    (async () => {
-      try {
-        if (statusQuery === "success") {
-          const result = await confirmReservationPayment(reservationId);
-          setMessage(result.message);
-          await loadDetails();
-          return;
-        }
-
-        if (statusQuery === "cancelled") {
-          const result = await cancelReservationPayment(reservationId);
-          setMessage(result.message);
-          await loadDetails();
-        }
-      } catch (error: any) {
-        setMessage(error?.payload?.message ?? error?.message ?? "Payment status check failed.");
-      }
-    })();
-  }, [loadDetails, reservationId, statusQuery]);
-
   const feeLabel = useMemo(() => {
     if (!details) return formatAmount(100);
     return formatAmount(details.paymentAmount);
@@ -143,10 +111,13 @@ export default function PaymentPage() {
     setMessage(null);
 
     try {
-      const session = await createCheckoutSession(reservationId, selectedMethod);
-      window.location.href = session.checkoutUrl;
+      await createCheckoutSession(reservationId, selectedMethod);
+      setMessage("Payment successful! Your reservation is now confirmed.");
+      await loadDetails();
+      setShowReceipt(true);
     } catch (error: any) {
-      setMessage(error?.payload?.message ?? error?.message ?? "Unable to start payment checkout.");
+      setMessage(error?.payload?.message ?? error?.message ?? "Payment failed. Please try again.");
+    } finally {
       setSubmitting(false);
     }
   }
@@ -238,7 +209,7 @@ export default function PaymentPage() {
 
   return (
     <div className="relative min-h-[calc(100vh-72px)] w-full bg-[#f3f3f4] text-[#1f2937]">
-      <section className="mx-auto max-w-5xl px-6 pb-12 pt-8">
+      <section className="mx-auto max-w-5xl px-4 sm:px-6 pb-12 pt-8">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 rounded-full border border-[#ddd7d9] bg-white px-4 py-2 text-sm text-[#6b7280] shadow-[0_6px_16px_rgba(15,23,42,0.06)] transition hover:text-[#7b2f3b]"
@@ -248,20 +219,24 @@ export default function PaymentPage() {
         </button>
 
         {message && (
-          <div className="mt-5 rounded-2xl border border-[#f0cdd4] bg-[#fff6f7] px-4 py-3 text-sm text-[#9f1239]">
+          <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm ${
+            message.toLowerCase().includes("successful") || message.toLowerCase().includes("confirmed")
+              ? "border-[#bfe6d0] bg-[#e6f7ef] text-[#227a4c]"
+              : "border-[#f0cdd4] bg-[#fff6f7] text-[#9f1239]"
+          }`}>
             {message}
           </div>
         )}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-3xl border border-[#e8e2e3] bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.1)]">
-            <h1 className="text-5xl font-semibold text-[#1f2937]">Secure Payment</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-semibold text-[#1f2937]">Secure Payment</h1>
             <p className="mt-1 text-[#667085]">Complete your reservation fee payment</p>
 
             <div className="mt-6 overflow-hidden rounded-2xl border border-[#e8e2e3] bg-[#fafafa]">
               <div className="flex items-center justify-between border-b border-[#e8e2e3] bg-[#f8ecee] px-5 py-4">
                 <span className="text-base text-[#374151]">Reservation Fee</span>
-                <span className="text-4xl font-semibold text-[#8b3d4a]">{feeLabel}</span>
+                <span className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#8b3d4a]">{feeLabel}</span>
               </div>
 
               <div className="space-y-5 p-5">
@@ -270,42 +245,56 @@ export default function PaymentPage() {
                     Select Payment Method
                   </div>
 
-                  <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                       type="button"
-                      onClick={() => setSelectedMethod("card")}
+                      onClick={() => setSelectedMethod("gcash")}
                       disabled={paymentLocked}
                       className={`rounded-2xl border p-4 text-left transition ${
-                        selectedMethod === "card"
+                        selectedMethod === "gcash"
                           ? "border-[#c98d98] bg-[#f8ecee]"
                           : "border-[#e8e2e3] bg-white hover:bg-[#faf7f8]"
                       } disabled:opacity-60`}
                     >
-                      <CreditCard className="h-5 w-5 text-[#8b3d4a]" />
-                      <div className="mt-3 text-sm font-medium text-[#1f2937]">Credit Card</div>
-                      <div className="text-xs text-[#6b7280]">Visa / Mastercard</div>
+                      <Wallet className="h-5 w-5 text-[#007dfe]" />
+                      <div className="mt-3 text-sm font-medium text-[#1f2937]">GCash</div>
+                      <div className="text-xs text-[#6b7280]">E-wallet</div>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setSelectedMethod("wallet")}
+                      onClick={() => setSelectedMethod("paymaya")}
                       disabled={paymentLocked}
                       className={`rounded-2xl border p-4 text-left transition ${
-                        selectedMethod === "wallet"
+                        selectedMethod === "paymaya"
                           ? "border-[#c98d98] bg-[#f8ecee]"
                           : "border-[#e8e2e3] bg-white hover:bg-[#faf7f8]"
                       } disabled:opacity-60`}
                     >
-                      <Wallet className="h-5 w-5 text-[#8b3d4a]" />
-                      <div className="mt-3 text-sm font-medium text-[#1f2937]">GCash / Maya</div>
-                      <div className="text-xs text-[#6b7280]">Secure wallet checkout</div>
+                      <Wallet className="h-5 w-5 text-[#00b900]" />
+                      <div className="mt-3 text-sm font-medium text-[#1f2937]">PayMaya</div>
+                      <div className="text-xs text-[#6b7280]">E-wallet</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMethod("gotyme")}
+                      disabled={paymentLocked}
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        selectedMethod === "gotyme"
+                          ? "border-[#c98d98] bg-[#f8ecee]"
+                          : "border-[#e8e2e3] bg-white hover:bg-[#faf7f8]"
+                      } disabled:opacity-60`}
+                    >
+                      <Wallet className="h-5 w-5 text-[#ff6b00]" />
+                      <div className="mt-3 text-sm font-medium text-[#1f2937]">GoTyme</div>
+                      <div className="text-xs text-[#6b7280]">Digital bank</div>
                     </button>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-[#ece8e9] bg-white p-4 text-sm text-[#667085]">
-                  To keep your payment secure and PCI-compliant, card and wallet details are entered on
-                  the provider checkout page after you click Pay.
+                  Select your preferred payment method and click the button below to confirm payment.
                 </div>
 
                 <label className="inline-flex items-start gap-3 text-sm text-[#475467]">
@@ -330,11 +319,11 @@ export default function PaymentPage() {
                   {submitting ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Redirecting...
+                      Processing...
                     </>
                   ) : (
                     <>
-                      <Lock className="h-5 w-5" />
+                      <CheckCircle className="h-5 w-5" />
                       Pay {feeLabel}
                     </>
                   )}
@@ -349,7 +338,7 @@ export default function PaymentPage() {
           </section>
 
           <aside className="rounded-3xl border border-[#e8e2e3] bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.1)]">
-            <h2 className="text-3xl font-semibold text-[#1f2937]">Reservation Details</h2>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-[#1f2937]">Reservation Details</h2>
             <div className="mt-5 space-y-3 text-sm text-[#475467]">
               <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-4">
                 <div className="text-xs uppercase tracking-wide text-[#7b8498]">Restaurant</div>
@@ -396,6 +385,169 @@ export default function PaymentPage() {
           </aside>
         </div>
       </section>
+
+      {/* ── Payment Receipt Modal ── */}
+      <AnimatePresence>
+        {showReceipt && details && (() => {
+          const methodThemes: Record<Method, { bg: string; accent: string; text: string; border: string; logo: string; label: string }> = {
+            gcash: { bg: "bg-[#007dfe]", accent: "#007dfe", text: "text-white", border: "border-[#007dfe]", logo: "G", label: "GCash" },
+            paymaya: { bg: "bg-[#00b900]", accent: "#00b900", text: "text-white", border: "border-[#00b900]", logo: "M", label: "Maya" },
+            gotyme: { bg: "bg-[#ff6b00]", accent: "#ff6b00", text: "text-white", border: "border-[#ff6b00]", logo: "GT", label: "GoTyme" },
+          };
+          const theme = methodThemes[selectedMethod];
+          const refNo = `RS${reservationId?.slice(0, 8).toUpperCase() ?? "00000000"}`;
+          const txnDate = new Date().toLocaleString("en-PH", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+          return (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+            onClick={() => setShowReceipt(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ duration: 0.22 }}
+              className="relative w-full max-w-[380px] overflow-hidden rounded-[20px] bg-white shadow-[0_28px_60px_rgba(15,23,42,0.22)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Provider Header */}
+              <div className={`${theme.bg} px-6 py-5 text-center ${theme.text}`}>
+                <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-full bg-white/20 text-lg font-extrabold">{theme.logo}</div>
+                <div className="text-lg font-bold tracking-wide">{theme.label}</div>
+                <div className="mt-1 text-sm opacity-80">Payment Receipt</div>
+              </div>
+
+              {/* Success Badge */}
+              <div className="flex justify-center -mt-4">
+                <div className="grid h-8 w-8 place-items-center rounded-full bg-[#22c55e] text-white shadow-md">
+                  <CheckCircle className="h-5 w-5" />
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div className="mt-3 text-center">
+                <div className="text-xs uppercase tracking-wider text-[#6b7280]">Amount Paid</div>
+                <div className="mt-1 text-3xl font-bold text-[#1f2937]">{formatAmount(details.paymentAmount)}</div>
+                <div className="mt-1 inline-flex rounded-full bg-[#dcfce7] px-3 py-0.5 text-xs font-semibold text-[#16a34a]">Successful</div>
+              </div>
+
+              {/* Dashed Divider (receipt tear line) */}
+              <div className="relative my-4">
+                <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
+                <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
+                <div className="border-t-2 border-dashed border-[#e5e7eb] mx-5" />
+              </div>
+
+              {/* Details */}
+              <div className="px-6 space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-[#6b7280]">Ref. No.</span>
+                  <span className="font-mono text-xs font-semibold text-[#374151]">{refNo}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6b7280]">Paid To</span>
+                  <span className="font-medium text-[#1f2937]">RESEATO</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6b7280]">Restaurant</span>
+                  <span className="max-w-[180px] truncate text-right font-medium text-[#1f2937]">{details.restaurantName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6b7280]">Date & Time</span>
+                  <span className="font-medium text-[#1f2937]">{prettyDate(details.date)}, {to12Hour(details.time)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6b7280]">Guests</span>
+                  <span className="font-medium text-[#1f2937]">{details.guests}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6b7280]">Payment Method</span>
+                  <span className="font-semibold" style={{ color: theme.accent }}>{theme.label}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6b7280]">Transaction Date</span>
+                  <span className="text-xs text-[#374151]">{txnDate}</span>
+                </div>
+              </div>
+
+              {/* Dashed Divider */}
+              <div className="relative my-4">
+                <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
+                <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
+                <div className="border-t-2 border-dashed border-[#e5e7eb] mx-5" />
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="px-6 pb-5 space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const divider = "════════════════════════════════════";
+                    const lines = [
+                      divider,
+                      `        ${theme.label.toUpperCase()} - PAYMENT RECEIPT`,
+                      divider,
+                      "",
+                      `  Status:          SUCCESSFUL`,
+                      `  Ref. No:         ${refNo}`,
+                      `  Transaction:     ${txnDate}`,
+                      "",
+                      `  ─── RESERVATION DETAILS ───`,
+                      "",
+                      `  Paid To:         RESEATO`,
+                      `  Restaurant:      ${details.restaurantName}`,
+                      `  Date:            ${prettyDate(details.date)}`,
+                      `  Time:            ${to12Hour(details.time)}`,
+                      `  Guests:          ${details.guests}`,
+                      "",
+                      `  ─── PAYMENT DETAILS ───`,
+                      "",
+                      `  Amount Paid:     ${formatAmount(details.paymentAmount)}`,
+                      `  Payment Method:  ${theme.label}`,
+                      `  Booking ID:      ${reservationId}`,
+                      "",
+                      divider,
+                      "  Thank you for dining with RESEATO!",
+                      divider,
+                    ];
+                    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${theme.label}-Receipt-${refNo}.txt`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white shadow-md"
+                  style={{ background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent}dd)` }}
+                >
+                  <Download className="h-4 w-4" />
+                  Download Receipt
+                </button>
+                <Link
+                  to="/my-reservations"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-[#f9fafb] py-2.5 text-sm font-semibold text-[#374151] transition hover:bg-[#f1f1f3]"
+                >
+                  <Receipt className="h-4 w-4" />
+                  My Reservations
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowReceipt(false)}
+                  className="w-full text-center text-xs text-[#9ca3af] hover:text-[#6b7280]"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }

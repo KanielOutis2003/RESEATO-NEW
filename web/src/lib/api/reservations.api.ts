@@ -6,6 +6,7 @@ export type Slot = {
   maxTables?: number;
   reservedTables?: number;
   remainingTables?: number;
+  remainingGuests?: number;
 };
 
 export type SlotsResponse = {
@@ -13,6 +14,7 @@ export type SlotsResponse = {
   date: string;
   dayOfWeek: number;
   source: "default" | "configured" | string;
+  maxGuestsPerTable?: number;
   slots: Slot[];
 };
 
@@ -38,10 +40,10 @@ export type CreateReservationResponse = {
   createdAt: string;
 };
 
-export function getSlots(restaurantId: string, date: string) {
-  return api<SlotsResponse>(
-    `/restaurants/${restaurantId}/slots?date=${encodeURIComponent(date)}`,
-  );
+export function getSlots(restaurantId: string, date: string, guests?: number) {
+  let url = `/restaurants/${restaurantId}/slots?date=${encodeURIComponent(date)}`;
+  if (guests && guests > 0) url += `&guests=${guests}`;
+  return api<SlotsResponse>(url);
 }
 
 export function createReservation(payload: CreateReservationInput) {

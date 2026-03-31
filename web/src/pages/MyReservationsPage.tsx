@@ -152,7 +152,7 @@ function CancelConfirmModal({
               <span className="font-semibold text-[#1f2937]">{restaurantName}</span>?
             </p>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={onCancel}
@@ -289,7 +289,7 @@ function ReceiptModal({
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={onClose}
@@ -405,6 +405,8 @@ export default function MyReservationsPage() {
       const updated = await cancelReservationSupabase(cancelTarget.id);
       setItems((prev) => prev.map((row) => (row.id === cancelTarget.id ? updated : row)));
       setCancelTarget(null);
+      setMsg("Reservation cancelled successfully.");
+      setTimeout(() => setMsg(null), 3000);
     } catch (e: any) {
       setMsg(e?.message ?? "Cancel failed");
       setCancelTarget(null);
@@ -446,7 +448,7 @@ export default function MyReservationsPage() {
           </div>
 
           <div>
-            <h1 className="text-4xl font-semibold tracking-tight text-[#1f2937]">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-[#1f2937]">
               My Reservations
             </h1>
             <p className="mt-1 text-[15px] text-[#667085]">
@@ -456,7 +458,11 @@ export default function MyReservationsPage() {
         </div>
 
         {msg && (
-          <div className="mt-6 rounded-2xl border border-[#f0cdd4] bg-[#fff6f7] px-4 py-3 text-sm text-[#9f1239]">
+          <div className={`mt-6 rounded-2xl border px-4 py-3 text-sm ${
+            msg.toLowerCase().includes("success")
+              ? "border-[#bfe6d0] bg-[#e6f7ef] text-[#227a4c]"
+              : "border-[#f0cdd4] bg-[#fff6f7] text-[#9f1239]"
+          }`}>
             {msg}
           </div>
         )}
@@ -545,7 +551,7 @@ export default function MyReservationsPage() {
                     </span>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-3">
                       <div className="inline-flex items-center gap-2 text-xs text-[#6b7280]">
                         <CalendarDays className="h-3.5 w-3.5 text-[#8b3e46]" />

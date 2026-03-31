@@ -126,7 +126,7 @@ function InfoRow(props: { icon: ReactNode; label: string; value: string }) {
 }
 
 /* ══════════════════════════════════════════ */
-export default function AdminSidebar() {
+export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -286,9 +286,15 @@ export default function AdminSidebar() {
     navigate("/log-in-sign-up");
   }
 
+  function closeMobile() { onMobileClose?.(); }
+
   return (
     <>
-      <aside className="sticky top-0 flex h-screen w-[270px] shrink-0 flex-col bg-[linear-gradient(180deg,#151923_0%,#1c2230_100%)] px-[18px] py-[26px] text-[#d0daf0]">
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[90] bg-black/50 lg:hidden" onClick={closeMobile} />
+      )}
+      <aside className={`fixed top-0 left-0 z-[95] flex h-screen w-[270px] shrink-0 flex-col bg-[linear-gradient(180deg,#151923_0%,#1c2230_100%)] px-[18px] py-[26px] text-[#d0daf0] transition-transform duration-300 lg:sticky lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Brand */}
         <div className="flex items-center gap-3 rounded-[18px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] px-3 py-2.5 mb-7">
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[linear-gradient(135deg,#6f89c8,#3b5ca8)] shadow-[0_12px_24px_rgba(0,0,0,0.2)]">
@@ -305,19 +311,19 @@ export default function AdminSidebar() {
           Administration
         </div>
         <nav className="space-y-1">
-          <NavLink to="/admin" end className={sidebarLinkClass}>
+          <NavLink to="/admin" end className={sidebarLinkClass} onClick={closeMobile}>
             <LayoutDashboard className="h-4 w-4" />
             Overview
           </NavLink>
-          <NavLink to="/admin/users" className={sidebarLinkClass}>
+          <NavLink to="/admin/users" className={sidebarLinkClass} onClick={closeMobile}>
             <Users className="h-4 w-4" />
             Users
           </NavLink>
-          <NavLink to="/admin/restaurants" className={sidebarLinkClass}>
+          <NavLink to="/admin/restaurants" className={sidebarLinkClass} onClick={closeMobile}>
             <Building2 className="h-4 w-4" />
             Restaurants
           </NavLink>
-          <NavLink to="/admin/reservations" className={sidebarLinkClass}>
+          <NavLink to="/admin/reservations" className={sidebarLinkClass} onClick={closeMobile}>
             <BookOpenCheck className="h-4 w-4" />
             Reservations
           </NavLink>
@@ -328,19 +334,19 @@ export default function AdminSidebar() {
           Reports
         </div>
         <nav className="space-y-1">
-          <NavLink to="/admin/charts" className={sidebarLinkClass}>
+          <NavLink to="/admin/charts" className={sidebarLinkClass} onClick={closeMobile}>
             <BarChart3 className="h-4 w-4" />
             Performance Charts
           </NavLink>
-          <NavLink to="/admin/audit" className={sidebarLinkClass}>
+          <NavLink to="/admin/audit" className={sidebarLinkClass} onClick={closeMobile}>
             <ClipboardList className="h-4 w-4" />
             Audit Logs
           </NavLink>
-          <NavLink to="/admin/support" className={sidebarLinkClass}>
+          <NavLink to="/admin/support" className={sidebarLinkClass} onClick={closeMobile}>
             <Headphones className="h-4 w-4" />
             Customer Service
           </NavLink>
-          <button type="button" onClick={() => setSettingsOpen(true)} className={sidebarButtonClass}>
+          <button type="button" onClick={() => { setSettingsOpen(true); closeMobile(); }} className={sidebarButtonClass}>
             <Settings className="h-4 w-4" />
             Settings
           </button>

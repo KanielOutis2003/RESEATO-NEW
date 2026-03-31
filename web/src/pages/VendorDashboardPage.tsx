@@ -632,7 +632,7 @@ export default function VendorDashboardPage() {
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={handleExportInventoryCsv} className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56]"><Download className="mr-1 inline-block h-3.5 w-3.5" />Export</button>
-                  {restaurants[0]?.id && <Link to={`/vendor/restaurants/${restaurants[0].id}/best-sellers`} className="rounded-[14px] border border-[#d8dbe2] bg-white px-3.5 py-2.5 text-sm font-bold text-[#374151]"><Settings2 className="mr-1 inline-block h-3.5 w-3.5" />Manage</Link>}
+                  {restaurants[0]?.id && <Link to={`/vendor/restaurants/${restaurants[0].id}/slots`} className="rounded-[14px] border border-[#d8dbe2] bg-white px-3.5 py-2.5 text-sm font-bold text-[#374151]"><Settings2 className="mr-1 inline-block h-3.5 w-3.5" />Manage</Link>}
                 </div>
               </div>
 

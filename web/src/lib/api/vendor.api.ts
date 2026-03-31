@@ -25,6 +25,7 @@ export type VendorRestaurant = {
   contactEmail: string | null;
   ownerId: string | null;
   totalTables: number;
+  maxGuestsPerTable: number;
   createdAt: string | null;
   galleryImages?: string[];
 };
@@ -40,6 +41,7 @@ export type VendorRestaurantInput = {
   rating?: number;
   priceLevel?: number;
   totalTables?: number;
+  maxGuestsPerTable?: number;
   galleryImages?: string[];
 };
 
@@ -374,6 +376,40 @@ export function deleteVendorBestSeller(restaurantId: string, itemId: string) {
     `/vendor/restaurants/${restaurantId}/best-sellers/${itemId}`,
     {
       method: "DELETE",
+    },
+  );
+}
+
+// --- Guest capacity configs ---
+
+export type GuestCapacityConfig = {
+  id: string;
+  minGuests: number;
+  maxGuests: number;
+  maxTables: number;
+};
+
+export type GuestCapacityConfigInput = {
+  minGuests: number;
+  maxGuests: number;
+  maxTables: number;
+};
+
+export function getVendorGuestConfigs(restaurantId: string) {
+  return api<GuestCapacityConfig[]>(
+    `/vendor/restaurants/${restaurantId}/guest-configs`,
+  );
+}
+
+export function saveVendorGuestConfigs(
+  restaurantId: string,
+  configs: GuestCapacityConfigInput[],
+) {
+  return api<GuestCapacityConfig[]>(
+    `/vendor/restaurants/${restaurantId}/guest-configs`,
+    {
+      method: "PUT",
+      body: { configs },
     },
   );
 }

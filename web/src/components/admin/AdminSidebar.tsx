@@ -131,6 +131,13 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
   const { user } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  /* admin display name */
+  const adminName = useMemo(() => {
+    if (!user) return "Admin";
+    const { fullName } = deriveFromMetadata(user);
+    return fullName.split(" ")[0] || "Admin";
+  }, [user]);
+
   /* ── settings modal state ── */
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<"account" | "security" | "notifications">("account");
@@ -302,7 +309,7 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
           </div>
           <div className="min-w-0">
             <div className="truncate text-base font-extrabold tracking-wide text-white">RESEATO</div>
-            <div className="text-xs text-[#bfcdf4]">Admin Control</div>
+            <div className="truncate text-xs font-bold tracking-wide text-[#bfcdf4]">{adminName.toUpperCase()}</div>
           </div>
         </div>
 

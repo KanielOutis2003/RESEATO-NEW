@@ -137,6 +137,29 @@ export default function VendorSidebar({ mobileOpen = false, onMobileClose }: { m
   const { user } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  /* vendor display name */
+  const vendorName = useMemo(() => {
+    if (!user) return "Vendor";
+    const { fullName } = deriveFromMetadata(user);
+    return fullName.split(" ")[0] || "Vendor";
+  }, [user]);
+
+  /* restaurant name for sidebar header */
+  const [sidebarRestName, setSidebarRestName] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const list = await listVendorRestaurants();
+        if (!alive) return;
+        if (list.length > 0) {
+          setSidebarRestName(list[0].name);
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { alive = false; };
+  }, []);
+
   /* ── My Restaurant modal state ── */
   const [restaurantModalOpen, setRestaurantModalOpen] = useState(false);
   const [restaurantData, setRestaurantData] = useState<VendorRestaurant | null>(null);
@@ -213,6 +236,7 @@ export default function VendorSidebar({ mobileOpen = false, onMobileClose }: { m
         priceLevel: Math.min(4, Math.max(1, restForm.priceLevel)),
       });
       setRestaurantData((p) => p ? { ...p, ...restForm } : p);
+      setSidebarRestName(restForm.name.trim());
       setRestaurantMsg("Restaurant details updated successfully!");
       setTimeout(() => closeRestaurantModal(), 1200);
     } catch (err: any) {
@@ -447,7 +471,9 @@ export default function VendorSidebar({ mobileOpen = false, onMobileClose }: { m
           </div>
           <div className="min-w-0">
             <div className="truncate text-base font-extrabold tracking-wide">RESEATO</div>
-            <div className="text-xs text-[#d9bcc3]">Vendor Portal</div>
+            <div className="truncate text-xs font-bold tracking-wide text-[#d9bcc3]">
+              {sidebarRestName ? `${sidebarRestName.toUpperCase()} RESTAURANT` : vendorName.toUpperCase()}
+            </div>
           </div>
         </div>
 

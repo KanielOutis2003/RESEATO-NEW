@@ -1222,6 +1222,30 @@ app.post("/reservations", requireUser, async (req: any, res) => {
       return res.status(500).json({ message: error.message });
     }
 
+    // Send notification to the customer that the reservation is placed
+    try {
+      const { data: restRow } = await supabase
+        .from("restaurants")
+        .select("name")
+        .eq("id", restaurantId)
+        .maybeSingle();
+      const restaurantName = (restRow as any)?.name ?? "the restaurant";
+
+      await createUserNotification({
+        userId,
+        title: "Reservation Placed",
+        body: `Your reservation at ${restaurantName} for ${String(date)} at ${timeValue} has been placed. Waiting for vendor to confirm.`,
+        type: "reservation_placed",
+        link: "/my-reservations",
+        data: {
+          reservationId: data.id,
+          restaurantId: String(restaurantId),
+        },
+      });
+    } catch {
+      // notification is non-critical, don't fail the reservation
+    }
+
     return res.status(201).json({
       id: data.id,
       restaurantId: data.restaurant_id,

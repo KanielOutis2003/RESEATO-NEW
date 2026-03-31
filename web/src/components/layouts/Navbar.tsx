@@ -195,7 +195,13 @@ export default function Navbar() {
     [role, session],
   );
 
-  const roleLabel = useMemo(() => getRoleLabel(roleKind), [roleKind]);
+  const roleLabel = useMemo(() => {
+    if (roleKind === "customer") {
+      const first = displayFullName.split(" ")[0];
+      return first || "Customer";
+    }
+    return getRoleLabel(roleKind);
+  }, [roleKind, displayFullName]);
 
   const navItems = useMemo(() => getNavItems(roleKind), [roleKind]);
 

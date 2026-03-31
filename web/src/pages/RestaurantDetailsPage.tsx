@@ -168,24 +168,26 @@ export default function RestaurantDetailsPage() {
     if (!id) return;
     let alive = true;
     async function loadRestaurant() {
-      try {
-        setLoadingRestaurant(true);
-        setMsg(null);
-        const restaurantId = id;
-        if (!restaurantId) return;
-        const details = await getRestaurant(restaurantId);
-        if (!alive) return;
-        setData(details);
-      } catch (error) {
-        if (!alive) return;
-        setData(null);
-        setMsg(getErrorMessage(error, "Unable to load restaurant details."));
-      } finally {
-        if (!alive) return;
-        setLoadingRestaurant(false);
+      setLoadingRestaurant(true);
+      setMsg(null);
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        try {
+          const details = await getRestaurant(id!);
+          if (!alive) return;
+          setData(details);
+          return;
+        } catch (error) {
+          if (!alive) return;
+          if (attempt === 2) {
+            setData(null);
+            setMsg(getErrorMessage(error, "Unable to load restaurant details."));
+          }
+          await new Promise((r) => setTimeout(r, 2000));
+        }
       }
+      if (alive) setLoadingRestaurant(false);
     }
-    loadRestaurant();
+    loadRestaurant().finally(() => { if (alive) setLoadingRestaurant(false); });
     return () => { alive = false; };
   }, [id]);
 
@@ -194,30 +196,51 @@ export default function RestaurantDetailsPage() {
     let alive = true;
     setLoadingSlots(true);
     setMsg(null);
-    getSlots(id, date)
-      .then((r) => {
-        if (!alive) return;
-        setSlots(r.slots);
-        const first = r.slots.find((s) => s.available)?.time ?? "";
-        setTime(first);
-      })
-      .catch((error) => {
-        if (!alive) return;
-        setSlots([]);
-        setTime("");
-        setMsg(getErrorMessage(error, "Unable to load available slots."));
-      })
-      .finally(() => {
-        if (!alive) return;
-        setLoadingSlots(false);
-      });
-    return () => { alive = false; };
-  }, [id, date]);
 
-  const availableTimes = useMemo(() => slots.filter((s) => s.available), [slots]);
+    async function fetchSlots(retries: number) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const r = await getSlots(id!, date, guests);
+          if (!alive) return;
+          setSlots(r.slots);
+          const first = r.slots.find((s) => s.available)?.time ?? "";
+          setTime(first);
+          return;
+        } catch (error) {
+          if (!alive) return;
+          if (attempt === retries) {
+            setSlots([]);
+            setTime("");
+            setMsg(getErrorMessage(error, "Unable to load available slots."));
+          }
+          // wait before retrying
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+    }
+
+    fetchSlots(2).finally(() => { if (alive) setLoadingSlots(false); });
+    return () => { alive = false; };
+  }, [id, date, guests]);
+
+  const availableTimes = useMemo(() => slots.filter((s) => {
+    if (!s.available) return false;
+    if (s.remainingTables != null && s.remainingTables <= 0) return false;
+    return true;
+  }), [slots]);
 
   function decGuests() { setGuests((g) => Math.max(1, g - 1)); }
-  function incGuests() { setGuests((g) => Math.min(20, g + 1)); }
+  function incGuests() { setGuests((g) => Math.min(50, g + 1)); }
+
+  // Reset time selection when guest count makes current slot unavailable
+  useEffect(() => {
+    if (!time) return;
+    const slot = slots.find((s) => s.time === time);
+    if (slot && slot.remainingGuests != null && slot.remainingGuests < guests) {
+      const fallback = slots.find((s) => s.available && (s.remainingGuests == null || s.remainingGuests >= guests))?.time ?? "";
+      setTime(fallback);
+    }
+  }, [guests, slots, time]);
 
   async function onReserve() {
     if (!id) return;
@@ -225,7 +248,7 @@ export default function RestaurantDetailsPage() {
     setMsg(null);
     try {
       const res = await createReservation({ restaurantId: id, name, phone, date, time, guests });
-      setMsg(`Reservation created. Redirecting to payment for Ref: ${res.id}`);
+      setBookingOpen(false);
       navigate(`/payment/${res.id}`);
     } catch (e: any) {
       setMsg(e?.payload?.message ?? e?.message ?? "Reservation failed");
@@ -600,6 +623,7 @@ export default function RestaurantDetailsPage() {
                             <tr className="border-b border-[#ece8e9] bg-[#f8fafc]">
                               <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Period</th>
                               <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Time</th>
+                              <th className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Tables Left</th>
                               <th className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Status</th>
                             </tr>
                           </thead>
@@ -607,15 +631,16 @@ export default function RestaurantDetailsPage() {
                             {slots.map((s) => {
                               const hour = Number(s.time.slice(0, 2));
                               const period = hour < 12 ? "AM" : "PM";
-                              const isSelected = time === s.time && s.available;
+                              const canFit = s.available && (s.remainingTables == null || s.remainingTables > 0);
+                              const isSelected = time === s.time && canFit;
                               return (
                                 <tr
                                   key={s.time}
-                                  onClick={() => s.available && setTime(s.time)}
+                                  onClick={() => canFit && setTime(s.time)}
                                   className={cx(
                                     "border-b border-[#f1f5f9] transition",
-                                    s.available ? "cursor-pointer" : "cursor-default opacity-50",
-                                    isSelected ? "bg-[#f8ecee]" : s.available ? "hover:bg-[#faf7f8]" : "bg-[#fafafa]",
+                                    canFit ? "cursor-pointer" : "cursor-default opacity-50",
+                                    isSelected ? "bg-[#f8ecee]" : canFit ? "hover:bg-[#faf7f8]" : "bg-[#fafafa]",
                                   )}
                                 >
                                   <td className="px-3 py-2.5">
@@ -623,7 +648,16 @@ export default function RestaurantDetailsPage() {
                                   </td>
                                   <td className={cx("px-3 py-2.5 font-medium", isSelected ? "text-[#7b2f3b]" : "text-[#374151]")}>{to12Hour(s.time)}</td>
                                   <td className="px-3 py-2.5 text-center">
-                                    {!s.available ? (
+                                    {s.remainingTables != null ? (
+                                      <span className={cx("text-[11px] font-medium", s.remainingTables === 0 ? "text-[#be123c]" : s.remainingTables <= 2 ? "text-amber-600" : "text-emerald-700")}>
+                                        {s.remainingTables} table{s.remainingTables !== 1 ? "s" : ""}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[11px] text-[#98a2b3]">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2.5 text-center">
+                                    {!canFit ? (
                                       <span className="inline-flex rounded-full border border-[#f0cdd4] bg-[#fff6f7] px-2 py-0.5 text-[11px] font-medium text-[#be123c]">Full</span>
                                     ) : isSelected ? (
                                       <span className="inline-flex rounded-full border border-[#c98d98] bg-[#f8ecee] px-2 py-0.5 text-[11px] font-semibold text-[#7b2f3b]">Selected</span>

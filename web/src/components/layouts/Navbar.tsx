@@ -617,9 +617,9 @@ export default function Navbar() {
                   </button>
 
                   {notifOpen && (
-                    <div className="absolute right-0 mt-3 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-[#eadde1] bg-white text-[#1f2937] shadow-[0_22px_48px_rgba(15,23,42,0.16)] sm:w-96">
-                      <div className="flex items-center justify-between border-b border-[#f0e8ea] px-5 py-4">
-                        <div className="text-lg font-semibold">Notifications</div>
+                    <div className="absolute -right-2 mt-3 w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-[#eadde1] bg-white text-[#1f2937] shadow-[0_22px_48px_rgba(15,23,42,0.16)] sm:right-0 sm:w-96">
+                      <div className="flex items-center justify-between border-b border-[#f0e8ea] px-4 py-3 sm:px-5 sm:py-4">
+                        <div className="text-base font-semibold sm:text-lg">Notifications</div>
                         {unreadCount > 0 && (
                           <button
                             type="button"
@@ -642,7 +642,7 @@ export default function Navbar() {
                           <p className="text-sm text-[#6b7280]">No notifications yet</p>
                         </div>
                       ) : (
-                        <div className="max-h-[380px] overflow-y-auto">
+                        <div className="max-h-[60vh] sm:max-h-[380px] overflow-y-auto">
                           {notifications.map((item) => (
                             <button
                               key={item.id}
@@ -652,13 +652,13 @@ export default function Navbar() {
                                 item.is_read ? "bg-transparent" : "bg-[#fff8fa]"
                               }`}
                             >
-                              <div className="flex items-start justify-between gap-3">
-                                <p className="text-sm font-semibold text-[#1f2937]">{item.title}</p>
-                                <span className="shrink-0 text-[11px] text-[#8b97a8]">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-sm font-semibold text-[#1f2937] leading-snug">{item.title}</p>
+                                <span className="shrink-0 text-[10px] sm:text-[11px] text-[#8b97a8] mt-0.5">
                                   {formatNotificationTime(item.created_at)}
                                 </span>
                               </div>
-                              <p className="mt-1 text-xs text-[#5b6374]">{item.body}</p>
+                              <p className="mt-1 text-xs leading-relaxed text-[#5b6374]">{item.body}</p>
                             </button>
                           ))}
                         </div>

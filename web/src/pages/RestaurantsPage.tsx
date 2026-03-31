@@ -12,6 +12,7 @@ import {
   Search,
   Shell,
   Soup,
+  Star,
   UtensilsCrossed,
   type LucideIcon,
 } from "lucide-react";
@@ -319,19 +320,19 @@ export default function RestaurantsPage() {
               Browse Restaurants
             </div>
             <h1
-              className="mt-2 text-[42px] font-semibold leading-[1.02] tracking-tight text-white sm:text-[48px]"
+              className="mt-2 text-2xl font-semibold leading-[1.02] tracking-tight text-white sm:text-4xl lg:text-[48px]"
               style={{ textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
             >
               Welcome Folks!
             </h1>
             <p
-              className="mt-2 max-w-[620px] text-[17px] leading-[1.35] text-white/95 sm:text-[18px]"
+              className="mt-2 max-w-[620px] text-sm leading-relaxed text-white/95 sm:text-base lg:text-lg"
               style={{ textShadow: "0 2px 10px rgba(0,0,0,0.45)" }}
             >
               Enjoy your order at our chosen best restaurant and get a taste of delicious food from our best menu.
             </p>
 
-            <div className="mt-5 max-w-[420px]">
+            <div className="mt-5 max-w-full sm:max-w-[420px]">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/75" />
                 <input
@@ -376,9 +377,18 @@ export default function RestaurantsPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.08 }}
+          className="rounded-[28px] border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.08)] sm:p-7"
         >
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-2 sm:gap-3">
-            <h2 className="min-w-0 text-[32px] font-semibold leading-[1.08] tracking-tight text-[#1f2937] sm:text-[35px]">Recommended Restaurants</h2>
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[#8b3e46] to-[#6a2f35] text-white shadow-md">
+                <Star className="h-5 w-5 fill-white" />
+              </div>
+              <div>
+                <h2 className="min-w-0 text-xl font-bold leading-[1.08] tracking-tight text-[#1f2937] sm:text-2xl lg:text-[35px]">Recommended Restaurants</h2>
+                <p className="text-sm text-[#667085]">Top-rated dining spots picked for you</p>
+              </div>
+            </div>
             <div className="shrink-0 text-xs text-[#7b8498] sm:text-sm">
               Showing {filtered.length} result{filtered.length === 1 ? "" : "s"}
             </div>

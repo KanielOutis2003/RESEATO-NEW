@@ -9,4 +9,5 @@ export type Restaurant = {
   imageUrl?: string;
   contactPhone?: string | null;
   contactEmail?: string | null;
+  maxGuestsPerTable?: number;
 };

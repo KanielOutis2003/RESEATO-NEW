@@ -68,7 +68,7 @@ export async function api<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const timeoutMs = options.timeoutMs ?? 8000;
+  const timeoutMs = options.timeoutMs ?? 15000;
   const method = options.method ?? "GET";
   const body = options.body ? JSON.stringify(options.body) : undefined;
 

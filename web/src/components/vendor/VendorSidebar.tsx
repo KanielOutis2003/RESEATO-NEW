@@ -131,7 +131,7 @@ function InfoRow(props: { icon: ReactNode; label: string; value: string }) {
 }
 
 /* ══════════════════════════════════════════ */
-export default function VendorSidebar() {
+export default function VendorSidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -228,6 +228,7 @@ export default function VendorSidebar() {
       });
       setRestaurantData((p) => p ? { ...p, ...restForm } : p);
       setRestaurantMsg("Restaurant details updated successfully!");
+      setTimeout(() => closeRestaurantModal(), 1200);
     } catch (err: any) {
       setRestaurantMsg(err?.message ?? "Failed to save changes.");
     } finally {
@@ -444,9 +445,15 @@ export default function VendorSidebar() {
     navigate("/log-in-sign-up");
   }
 
+  function closeMobile() { onMobileClose?.(); }
+
   return (
     <>
-      <aside className="sticky top-0 flex h-screen w-[270px] shrink-0 flex-col bg-[linear-gradient(180deg,#22171a_0%,#2a1d21_100%)] px-[18px] py-[26px] text-[#f8ecee]">
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[90] bg-black/50 lg:hidden" onClick={closeMobile} />
+      )}
+      <aside className={`fixed top-0 left-0 z-[95] flex h-screen w-[270px] shrink-0 flex-col bg-[linear-gradient(180deg,#22171a_0%,#2a1d21_100%)] px-[18px] py-[26px] text-[#f8ecee] transition-transform duration-300 lg:sticky lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Brand */}
         <div className="flex items-center gap-3 rounded-[18px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] px-3 py-2.5 mb-7">
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[linear-gradient(135deg,#b76a73,#8f3d56)] shadow-[0_12px_24px_rgba(0,0,0,0.2)]">
@@ -463,34 +470,27 @@ export default function VendorSidebar() {
           Menu
         </div>
         <nav className="space-y-1">
-          <NavLink to="/vendor" end className={sidebarLinkClass}>
+          <NavLink to="/vendor" end className={sidebarLinkClass} onClick={closeMobile}>
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
           </NavLink>
-          <NavLink to="/vendor/reservations" className={sidebarLinkClass}>
+          <NavLink to="/vendor/reservations" className={sidebarLinkClass} onClick={closeMobile}>
             <CalendarCheck2 className="h-4 w-4" />
             Reservations
           </NavLink>
-          <NavLink to="/vendor/tables" end className={sidebarLinkClass}>
+          <NavLink to="/vendor/tables" end className={sidebarLinkClass} onClick={closeMobile}>
             <Table2 className="h-4 w-4" />
             Tables
           </NavLink>
-          {firstRestaurantId ? (
-            <NavLink to={`/vendor/restaurants/${firstRestaurantId}/best-sellers`} className={sidebarLinkClass}>
-              <Star className="h-4 w-4" />
-              Best Sellers
-            </NavLink>
-          ) : (
-            <button type="button" className={`${sidebarButtonClass}${!loadingRestaurant ? " opacity-50 cursor-not-allowed" : ""}`} disabled={!loadingRestaurant ? true : undefined}>
-              <Star className="h-4 w-4" />
-              Best Sellers
-            </button>
-          )}
-          <button type="button" onClick={() => setRestaurantModalOpen(true)} className={sidebarButtonClass}>
+          <button type="button" onClick={() => { setRestaurantModalOpen(true); closeMobile(); }} className={sidebarButtonClass}>
+            <ImageIcon className="h-4 w-4" />
+            Gallery
+          </button>
+          <button type="button" onClick={() => { setRestaurantModalOpen(true); closeMobile(); }} className={sidebarButtonClass}>
             <Store className="h-4 w-4" />
             My Restaurant
           </button>
-          <button type="button" onClick={() => setSettingsOpen(true)} className={sidebarButtonClass}>
+          <button type="button" onClick={() => { setSettingsOpen(true); closeMobile(); }} className={sidebarButtonClass}>
             <Settings className="h-4 w-4" />
             Settings
           </button>

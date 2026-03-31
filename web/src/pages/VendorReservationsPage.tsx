@@ -186,7 +186,9 @@ export default function VendorReservationsPage() {
           reservation.id === reservationId ? result.reservation : reservation,
         ),
       );
+      setViewingId(null);
       setMessage(result.message);
+      setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       setMessage(getErrorMessage(error, `Failed to ${action} reservation.`));
     } finally {
@@ -472,20 +474,20 @@ export default function VendorReservationsPage() {
                   <div className="flex items-center gap-3 border-t border-[#ece8e9] px-5 py-4">
                     <button
                       type="button"
-                      onClick={() => { handleDecision(reservation.id, "approve"); setViewingId(null); }}
+                      onClick={() => handleDecision(reservation.id, "approve")}
                       disabled={isActing}
                       className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#b7e4c7] bg-[#ecfdf3] px-4 py-2.5 text-sm font-semibold text-[#166534] hover:bg-[#ddf8e8] disabled:opacity-50"
                     >
-                      <CheckCircle2 className="h-4 w-4" />
+                      {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                       Approve
                     </button>
                     <button
                       type="button"
-                      onClick={() => { handleDecision(reservation.id, "decline"); setViewingId(null); }}
+                      onClick={() => handleDecision(reservation.id, "decline")}
                       disabled={isActing}
                       className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#f5c2c7] bg-[#fff1f2] px-4 py-2.5 text-sm font-semibold text-[#be123c] hover:bg-[#ffe4e8] disabled:opacity-50"
                     >
-                      <XCircle className="h-4 w-4" />
+                      {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
                       Decline
                     </button>
                   </div>

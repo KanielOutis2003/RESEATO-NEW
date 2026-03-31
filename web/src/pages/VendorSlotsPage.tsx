@@ -6,13 +6,18 @@ import {
   PlusCircle,
   Save,
   Settings,
+  Users,
 } from "lucide-react";
 import {
   getVendorRestaurant,
   getVendorRestaurantSlots,
   saveVendorRestaurantSlots,
+  getVendorGuestConfigs,
+  saveVendorGuestConfigs,
   VendorRestaurant,
   VendorSlotConfig,
+  GuestCapacityConfig,
+  GuestCapacityConfigInput,
 } from "../lib/api/vendor.api";
 import { ApiError } from "../lib/api/client";
 import { useAuth } from "../lib/auth/useAuth";
@@ -255,6 +260,70 @@ export default function VendorSlotsPage() {
   const [newSlotTime, setNewSlotTime] = useState("21:00");
   const [newSlotTables, setNewSlotTables] = useState("10");
 
+  // Guest capacity config state
+  const [guestConfigs, setGuestConfigs] = useState<GuestCapacityConfigInput[]>([]);
+  const [savingGuests, setSavingGuests] = useState(false);
+  const [guestMessage, setGuestMessage] = useState<string | null>(null);
+
+  async function loadGuestConfigs(targetRestaurantId: string) {
+    try {
+      const data = await getVendorGuestConfigs(targetRestaurantId);
+      setGuestConfigs(
+        data.map((c) => ({
+          minGuests: c.minGuests,
+          maxGuests: c.maxGuests,
+          maxTables: c.maxTables,
+        })),
+      );
+    } catch {
+      // Table may not exist yet — ignore
+      setGuestConfigs([]);
+    }
+  }
+
+  function addGuestConfig() {
+    setGuestConfigs((prev) => [
+      ...prev,
+      { minGuests: 1, maxGuests: 2, maxTables: 10 },
+    ]);
+  }
+
+  function updateGuestConfig(index: number, patch: Partial<GuestCapacityConfigInput>) {
+    setGuestConfigs((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], ...patch };
+      return next;
+    });
+  }
+
+  function removeGuestConfig(index: number) {
+    setGuestConfigs((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function onSaveGuestConfigs() {
+    if (!restaurantId) return;
+
+    try {
+      setSavingGuests(true);
+      setGuestMessage(null);
+
+      const saved = await saveVendorGuestConfigs(restaurantId, guestConfigs);
+      setGuestConfigs(
+        saved.map((c) => ({
+          minGuests: c.minGuests,
+          maxGuests: c.maxGuests,
+          maxTables: c.maxTables,
+        })),
+      );
+      setGuestMessage("Guest capacity configuration saved.");
+      setTimeout(() => setGuestMessage(null), 3000);
+    } catch (error) {
+      setGuestMessage(getErrorMessage(error, "Failed to save guest configs."));
+    } finally {
+      setSavingGuests(false);
+    }
+  }
+
   async function loadSlots(targetRestaurantId: string, targetDay: number) {
     const data = await getVendorRestaurantSlots(targetRestaurantId, targetDay);
     setDefaultMaxTables(data?.defaultMaxTables || 10);
@@ -292,6 +361,7 @@ export default function VendorSlotsPage() {
 
         setRestaurant(restaurantData);
         await loadSlots(restaurantId, dayOfWeek);
+        await loadGuestConfigs(restaurantId);
       } catch (error) {
         if (!alive) return;
         setMessage(getErrorMessage(error, "Unable to load slot configuration."));
@@ -590,6 +660,146 @@ export default function VendorSlotsPage() {
             <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#6b7280]">
               <Settings className="h-3.5 w-3.5" />
               Inactive slots stay in config but are hidden from customer booking.
+            </div>
+          </section>
+
+          {/* Guest Capacity Configuration */}
+          <section className="mt-6 rounded-3xl border border-[#e8e2e3] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+            <div className="flex items-center gap-3">
+              <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#8b3e46] to-[#6a2f35] text-white shadow-md">
+                <Users className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-[#1f2937]">Guest Capacity</h2>
+                <p className="text-sm text-[#6b7280]">
+                  Set how many tables are available per guest count range.
+                </p>
+              </div>
+            </div>
+
+            {guestMessage && (
+              <div
+                className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+                  guestMessage.toLowerCase().includes("saved")
+                    ? "border-[#b7e4c7] bg-[#ecfdf3] text-[#166534]"
+                    : "border-[#f2cccf] bg-[#fff6f7] text-[#9f1239]"
+                }`}
+              >
+                {guestMessage}
+              </div>
+            )}
+
+            <div className="mt-4 rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] p-4">
+              {guestConfigs.length === 0 ? (
+                <p className="text-sm text-[#6b7280]">
+                  No guest capacity rules configured. All slots will use the default Max Tables value above.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">
+                    <span>Min Guests</span>
+                    <span>Max Guests</span>
+                    <span>Tables Available</span>
+                    <span />
+                  </div>
+                  {guestConfigs.map((cfg, index) => (
+                    <div
+                      key={index}
+                      className="grid gap-2 rounded-xl border border-[#e5e7eb] bg-white p-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-center"
+                    >
+                      <label className="text-xs text-[#6b7280]">
+                        <span className="sm:hidden">Min Guests</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={cfg.minGuests}
+                          onChange={(e) =>
+                            updateGuestConfig(index, {
+                              minGuests: Math.max(1, Number(e.target.value) || 1),
+                            })
+                          }
+                          className="mt-1 w-full rounded-lg border border-[#d9dce3] bg-white px-2 py-1.5 text-sm text-[#1f2937]"
+                        />
+                      </label>
+
+                      <label className="text-xs text-[#6b7280]">
+                        <span className="sm:hidden">Max Guests</span>
+                        <input
+                          type="number"
+                          min={cfg.minGuests}
+                          max={50}
+                          value={cfg.maxGuests}
+                          onChange={(e) =>
+                            updateGuestConfig(index, {
+                              maxGuests: Math.max(cfg.minGuests, Number(e.target.value) || cfg.minGuests),
+                            })
+                          }
+                          className="mt-1 w-full rounded-lg border border-[#d9dce3] bg-white px-2 py-1.5 text-sm text-[#1f2937]"
+                        />
+                      </label>
+
+                      <label className="text-xs text-[#6b7280]">
+                        <span className="sm:hidden">Tables Available</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={999}
+                          value={cfg.maxTables}
+                          onChange={(e) =>
+                            updateGuestConfig(index, {
+                              maxTables: Math.max(0, Number(e.target.value) || 0),
+                            })
+                          }
+                          className="mt-1 w-full rounded-lg border border-[#d9dce3] bg-white px-2 py-1.5 text-sm text-[#1f2937]"
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => removeGuestConfig(index)}
+                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-[#f2cccf] bg-[#fff6f7] px-2 py-1.5 text-xs text-[#9f1239] hover:bg-[#ffeef1]"
+                      >
+                        <MinusCircle className="h-3.5 w-3.5" />
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={addGuestConfig}
+                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#d9c3c8] bg-[#f8ecee] px-3 py-2 text-sm font-medium text-[#7b2f3b] hover:bg-[#f3dde1]"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Add Guest Rule
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onSaveGuestConfigs}
+              disabled={savingGuests}
+              className="mt-5 inline-flex items-center gap-2 rounded-xl border border-[#c98d98] bg-[#f8ecee] px-4 py-2.5 text-sm font-semibold text-[#7b2f3b] hover:bg-[#f3dde1] disabled:opacity-60"
+            >
+              {savingGuests ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Save Guest Capacity
+                </>
+              )}
+            </button>
+
+            <div className="mt-2 text-xs text-[#6b7280]">
+              <Settings className="mr-1 inline h-3.5 w-3.5" />
+              Example: 1-2 guests → 13 tables, 3-5 guests → 6 tables, 6-12 guests → 2 tables.
             </div>
           </section>
           </VendorPageReveal>

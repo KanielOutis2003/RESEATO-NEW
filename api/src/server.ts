@@ -11,7 +11,7 @@ const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:3000";
 const WEB_ORIGINS = Array.from(
   new Set(
     WEB_ORIGIN.split(",")
-      .map((origin) => origin.trim())
+      .map((origin) => origin.trim().replace(/\/+$/, ""))
       .filter(Boolean)
       .concat(
         process.env.NODE_ENV === "production"
@@ -417,6 +417,7 @@ function mapRestaurantRow(
     ownerName: owner?.name ?? null,
     ownerEmail: owner?.email ?? null,
     totalTables: Number(row.total_tables ?? 1),
+    maxGuestsPerTable: parsePositiveInt(row.max_guests_per_table, 4, 1, 50),
     createdAt: row.created_at ?? null,
     galleryImages: Array.isArray(row.gallery_images) ? row.gallery_images.filter((u: unknown) => typeof u === "string" && (u as string).trim()) : [],
   };
@@ -621,6 +622,73 @@ async function getRestaurantTotalTables(restaurantId: string) {
   return parsePositiveInt(data?.total_tables, 1, 1, 999);
 }
 
+async function getRestaurantMaxGuestsPerTable(restaurantId: string) {
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("max_guests_per_table")
+    .eq("id", restaurantId)
+    .maybeSingle();
+
+  if (error && isUndefinedColumnError(error)) return 4;
+  if (error) return 4;
+
+  return parsePositiveInt(data?.max_guests_per_table, 4, 1, 50);
+}
+
+type GuestConfig = { minGuests: number; maxGuests: number; maxTables: number };
+
+async function getRestaurantGuestConfigs(restaurantId: string): Promise<GuestConfig[]> {
+  const { data, error } = await supabase
+    .from("restaurant_guest_configs")
+    .select("min_guests,max_guests,max_tables")
+    .eq("restaurant_id", restaurantId)
+    .order("min_guests", { ascending: true });
+
+  if (error) return [];
+
+  return (data ?? []).map((row: any) => ({
+    minGuests: Number(row.min_guests),
+    maxGuests: Number(row.max_guests),
+    maxTables: Number(row.max_tables),
+  }));
+}
+
+function findGuestConfig(configs: GuestConfig[], guestCount: number): GuestConfig | null {
+  return configs.find((c) => guestCount >= c.minGuests && guestCount <= c.maxGuests) ?? null;
+}
+
+async function getActiveReservationCountsByGuestRange(
+  restaurantId: string,
+  date: string,
+  guestConfig: GuestConfig,
+) {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("time,status,guests")
+    .eq("restaurant_id", restaurantId)
+    .eq("date", date);
+
+  if (error) throw new Error(error.message);
+
+  const counts = new Map<string, number>();
+
+  for (const row of data ?? []) {
+    const status = normalizeReservationStatus(row.status);
+    if (status === "cancelled" || status === "declined") continue;
+
+    const time = normalizeTime(row.time);
+    if (!time) continue;
+
+    const rowGuests = parsePositiveInt(row.guests, 1, 1, 50);
+    // Count only reservations that fall in the same guest range
+    if (rowGuests >= guestConfig.minGuests && rowGuests <= guestConfig.maxGuests) {
+      counts.set(time, (counts.get(time) ?? 0) + 1);
+    }
+  }
+
+  return counts;
+}
+
 async function getSlotConfigsForDate(restaurantId: string, date: string) {
   const dayOfWeek = toDayOfWeek(date);
   if (dayOfWeek === null) {
@@ -680,10 +748,10 @@ async function getSlotConfigsForDate(restaurantId: string, date: string) {
   };
 }
 
-async function getActiveReservationCounts(restaurantId: string, date: string) {
+async function getActiveReservationCounts(restaurantId: string, date: string, maxGuestsPerTable = 4) {
   const { data, error } = await supabase
     .from("reservations")
-    .select("time,status")
+    .select("time,status,guests")
     .eq("restaurant_id", restaurantId)
     .eq("date", date);
 
@@ -698,7 +766,9 @@ async function getActiveReservationCounts(restaurantId: string, date: string) {
     const time = normalizeTime(row.time);
     if (!time) continue;
 
-    counts.set(time, (counts.get(time) ?? 0) + 1);
+    const guestCount = parsePositiveInt(row.guests, 1, 1, 50);
+    const tablesUsed = Math.ceil(guestCount / maxGuestsPerTable);
+    counts.set(time, (counts.get(time) ?? 0) + tablesUsed);
   }
 
   return counts;
@@ -1006,6 +1076,7 @@ app.get("/restaurants/:id", async (req, res) => {
     imageUrl: data.image_url,
     contactPhone: data.contact_phone ?? null,
     contactEmail: data.contact_email ?? null,
+    maxGuestsPerTable: parsePositiveInt(data.max_guests_per_table, 4, 1, 50),
     galleryImages,
     bestSellers,
   });
@@ -1014,23 +1085,41 @@ app.get("/restaurants/:id", async (req, res) => {
 app.get("/restaurants/:id/slots", async (req, res) => {
   const restaurantId = req.params.id;
   const date = String(req.query.date ?? "");
+  const guestsQuery = Number(req.query.guests) || 0;
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({ message: "Invalid date. Use YYYY-MM-DD" });
   }
 
   try {
+    const maxGuestsPerTable = await getRestaurantMaxGuestsPerTable(restaurantId);
     const slotConfigData = await getSlotConfigsForDate(restaurantId, date);
-    const reservationCounts = await getActiveReservationCounts(restaurantId, date);
+    const guestConfigs = await getRestaurantGuestConfigs(restaurantId);
+
+    // If guest count is provided and guest configs exist, use guest-range-based availability
+    const guestConfig = guestsQuery > 0 ? findGuestConfig(guestConfigs, guestsQuery) : null;
+
+    let reservationCounts: Map<string, number>;
+    let effectiveMaxTablesOverride: number | null = null;
+
+    if (guestConfig) {
+      // Count only reservations in this guest range
+      reservationCounts = await getActiveReservationCountsByGuestRange(restaurantId, date, guestConfig);
+      effectiveMaxTablesOverride = guestConfig.maxTables;
+    } else {
+      // Fallback: count all reservations using the old table-ratio logic
+      reservationCounts = await getActiveReservationCounts(restaurantId, date, maxGuestsPerTable);
+    }
 
     const slots = slotConfigData.slots.map((slot) => {
+      const effectiveMax = effectiveMaxTablesOverride ?? slot.maxTables;
       const reservedTables = reservationCounts.get(slot.time) ?? 0;
-      const remainingTables = Math.max(slot.maxTables - reservedTables, 0);
+      const remainingTables = Math.max(effectiveMax - reservedTables, 0);
 
       return {
         time: slot.time,
         available: remainingTables > 0,
-        maxTables: slot.maxTables,
+        maxTables: effectiveMax,
         reservedTables,
         remainingTables,
       };
@@ -1041,6 +1130,8 @@ app.get("/restaurants/:id/slots", async (req, res) => {
       date,
       dayOfWeek: slotConfigData.dayOfWeek,
       source: slotConfigData.source,
+      maxGuestsPerTable,
+      guestConfigs: guestConfigs.length > 0 ? guestConfigs : undefined,
       slots,
     });
   } catch (error: any) {
@@ -1075,13 +1166,36 @@ app.post("/reservations", requireUser, async (req: any, res) => {
       });
     }
 
-    const counts = await getActiveReservationCounts(String(restaurantId), String(date));
-    const reservedTables = counts.get(timeValue) ?? 0;
+    // Check guest-range-based capacity if configs exist
+    const guestConfigs = await getRestaurantGuestConfigs(String(restaurantId));
+    const guestConfig = findGuestConfig(guestConfigs, guestCount);
 
-    if (reservedTables >= slot.maxTables) {
-      return res.status(409).json({
-        message: "Selected time slot is already full. Please choose another time.",
-      });
+    if (guestConfig) {
+      // Use guest-range-based limits: count reservations in same guest range
+      const rangeCounts = await getActiveReservationCountsByGuestRange(String(restaurantId), String(date), guestConfig);
+      const reservedInRange = rangeCounts.get(timeValue) ?? 0;
+      const remainingInRange = Math.max(guestConfig.maxTables - reservedInRange, 0);
+
+      if (remainingInRange <= 0) {
+        return res.status(409).json({
+          message: `No tables available for ${guestCount} guest${guestCount === 1 ? "" : "s"} at this time. Only ${guestConfig.maxTables} table${guestConfig.maxTables === 1 ? " is" : "s are"} allocated for ${guestConfig.minGuests}-${guestConfig.maxGuests} guests.`,
+        });
+      }
+    } else {
+      // Fallback: use the old table-ratio logic
+      const maxGuestsPerTable = await getRestaurantMaxGuestsPerTable(String(restaurantId));
+      const tablesNeeded = Math.ceil(guestCount / maxGuestsPerTable);
+      const counts = await getActiveReservationCounts(String(restaurantId), String(date), maxGuestsPerTable);
+      const reservedTables = counts.get(timeValue) ?? 0;
+      const remainingTables = Math.max(slot.maxTables - reservedTables, 0);
+
+      if (tablesNeeded > remainingTables) {
+        return res.status(409).json({
+          message: remainingTables === 0
+            ? "Selected time slot is already full. Please choose another time."
+            : `Not enough capacity for ${guestCount} guests at this time. Please choose another time.`,
+        });
+      }
     }
 
     const { data, error } = await supabase
@@ -1252,18 +1366,9 @@ app.post(
   async (req: any, res) => {
     const userId = req.user.id;
     const reservationId = String(req.params.reservationId ?? "");
-    const rawMethod = String(req.body?.paymentMethod ?? "card").toLowerCase();
-    const paymentMethod: PaymentMethod =
-      rawMethod === "wallet" ? "wallet" : "card";
+    const rawMethod = String(req.body?.paymentMethod ?? "wallet").toLowerCase();
 
     try {
-      if (!PAYMONGO_SECRET_KEY) {
-        return res.status(500).json({
-          message:
-            "PAYMONGO_SECRET_KEY is missing. Configure it on the API server first.",
-        });
-      }
-
       const reservation = await getReservationForUser(reservationId, userId);
       if (!reservation) {
         return res.status(404).json({ message: "Reservation not found" });
@@ -1281,67 +1386,21 @@ app.post(
         return res.status(409).json({ message: "Reservation is already paid." });
       }
 
-      const restaurantName = await getRestaurantName(reservation.restaurant_id);
       const amountMinor =
         Number.isFinite(Number(reservation.payment_amount)) &&
         Number(reservation.payment_amount) > 0
           ? Number(reservation.payment_amount)
           : defaultReservationFeeMinor();
 
-      const paymongoPayload = {
-        data: {
-          attributes: {
-            billing: {
-              name: String(reservation.name ?? "RESEATO Customer"),
-            },
-            send_email_receipt: false,
-            show_description: true,
-            show_line_items: true,
-            line_items: [
-              {
-                currency: "PHP",
-                amount: amountMinor,
-                name: `Reservation Fee - ${restaurantName}`,
-                quantity: 1,
-                description: `Reservation #${reservation.id} on ${reservation.date} at ${String(reservation.time).slice(0, 5)}`,
-              },
-            ],
-            payment_method_types: getPaymongoPaymentTypes(paymentMethod),
-            description: `Reservation payment for ${restaurantName}`,
-            success_url: `${APP_BASE_URL}/payment/${reservation.id}?status=success`,
-            cancel_url: `${APP_BASE_URL}/payment/${reservation.id}?status=cancelled`,
-            metadata: {
-              reservation_id: reservation.id,
-              restaurant_id: reservation.restaurant_id,
-              user_id: reservation.user_id,
-            },
-          },
-        },
-      };
-
-      const paymongoResponse: any = await paymongoRequest("/checkout_sessions", {
-        method: "POST",
-        body: paymongoPayload,
-      });
-
-      const checkoutSessionId = String(paymongoResponse?.data?.id ?? "");
-      const checkoutUrl = String(
-        paymongoResponse?.data?.attributes?.checkout_url ?? "",
-      );
-
-      if (!checkoutSessionId || !checkoutUrl) {
-        return res.status(502).json({
-          message: "Payment provider did not return a checkout session URL.",
-        });
-      }
+      const providerLabel = rawMethod === "gcash" ? "gcash" : rawMethod === "gotyme" ? "gotyme" : "paymaya";
 
       const { error: updateError } = await supabase
         .from("reservations")
         .update({
-          payment_status: "processing",
-          payment_provider: "paymongo",
+          payment_status: "paid",
+          payment_provider: providerLabel,
           payment_amount: amountMinor,
-          payment_checkout_session_id: checkoutSessionId,
+          payment_paid_at: new Date().toISOString(),
           payment_error: null,
         })
         .eq("id", reservation.id)
@@ -1353,13 +1412,12 @@ app.post(
 
       return res.json({
         reservationId: reservation.id,
-        paymentStatus: "processing",
-        checkoutSessionId,
-        checkoutUrl,
+        paymentStatus: "paid",
+        message: "Payment successful! Your reservation is now confirmed.",
       });
     } catch (error: any) {
       return res.status(500).json({
-        message: error?.message ?? "Failed to create payment session",
+        message: error?.message ?? "Failed to process payment",
       });
     }
   },
@@ -1670,6 +1728,7 @@ app.post("/vendor/restaurants", requireUser, async (req: any, res) => {
       contact_phone: String(body.contactPhone ?? "").trim() || null,
       contact_email: String(body.contactEmail ?? "").trim() || null,
       total_tables: parsePositiveInt(body.totalTables, 10, 1, 999),
+      max_guests_per_table: parsePositiveInt(body.maxGuestsPerTable, 4, 1, 50),
     };
 
     const { data, error } = await insertRestaurantWithFallback(userId, payload);
@@ -1731,6 +1790,10 @@ app.patch("/vendor/restaurants/:restaurantId", requireUser, async (req: any, res
         body.totalTables === undefined
           ? undefined
           : parsePositiveInt(body.totalTables, 10, 1, 999),
+      max_guests_per_table:
+        body.maxGuestsPerTable === undefined
+          ? undefined
+          : parsePositiveInt(body.maxGuestsPerTable, 4, 1, 50),
       rating:
         body.rating === undefined
           ? undefined
@@ -1934,6 +1997,111 @@ app.put("/vendor/restaurants/:restaurantId/slots", requireUser, async (req: any,
   } catch (error: any) {
     const status = Number(error?.status ?? 500);
     return res.status(status).json({ message: error?.message ?? "Failed to save slot configs" });
+  }
+});
+
+// --- Guest capacity configs ---
+
+app.get("/vendor/restaurants/:restaurantId/guest-configs", requireUser, async (req: any, res) => {
+  const userId = req.user.id;
+  const restaurantId = String(req.params.restaurantId ?? "");
+
+  try {
+    await ensureVendorRole(userId);
+    const restaurant = await getRestaurantByIdForVendor(restaurantId, userId);
+    if (!restaurant) return res.status(404).json({ message: "Restaurant not found" });
+
+    const { data, error } = await supabase
+      .from("restaurant_guest_configs")
+      .select("id,min_guests,max_guests,max_tables")
+      .eq("restaurant_id", restaurantId)
+      .order("min_guests", { ascending: true });
+
+    if (error && isUndefinedTableError(error)) return res.json([]);
+    if (error) return res.status(500).json({ message: error.message });
+
+    return res.json(
+      (data ?? []).map((row: any) => ({
+        id: row.id,
+        minGuests: Number(row.min_guests),
+        maxGuests: Number(row.max_guests),
+        maxTables: Number(row.max_tables),
+      })),
+    );
+  } catch (error: any) {
+    const status = Number(error?.status ?? 500);
+    return res.status(status).json({ message: error?.message ?? "Failed to load guest configs" });
+  }
+});
+
+app.put("/vendor/restaurants/:restaurantId/guest-configs", requireUser, async (req: any, res) => {
+  const userId = req.user.id;
+  const restaurantId = String(req.params.restaurantId ?? "");
+
+  try {
+    await ensureVendorRole(userId);
+    const restaurant = await getRestaurantByIdForVendor(restaurantId, userId);
+    if (!restaurant) return res.status(404).json({ message: "Restaurant not found" });
+
+    const configs = Array.isArray(req.body?.configs) ? req.body.configs : null;
+    if (!configs) return res.status(400).json({ message: "configs must be an array" });
+
+    const normalized: Array<{ min_guests: number; max_guests: number; max_tables: number }> = [];
+
+    for (const cfg of configs) {
+      const minGuests = parsePositiveInt(cfg?.minGuests, 1, 1, 50);
+      const maxGuests = parsePositiveInt(cfg?.maxGuests, minGuests, minGuests, 50);
+      const maxTables = Math.max(0, Math.min(999, Number(cfg?.maxTables) || 0));
+
+      normalized.push({ min_guests: minGuests, max_guests: maxGuests, max_tables: maxTables });
+    }
+
+    // Delete existing configs for this restaurant
+    const { error: deleteError } = await supabase
+      .from("restaurant_guest_configs")
+      .delete()
+      .eq("restaurant_id", restaurantId);
+
+    if (deleteError && isUndefinedTableError(deleteError)) {
+      return res.status(503).json({ message: "Guest config table missing. Run the SQL migration first." });
+    }
+    if (deleteError) return res.status(500).json({ message: deleteError.message });
+
+    if (normalized.length > 0) {
+      const { error: insertError } = await supabase
+        .from("restaurant_guest_configs")
+        .insert(
+          normalized.map((cfg) => ({
+            restaurant_id: restaurantId,
+            min_guests: cfg.min_guests,
+            max_guests: cfg.max_guests,
+            max_tables: cfg.max_tables,
+          })),
+        );
+
+      if (insertError) return res.status(500).json({ message: insertError.message });
+    }
+
+    // Return saved configs
+    const { data: saved, error: readError } = await supabase
+      .from("restaurant_guest_configs")
+      .select("id,min_guests,max_guests,max_tables")
+      .eq("restaurant_id", restaurantId)
+      .order("min_guests", { ascending: true });
+
+    if (readError) return res.status(500).json({ message: readError.message });
+
+    return res.json(
+      (saved ?? []).map((row: any) => ({
+        id: row.id,
+        minGuests: Number(row.min_guests),
+        maxGuests: Number(row.max_guests),
+        maxTables: Number(row.max_tables),
+      })),
+    );
+  } catch (error: any) {
+    const status = Number(error?.status ?? 500);
+    return res.status(status).json({ message: error?.message ?? "Failed to save guest configs" });
   }
 });
 
@@ -2147,23 +2315,15 @@ app.post(
         time: String((updateResult.data as any).time).slice(0, 5),
       };
 
-      const shouldPromptPayment =
-        action === "approve" && normalizePaymentStatus(reservation.payment_status) !== "paid";
-
       const notificationTitle =
         action === "approve" ? "Reservation Confirmed" : "Reservation Declined";
 
       const notificationBody =
         action === "approve"
-          ? shouldPromptPayment
-            ? `Your reservation at ${restaurant.name} was approved. Please proceed to payment.`
-            : `Your reservation at ${restaurant.name} was approved and already paid.`
+          ? `Your reservation at ${restaurant.name} has been confirmed. See you on ${String((reservation as any).date ?? "")}!`
           : `Your reservation at ${restaurant.name} was declined.${declineReason ? ` Reason: ${declineReason}` : ""}`;
 
-      const notificationLink =
-        action === "approve" && shouldPromptPayment
-          ? `/payment/${reservationId}`
-          : "/my-reservations";
+      const notificationLink = "/my-reservations";
 
       await createUserNotification({
         userId: String((reservation as any).user_id),
@@ -2197,9 +2357,7 @@ app.post(
         reservation: updatedReservation,
         message:
           action === "approve"
-            ? shouldPromptPayment
-              ? "Reservation approved. Customer has been notified to proceed to payment."
-              : "Reservation approved. Customer has already paid."
+            ? "Reservation approved. Customer has been notified."
             : "Reservation declined successfully.",
       });
     } catch (error: any) {

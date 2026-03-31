@@ -30,6 +30,7 @@ type RestaurantFormState = {
   contactEmail: string;
   priceLevel: string;
   totalTables: string;
+  maxGuestsPerTable: string;
 };
 
 const EMPTY_FORM: RestaurantFormState = {
@@ -42,6 +43,7 @@ const EMPTY_FORM: RestaurantFormState = {
   contactEmail: "",
   priceLevel: "1",
   totalTables: "10",
+  maxGuestsPerTable: "4",
 };
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -65,6 +67,7 @@ function toFormState(restaurant: VendorRestaurant): RestaurantFormState {
     contactEmail: restaurant.contactEmail ?? "",
     priceLevel: String(restaurant.priceLevel ?? 1),
     totalTables: String(restaurant.totalTables ?? 10),
+    maxGuestsPerTable: String(restaurant.maxGuestsPerTable ?? 4),
   };
 }
 
@@ -168,11 +171,13 @@ export default function VendorRestaurantsPage() {
         contactEmail: createForm.contactEmail.trim(),
         priceLevel: Number(createForm.priceLevel) || 1,
         totalTables: Number(createForm.totalTables) || 10,
+        maxGuestsPerTable: Number(createForm.maxGuestsPerTable) || 4,
       });
 
       setRestaurants((prev) => [created, ...prev]);
       setCreateForm(EMPTY_FORM);
       setMessage("Restaurant created successfully.");
+      setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       setMessage(getErrorMessage(error, "Failed to create restaurant."));
     } finally {
@@ -207,6 +212,7 @@ export default function VendorRestaurantsPage() {
         contactEmail: editForm.contactEmail.trim(),
         priceLevel: Number(editForm.priceLevel) || 1,
         totalTables: Number(editForm.totalTables) || 10,
+        maxGuestsPerTable: Number(editForm.maxGuestsPerTable) || 4,
       });
 
       setRestaurants((prev) =>
@@ -216,7 +222,9 @@ export default function VendorRestaurantsPage() {
       );
 
       setEditingRestaurantId(null);
-      setMessage("Restaurant updated.");
+      setEditForm(EMPTY_FORM);
+      setMessage("Restaurant updated successfully.");
+      setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       setMessage(getErrorMessage(error, "Failed to update restaurant."));
     } finally {
@@ -338,6 +346,20 @@ export default function VendorRestaurantsPage() {
             />
           </label>
 
+          <label className="text-sm text-[#4b5563]">
+            Max Guests per Table
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={state.maxGuestsPerTable}
+              onChange={(event) =>
+                setState({ ...state, maxGuestsPerTable: event.target.value })
+              }
+              className="mt-1 w-full rounded-xl border border-[#ddd8da] bg-white px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#b46d73]"
+            />
+          </label>
+
           <label className="text-sm text-[#4b5563] sm:col-span-2">
             Image URL
             <input
@@ -446,7 +468,11 @@ export default function VendorRestaurantsPage() {
         </header>
 
         {message && (
-          <div className="mt-5 rounded-2xl border border-[#f2cccf] bg-[#fff6f7] px-4 py-3 text-sm text-[#9f1239]">
+          <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm ${
+            message.toLowerCase().includes("success") || message.toLowerCase().includes("updated")
+              ? "border-[#bfe6d0] bg-[#e6f7ef] text-[#227a4c]"
+              : "border-[#f2cccf] bg-[#fff6f7] text-[#9f1239]"
+          }`}>
             {message}
           </div>
         )}
@@ -513,7 +539,7 @@ export default function VendorRestaurantsPage() {
                         {restaurant.cuisine} - {restaurant.location}
                       </p>
                       <p className="mt-1 text-xs uppercase tracking-wide text-[#8b97a8]">
-                        Tables available: {restaurant.totalTables}
+                        Tables: {restaurant.totalTables} &middot; Max {restaurant.maxGuestsPerTable ?? 4} guests/table
                       </p>
                     </div>
 

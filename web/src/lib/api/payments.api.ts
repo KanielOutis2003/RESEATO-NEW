@@ -20,9 +20,8 @@ export type ReservationPaymentDetails = {
 
 export type CheckoutResponse = {
   reservationId: string;
-  paymentStatus: "processing";
-  checkoutSessionId: string;
-  checkoutUrl: string;
+  paymentStatus: "paid";
+  message: string;
 };
 
 export type ConfirmResponse = {
@@ -39,7 +38,7 @@ export async function getReservationPaymentDetails(reservationId: string) {
 
 export async function createCheckoutSession(
   reservationId: string,
-  paymentMethod: "card" | "wallet",
+  paymentMethod: "gcash" | "paymaya" | "gotyme",
 ) {
   return api<CheckoutResponse>(`/me/reservations/${reservationId}/payment/checkout`, {
     method: "POST",

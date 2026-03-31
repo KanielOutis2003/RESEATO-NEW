@@ -8,6 +8,7 @@ import {
   Camera,
   Eye,
   EyeOff,
+  BarChart3,
   ImageIcon,
   KeyRound,
   LayoutDashboard,
@@ -467,10 +468,10 @@ export default function VendorSidebar({ mobileOpen = false, onMobileClose }: { m
             <Table2 className="h-4 w-4" />
             Tables
           </NavLink>
-          <button type="button" onClick={() => { setRestaurantModalOpen(true); closeMobile(); }} className={sidebarButtonClass}>
-            <ImageIcon className="h-4 w-4" />
-            Gallery
-          </button>
+          <NavLink to="/vendor/analytics" className={sidebarLinkClass} onClick={closeMobile}>
+            <BarChart3 className="h-4 w-4" />
+            Analytics / Reports
+          </NavLink>
           <button type="button" onClick={() => { setRestaurantModalOpen(true); closeMobile(); }} className={sidebarButtonClass}>
             <Store className="h-4 w-4" />
             My Restaurant

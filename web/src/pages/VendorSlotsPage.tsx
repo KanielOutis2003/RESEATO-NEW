@@ -16,7 +16,6 @@ import {
   saveVendorGuestConfigs,
   VendorRestaurant,
   VendorSlotConfig,
-  GuestCapacityConfig,
   GuestCapacityConfigInput,
 } from "../lib/api/vendor.api";
 import { ApiError } from "../lib/api/client";

@@ -135,21 +135,6 @@ export default function VendorSidebar({ mobileOpen = false, onMobileClose }: { m
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [firstRestaurantId, setFirstRestaurantId] = useState<string | null>(null);
-  const [loadingRestaurant, setLoadingRestaurant] = useState(true);
-
-  /* fetch first restaurant for best-sellers link */
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const list = await listVendorRestaurants();
-        if (alive && list.length > 0) setFirstRestaurantId(list[0].id);
-      } catch { /* ignore */ }
-      finally { if (alive) setLoadingRestaurant(false); }
-    })();
-    return () => { alive = false; };
-  }, []);
 
   /* ── My Restaurant modal state ── */
   const [restaurantModalOpen, setRestaurantModalOpen] = useState(false);

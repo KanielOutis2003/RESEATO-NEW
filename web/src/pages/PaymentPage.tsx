@@ -11,7 +11,6 @@ import {
   Receipt,
   UtensilsCrossed,
   Wallet,
-  X,
 } from "lucide-react";
 import {
   createCheckoutSession,

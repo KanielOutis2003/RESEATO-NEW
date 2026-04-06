@@ -302,11 +302,11 @@ export default function RestaurantsPage() {
     <div className="relative min-h-[calc(100vh-72px)] w-full bg-[#f3f3f4] text-[#1f2937]">
       <section className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="relative h-[250px] overflow-hidden rounded-[28px] sm:h-[280px]"
-        >
+  initial={{ opacity: 0, scale: 0.96 }}
+  animate={{ opacity: 1, scale: 1 }}
+  transition={{ duration: 0.08, ease: "linear" }}
+  className="relative h-[250px] overflow-hidden rounded-[28px] sm:h-[280px] will-change-transform"
+>
           <img
             src="https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&w=2400&q=80"
             alt="Food table"

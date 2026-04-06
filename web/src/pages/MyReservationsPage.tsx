@@ -701,49 +701,6 @@ export default function MyReservationsPage() {
         )}
       </section>
 
-      <div className="mt-12 h-16 bg-[#ebecef]" />
-
-      <footer className="border-t border-[#e8e2e3] bg-white text-[#1f2937]">
-        <div className="mx-auto max-w-6xl px-6 py-14">
-          <div className="grid gap-10 md:grid-cols-3">
-            <div>
-              <h3 className="text-3xl font-semibold tracking-wide">RESEATO</h3>
-              <p className="mt-4 max-w-xs text-sm text-[#667085] leading-relaxed">
-                Making restaurant reservations simple and elegant for Cebu's
-                best dining spots.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="text-xl font-semibold">Quick Links</h4>
-              <div className="mt-4 space-y-2 text-sm text-[#667085]">
-                <Link to="/restaurants" className="block hover:text-[#7b2f3b]">
-                  Browse Restaurants
-                </Link>
-                <Link to="/my-reservations" className="block hover:text-[#7b2f3b]">
-                  My Reservations
-                </Link>
-                <Link to="/" className="block hover:text-[#7b2f3b]">
-                  Home
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-xl font-semibold">Contact</h4>
-              <div className="mt-4 space-y-2 text-sm text-[#667085]">
-                <p>SM Seaside, Cebu City</p>
-                <p>support@reseato.com</p>
-                <p>+63 123 456 7890</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-10 border-t border-[#ece8e9] pt-6 text-center text-sm text-[#98a2b3]">
-            � 2026 RESEATO. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
     </>
   );

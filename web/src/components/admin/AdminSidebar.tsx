@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Camera,
   ClipboardList,
+  Crown,
   Eye,
   EyeOff,
   Headphones,
@@ -333,6 +334,10 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
           <NavLink to="/admin/reservations" className={sidebarLinkClass} onClick={closeMobile}>
             <BookOpenCheck className="h-4 w-4" />
             Reservations
+          </NavLink>
+          <NavLink to="/admin/featured" className={sidebarLinkClass} onClick={closeMobile}>
+            <Crown className="h-4 w-4" />
+            Featured
           </NavLink>
         </nav>
 

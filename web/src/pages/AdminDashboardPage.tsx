@@ -36,11 +36,12 @@ import {
   listAdminReservations,
   listAdminRestaurants,
   listAdminUsers,
+  toggleAdminRestaurantFeatured,
   updateAdminReservationStatus,
   updateAdminUserRole,
 } from "../lib/api/admin.api";
 
-type TabKey = "overview" | "users" | "restaurants" | "reservations" | "audit" | "charts" | "support";
+type TabKey = "overview" | "users" | "restaurants" | "reservations" | "audit" | "charts" | "support" | "featured";
 
 type SupportTicket = {
   id: string;
@@ -87,6 +88,7 @@ function sectionToTab(section?: string): TabKey {
   if (value === "audit") return "audit";
   if (value === "charts") return "charts";
   if (value === "support") return "support";
+  if (value === "featured") return "featured";
   return "overview";
   }
 
@@ -275,6 +277,9 @@ function LoadingOverlay({ visible, label }: { visible: boolean; label?: string }
   );
 }
 
+const RESTAURANT_FALLBACK_IMG =
+  "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80";
+
 export default function AdminDashboardPage() {
   const { section } = useParams<{ section?: string }>();
   const { isAuthed, loading: authLoading, user } = useAuth();
@@ -333,6 +338,7 @@ export default function AdminDashboardPage() {
   const [creatingRestaurant, setCreatingRestaurant] = useState(false);
   const [assigningRestaurantId, setAssigningRestaurantId] = useState<string | null>(null);
   const [deletingRestaurantId, setDeletingRestaurantId] = useState<string | null>(null);
+  const [togglingFeaturedId, setTogglingFeaturedId] = useState<string | null>(null);
   const [showAddRestaurantModal, setShowAddRestaurantModal] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [globalLoading, setGlobalLoading] = useState<string | null>(null);
@@ -617,6 +623,8 @@ export default function AdminDashboardPage() {
       jobs.push({ label: "audit logs", run: loadAuditLogs });
     } else if (activeTab === "support") {
       jobs.push({ label: "support tickets", run: loadSupportTickets });
+    } else if (activeTab === "featured") {
+      jobs.push({ label: "restaurants", run: loadRestaurants });
     }
 
     const results = await Promise.allSettled(jobs.map((job) => job.run()));
@@ -916,6 +924,20 @@ export default function AdminDashboardPage() {
       setMessage(error?.payload?.message ?? error?.message ?? "Failed to assign restaurant owner.");
     } finally {
       setAssigningRestaurantId(null);
+    }
+  }
+
+  async function handleToggleFeatured(restaurantId: string, currentValue: boolean) {
+    setTogglingFeaturedId(restaurantId);
+    try {
+      const updated = await toggleAdminRestaurantFeatured(restaurantId, !currentValue);
+      setRestaurants((prev) =>
+        prev.map((r) => (r.id === restaurantId ? { ...r, isFeatured: updated.isFeatured } : r)),
+      );
+    } catch (err: any) {
+      setMessage(err?.message ?? "Failed to toggle featured");
+    } finally {
+      setTogglingFeaturedId(null);
     }
   }
 
@@ -1713,9 +1735,20 @@ export default function AdminDashboardPage() {
                           )}
                         </div>
                       </div>
-                      <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                        Active
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFeatured(item.id, item.isFeatured)}
+                          disabled={togglingFeaturedId === item.id}
+                          className="shrink-0 p-1 transition hover:scale-110"
+                          title={item.isFeatured ? "Remove from featured" : "Add to featured"}
+                        >
+                          <Star className={`h-5 w-5 ${item.isFeatured ? "fill-[#f59e0b] text-[#f59e0b]" : "text-[#d1d5db]"}`} />
+                        </button>
+                        <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                          Active
+                        </span>
+                      </div>
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1789,6 +1822,7 @@ export default function AdminDashboardPage() {
                       <th className="px-3 py-2.5">Assign Vendor</th>
                       <th className="px-3 py-2.5">Commissions</th>
                       <th className="px-3 py-2.5">Status</th>
+                      <th className="px-3 py-2.5">Featured</th>
                       <th className="px-3 py-2.5">Tables</th>
                       <th className="px-3 py-2.5">Rating</th>
                       <th className="px-3 py-2.5">Actions</th>
@@ -1797,7 +1831,7 @@ export default function AdminDashboardPage() {
                   <tbody>
                     {restaurants.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-3 py-8 text-center text-sm text-[#8b97a8]">
+                        <td colSpan={9} className="px-3 py-8 text-center text-sm text-[#8b97a8]">
                           No restaurants found.
                         </td>
                       </tr>
@@ -1873,6 +1907,17 @@ export default function AdminDashboardPage() {
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                               Active
                             </span>
+                          </td>
+                          <td className="px-3 py-3">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFeatured(item.id, item.isFeatured)}
+                              disabled={togglingFeaturedId === item.id}
+                              className="transition hover:scale-110"
+                              title={item.isFeatured ? "Remove from featured" : "Add to featured"}
+                            >
+                              <Star className={`h-5 w-5 ${item.isFeatured ? "fill-[#f59e0b] text-[#f59e0b]" : "text-[#d1d5db] hover:text-[#f59e0b]/50"}`} />
+                            </button>
                           </td>
                           <td className="px-3 py-3 text-[#475467]">{item.totalTables}</td>
                           <td className="px-3 py-3 text-[#475467]">{item.rating.toFixed(1)}</td>
@@ -2349,6 +2394,103 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             </>
+          )}
+        </section>
+      )}
+      {activeTab === "featured" && (
+        <section className={`mt-5 ${panelClass}`}>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-3xl text-[#1f2937]">Featured Restaurants</h2>
+              <p className="mt-1 text-sm text-[#667085]">
+                Select which restaurants appear on the homepage. Vendors can pay to have their restaurants featured.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-[#667085]">
+              <Star className="h-4 w-4 fill-[#f59e0b] text-[#f59e0b]" />
+              {restaurants.filter((r) => r.isFeatured).length} featured
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-[#3153a1]" />
+            </div>
+          ) : restaurants.length === 0 ? (
+            <div className="rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] p-8 text-center text-sm text-[#8b97a8]">
+              No restaurants found. Add restaurants first.
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[...restaurants].sort((a, b) => (a.isFeatured === b.isFeatured ? 0 : a.isFeatured ? -1 : 1)).map((item) => (
+                <div
+                  key={item.id}
+                  className={`group relative overflow-hidden rounded-2xl border transition-all duration-200 ${
+                    item.isFeatured
+                      ? "border-[#f59e0b]/40 bg-gradient-to-br from-[#fffbeb] to-[#fef9c3] shadow-[0_8px_24px_rgba(245,158,11,0.12)]"
+                      : "border-[#e5e7eb] bg-white hover:border-[#d1d5db] hover:shadow-md"
+                  }`}
+                >
+                  {/* Image */}
+                  <div className="relative h-[140px] overflow-hidden">
+                    <img
+                      src={item.imageUrl || RESTAURANT_FALLBACK_IMG}
+                      alt={item.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                      onError={(event) => {
+                        (event.currentTarget as HTMLImageElement).src = RESTAURANT_FALLBACK_IMG;
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+
+                    {/* Featured badge */}
+                    {item.isFeatured && (
+                      <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-[#f59e0b] px-2.5 py-0.5 text-[10px] font-bold text-white shadow">
+                        <Star className="h-3 w-3 fill-white" />
+                        FEATURED
+                      </div>
+                    )}
+
+                    {/* Rating */}
+                    <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-bold text-[#1f2937] backdrop-blur">
+                      <Star className="h-3 w-3 fill-[#f59e0b] text-[#f59e0b]" />
+                      {item.rating.toFixed(1)}
+                    </div>
+
+                    {/* Name on image */}
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <div className="text-base font-bold text-white drop-shadow">{item.name}</div>
+                      <div className="text-xs text-white/80">{item.cuisine} | {item.location}</div>
+                    </div>
+                  </div>
+
+                  {/* Card body */}
+                  <div className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div className="text-xs text-[#667085]">
+                      {item.ownerName || item.ownerEmail || "No owner assigned"}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFeatured(item.id, item.isFeatured)}
+                      disabled={togglingFeaturedId === item.id}
+                      className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition disabled:opacity-60 ${
+                        item.isFeatured
+                          ? "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                          : "border border-[#f0d5a5] bg-[#fffbeb] text-[#92400e] hover:bg-[#fef3c7]"
+                      }`}
+                    >
+                      <Star className={`h-3.5 w-3.5 ${item.isFeatured ? "" : "fill-[#f59e0b] text-[#f59e0b]"}`} />
+                      {togglingFeaturedId === item.id
+                        ? "Updating..."
+                        : item.isFeatured
+                          ? "Remove"
+                          : "Feature"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </section>
       )}

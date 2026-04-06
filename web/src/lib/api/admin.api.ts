@@ -69,6 +69,7 @@ export type AdminRestaurant = {
   ownerName?: string | null;
   ownerEmail?: string | null;
   totalTables: number;
+  isFeatured: boolean;
   createdAt: string | null;
 };
 
@@ -248,6 +249,13 @@ export function updateAdminReservationStatus(
       },
     },
   );
+}
+
+export function toggleAdminRestaurantFeatured(restaurantId: string, isFeatured: boolean) {
+  return adminApi<AdminRestaurant>(`/admin/restaurants/${restaurantId}/featured`, {
+    method: "PATCH",
+    body: { isFeatured },
+  });
 }
 
 export function listAdminAuditLogs(params?: { limit?: number }) {

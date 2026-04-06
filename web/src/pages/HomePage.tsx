@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  UtensilsCrossed, X, Info, FileText, Code2, 
-  ChevronDown, Star, MapPin, Instagram, 
-  Facebook, Twitter, Mail, Send 
+import {
+  UtensilsCrossed, X,
+  ChevronDown, Star, MapPin, Instagram,
+  Facebook, Twitter, Send
 } from "lucide-react";
 import { useSession } from "../lib/auth/useSession";
 import { getPostAuthRedirect } from "../lib/auth/roleRedirect";

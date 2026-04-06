@@ -161,7 +161,6 @@ export default function RestaurantDetailsPage() {
   const heroUrl =
     data?.imageUrl ??
     "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2400&q=80&sat=-10";
-  const bestSellers = data?.bestSellers ?? [];
   const gallery = data?.galleryImages ?? [];
 
   useEffect(() => {

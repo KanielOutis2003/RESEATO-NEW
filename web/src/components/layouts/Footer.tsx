@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { X, Code2, Github, Linkedin } from "lucide-react";
+import { X, Code2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const developers = [

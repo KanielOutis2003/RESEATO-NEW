@@ -199,7 +199,7 @@ export default function VendorAnalyticsPage() {
   }, [preset]);
 
   const summary = charts?.summary;
-  const days = charts?.days ?? [];
+  const days = useMemo(() => charts?.days ?? [], [charts?.days]);
 
   /* daily arrays for mini charts */
   const dailyTotal = useMemo(() => days.map((d) => d.total), [days]);

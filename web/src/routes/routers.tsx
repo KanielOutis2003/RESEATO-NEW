@@ -15,6 +15,7 @@ import VendorDashboardPage from "../pages/VendorDashboardPage";
 import VendorTablesPage from "../pages/VendorTablesPage";
 import VendorSlotsPage from "../pages/VendorSlotsPage";
 import VendorReservationsPage from "../pages/VendorReservationsPage";
+import VendorAnalyticsPage from "../pages/VendorAnalyticsPage";
 import AdminDashboardPage from "../pages/AdminDashboardPage";
 
 export const router = createBrowserRouter([
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
       },
       { path: "/vendor/restaurants/:restaurantId/slots", element: <VendorSlotsPage /> },
       { path: "/vendor/reservations", element: <VendorReservationsPage /> },
+      { path: "/vendor/analytics", element: <VendorAnalyticsPage /> },
       { path: "/admin", element: <AdminDashboardPage /> },
       { path: "/admin/:section", element: <AdminDashboardPage /> },
     ],

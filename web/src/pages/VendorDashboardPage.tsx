@@ -14,9 +14,7 @@ import {
 import {
   getVendorCharts,
   getVendorOverview,
-  listVendorBestSellers,
   listVendorRestaurants,
-  VendorBestSeller,
   VendorChartsResponse,
   VendorOverview,
   VendorRestaurant,
@@ -272,7 +270,6 @@ export default function VendorDashboardPage() {
   const { isAuthed, loading: authLoading, user } = useAuth();
   const [overview, setOverview] = useState<VendorOverview | null>(null);
   const [restaurants, setRestaurants] = useState<VendorRestaurant[]>([]);
-  const [bestSellers, setBestSellers] = useState<VendorBestSeller[]>([]);
   const [chartData, setChartData] = useState<VendorChartsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(false);
@@ -309,17 +306,15 @@ export default function VendorDashboardPage() {
         setLoading(true);
         setMessage(null);
 
-        const [overviewResult, restaurantsResult, bestSellersResult] = await Promise.allSettled([
+        const [overviewResult, restaurantsResult] = await Promise.allSettled([
           getVendorOverview(),
           listVendorRestaurants(),
-          listVendorBestSellers({ limit: 120, active: "all" }),
         ]);
 
         if (!alive) return;
 
         setOverview(overviewResult.status === "fulfilled" ? overviewResult.value : EMPTY_OVERVIEW);
         setRestaurants(restaurantsResult.status === "fulfilled" ? restaurantsResult.value : []);
-        setBestSellers(bestSellersResult.status === "fulfilled" ? bestSellersResult.value : []);
       } finally {
         if (alive) setLoading(false);
       }
@@ -405,10 +400,6 @@ export default function VendorDashboardPage() {
     ];
   }, [overview]);
 
-  const topBestSellers = useMemo(() => [...bestSellers].sort((a, b) => b.soldCount - a.soldCount), [bestSellers]);
-
-  const inventoryValueMinor = useMemo(() => topBestSellers.reduce((sum, item) => sum + item.priceMinor * item.stockQuantity, 0), [topBestSellers]);
-
   function handleExportTrendsCsv() {
     if (!chartData?.days?.length) return;
 
@@ -425,12 +416,6 @@ export default function VendorDashboardPage() {
     ]);
 
     downloadCsv(`vendor-booking-trends-${chartData.from}-to-${chartData.to}.csv`, ["date", "total", "pending", "confirmed", "completed", "cancelled", "paid", "revenue_minor", "revenue_php"], rows);
-  }
-
-  function handleExportInventoryCsv() {
-    if (!topBestSellers.length) return;
-    const rows = topBestSellers.map((item) => [item.restaurantName ?? "", item.name, item.priceMinor, (item.priceMinor / 100).toFixed(2), item.stockQuantity, item.soldCount, ((item.priceMinor * item.soldCount) / 100).toFixed(2)]);
-    downloadCsv(`vendor-inventory-${new Date().toISOString().slice(0, 10)}.csv`, ["restaurant", "item", "price_minor", "price_php", "stock", "sold", "estimated_sales_php"], rows);
   }
 
   const displayName = user?.user_metadata?.full_name
@@ -591,8 +576,8 @@ export default function VendorDashboardPage() {
                           <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{overview?.paidCount ?? 0}</div>
                         </div>
                         <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
-                          <div className="text-[11px] text-[#667085]">Inventory</div>
-                          <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{toCurrency(inventoryValueMinor)}</div>
+                          <div className="text-[11px] text-[#667085]">Restaurants</div>
+                          <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{restaurants.length}</div>
                         </div>
                       </div>
                     </div>
@@ -623,42 +608,6 @@ export default function VendorDashboardPage() {
               <div>{chartLoading ? <div className="grid h-[260px] place-items-center rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] text-sm text-[#5b6374]"><Loader2 className="h-4 w-4 animate-spin" /></div> : <VendorLineChart points={chartData?.days ?? []} />}</div>
             </section>
 
-            {/* Best Sellers Table Panel */}
-            <section className="rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <div>
-                  <h3 className="text-[22px] font-extrabold text-[#1f2937]">🏆 Best Sellers</h3>
-                  <p className="text-[13px] text-[#667085]">Top performing menu items across your restaurant.</p>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={handleExportInventoryCsv} className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56]"><Download className="mr-1 inline-block h-3.5 w-3.5" />Export</button>
-                  {restaurants[0]?.id && <Link to={`/vendor/restaurants/${restaurants[0].id}/slots`} className="rounded-[14px] border border-[#d8dbe2] bg-white px-3.5 py-2.5 text-sm font-bold text-[#374151]"><Settings2 className="mr-1 inline-block h-3.5 w-3.5" />Manage</Link>}
-                </div>
-              </div>
-
-              {topBestSellers.length === 0 ? (
-                <div className="rounded-2xl border border-[#e5e7eb] bg-[#fcfcfd] p-4 text-sm text-[#5b6374]">No best sellers added yet.</div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {topBestSellers.slice(0, 9).map((item, idx) => (
-                    <div key={item.id} className="group relative flex items-center gap-3 rounded-[16px] border border-[#e7e3e5] bg-[#fcfcfd] p-3 transition-all hover:border-[#d4b8be] hover:shadow-md">
-                      {idx < 3 && (
-                        <div className="absolute -top-2 -right-2 grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-[#f59e0b] to-[#f97316] text-[10px] font-bold text-white shadow">
-                          {idx + 1}
-                        </div>
-                      )}
-                      <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,#f7ebee,#f5f0fb)] text-lg">
-                        {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "🍽️"}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-bold text-[#1f2937]">{item.name}</div>
-                        <div className="truncate text-xs text-[#667085]">{item.restaurantName || "—"}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
           </VendorPageReveal>
         )}
       </div>

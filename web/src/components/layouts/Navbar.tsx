@@ -195,7 +195,13 @@ export default function Navbar() {
     [role, session],
   );
 
-  const roleLabel = useMemo(() => getRoleLabel(roleKind), [roleKind]);
+  const roleLabel = useMemo(() => {
+    if (roleKind === "customer") {
+      const first = displayFullName.split(" ")[0];
+      return first || "Customer";
+    }
+    return getRoleLabel(roleKind);
+  }, [roleKind, displayFullName]);
 
   const navItems = useMemo(() => getNavItems(roleKind), [roleKind]);
 
@@ -289,20 +295,19 @@ export default function Navbar() {
     };
   }, [session?.user]);
 
+  // Poll notifications every 15s so new ones appear without manual refresh
   useEffect(() => {
     let alive = true;
 
     async function loadNotifications() {
-      if (!session || !notifOpen) return;
-
+      if (!session) return;
       try {
-        setLoadingNotifications(true);
+        if (notifOpen) setLoadingNotifications(true);
         const items = await listMyNotifications();
         if (!alive) return;
         setNotifications(items);
       } catch {
         if (!alive) return;
-        setNotifications([]);
       } finally {
         if (!alive) return;
         setLoadingNotifications(false);
@@ -311,10 +316,38 @@ export default function Navbar() {
 
     loadNotifications();
 
+    const interval = setInterval(loadNotifications, 15_000);
+
     return () => {
       alive = false;
+      clearInterval(interval);
     };
   }, [notifOpen, session]);
+
+  // Auto-logout after 5 minutes of inactivity
+  useEffect(() => {
+    if (!session) return;
+
+    const IDLE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+    let timer: ReturnType<typeof setTimeout>;
+
+    function resetTimer() {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await supabase.auth.signOut();
+        navigate("/log-in-sign-up");
+      }, IDLE_TIMEOUT);
+    }
+
+    const events = ["pointerdown", "pointermove", "keydown", "scroll", "touchstart"];
+    events.forEach((evt) => window.addEventListener(evt, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((evt) => window.removeEventListener(evt, resetTimer));
+    };
+  }, [session, navigate]);
 
   async function logout() {
     await supabase.auth.signOut();

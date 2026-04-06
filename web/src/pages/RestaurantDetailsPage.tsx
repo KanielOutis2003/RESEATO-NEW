@@ -161,7 +161,6 @@ export default function RestaurantDetailsPage() {
   const heroUrl =
     data?.imageUrl ??
     "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2400&q=80&sat=-10";
-  const bestSellers = data?.bestSellers ?? [];
   const gallery = data?.galleryImages ?? [];
 
   useEffect(() => {
@@ -416,54 +415,6 @@ export default function RestaurantDetailsPage() {
                       />
                       <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
                     </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Best Sellers */}
-            <div className="rounded-3xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-6 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-xl font-bold text-[#1f2937]">Best Sellers</h2>
-                <span className="rounded-full border border-[#e5e7eb] bg-[#f8fafc] px-3 py-1 text-xs font-medium text-[#6b7280]">
-                  {bestSellers.length} item{bestSellers.length === 1 ? "" : "s"}
-                </span>
-              </div>
-
-              {bestSellers.length === 0 ? (
-                <div className="mt-4 flex items-center gap-3 rounded-2xl border border-[#ece8e9] bg-[#fafafa] px-4 py-5 text-sm text-[#667085]">
-                  <UtensilsCrossed className="h-5 w-5 text-[#c9b5b9]" />
-                  No best-seller items available yet.
-                </div>
-              ) : (
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  {bestSellers.map((item, idx) => (
-                    <article
-                      key={item.id}
-                      className="group relative overflow-hidden rounded-2xl border border-[#ece8e9] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.05)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(139,61,74,0.1)]"
-                    >
-                      <div className="relative h-40 overflow-hidden">
-                        {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                        ) : (
-                          <div className="grid h-full w-full place-items-center bg-gradient-to-br from-[#f7ebee] to-[#f0e4f0] text-[#8b3d4a]">
-                            <UtensilsCrossed className="h-8 w-8 opacity-50" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                        {idx < 3 && (
-                          <div className="absolute left-2.5 top-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-md">
-                            #{idx + 1} Popular
-                          </div>
-                        )}
-                        <div className="absolute bottom-2.5 left-3 right-3">
-                          <div className="text-base font-bold text-white drop-shadow-md">{item.name}</div>
-                        </div>
-                      </div>
-                      <div className="px-4 py-3">
-                        <p className="text-xs leading-relaxed text-[#667085]">A must-try dish loved by our guests.</p>
-                      </div>
-                    </article>
                   ))}
                 </div>
               )}

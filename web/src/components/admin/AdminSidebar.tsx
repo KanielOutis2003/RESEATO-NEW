@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Camera,
   ClipboardList,
+  Crown,
   Eye,
   EyeOff,
   Headphones,
@@ -130,6 +131,13 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  /* admin display name */
+  const adminName = useMemo(() => {
+    if (!user) return "Admin";
+    const { fullName } = deriveFromMetadata(user);
+    return fullName.split(" ")[0] || "Admin";
+  }, [user]);
 
   /* ── settings modal state ── */
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -302,7 +310,7 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
           </div>
           <div className="min-w-0">
             <div className="truncate text-base font-extrabold tracking-wide text-white">RESEATO</div>
-            <div className="text-xs text-[#bfcdf4]">Admin Control</div>
+            <div className="truncate text-xs font-bold tracking-wide text-[#bfcdf4]">{adminName.toUpperCase()}</div>
           </div>
         </div>
 
@@ -326,6 +334,10 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
           <NavLink to="/admin/reservations" className={sidebarLinkClass} onClick={closeMobile}>
             <BookOpenCheck className="h-4 w-4" />
             Reservations
+          </NavLink>
+          <NavLink to="/admin/featured" className={sidebarLinkClass} onClick={closeMobile}>
+            <Crown className="h-4 w-4" />
+            Featured
           </NavLink>
         </nav>
 

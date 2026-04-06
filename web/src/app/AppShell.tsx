@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import Navbar from "../components/layouts/Navbar";
+import Footer from "../components/layouts/Footer";
 import VendorSidebar from "../components/vendor/VendorSidebar";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import { Outlet, useLocation } from "react-router-dom";
@@ -55,6 +56,8 @@ export default function AppShell() {
     );
   }
 
+  const showFooter = !hideNavbar;
+
   return (
     <div className="min-h-screen">
       {!hideNavbar && <Navbar />}
@@ -68,6 +71,8 @@ export default function AppShell() {
           <Outlet />
         </main>
       )}
+
+      {showFooter && <Footer />}
     </div>
   );
 }

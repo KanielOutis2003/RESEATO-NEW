@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Receipt,
   Download,
+  CheckCircle,
 } from "lucide-react";
 import {
   listMyReservationsSupabase,
@@ -177,6 +178,14 @@ function CancelConfirmModal({
   );
 }
 
+const providerThemes: Record<string, { bg: string; accent: string; logo: string; label: string }> = {
+  gcash: { bg: "bg-[#007dfe]", accent: "#007dfe", logo: "G", label: "GCash" },
+  paymaya: { bg: "bg-[#00b900]", accent: "#00b900", logo: "M", label: "Maya" },
+  maya: { bg: "bg-[#00b900]", accent: "#00b900", logo: "M", label: "Maya" },
+  gotyme: { bg: "bg-[#ff6b00]", accent: "#ff6b00", logo: "GT", label: "GoTyme" },
+};
+const defaultTheme = { bg: "bg-[#8b3d4a]", accent: "#8b3d4a", logo: "R", label: "RESEATO" };
+
 function ReceiptModal({
   open,
   onClose,
@@ -188,36 +197,52 @@ function ReceiptModal({
 }) {
   if (!open || !reservation) return null;
 
-  const paymentStatus = String(reservation.payment_status ?? "unpaid").toLowerCase();
-  const isPaid = paymentStatus === "paid";
+  const provider = String(reservation.payment_provider ?? "").toLowerCase();
+  const theme = providerThemes[provider] ?? defaultTheme;
+  const refNo = `RS${reservation.id.slice(0, 8).toUpperCase()}`;
+  const txnDate = reservation.payment_paid_at
+    ? new Date(reservation.payment_paid_at).toLocaleString("en-PH", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+    : new Date().toLocaleString("en-PH", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const amount = reservation.payment_amount != null
+    ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 2 }).format(Number(reservation.payment_amount) / 100)
+    : null;
 
   function handleDownload() {
     if (!reservation) return;
-    const r = reservation;
+    const divider = "════════════════════════════════════";
     const lines = [
-      "===================================",
-      "         RESEATO - RECEIPT         ",
-      "===================================",
+      divider,
+      `        ${theme.label.toUpperCase()} - PAYMENT RECEIPT`,
+      divider,
       "",
-      `Booking ID:    ${r.id}`,
-      `Restaurant:    ${r.restaurant?.name ?? "N/A"}`,
-      `Location:      ${r.restaurant?.location ?? "N/A"}`,
-      `Date:          ${r.date}`,
-      `Time:          ${to12Hour(r.time)}`,
-      `Guests:        ${r.guests}`,
-      `Status:        ${r.status?.toUpperCase()}`,
-      `Payment:       ${paymentStatus.toUpperCase()}`,
+      `  Status:          SUCCESSFUL`,
+      `  Ref. No:         ${refNo}`,
+      `  Transaction:     ${txnDate}`,
       "",
-      "===================================",
-      `Generated:     ${new Date().toLocaleString()}`,
-      "Thank you for dining with RESEATO!",
-      "===================================",
+      `  ─── RESERVATION DETAILS ───`,
+      "",
+      `  Paid To:         RESEATO`,
+      `  Restaurant:      ${reservation.restaurant?.name ?? "N/A"}`,
+      `  Location:        ${reservation.restaurant?.location ?? "N/A"}`,
+      `  Date:            ${reservation.date}`,
+      `  Time:            ${to12Hour(reservation.time)}`,
+      `  Guests:          ${reservation.guests}`,
+      "",
+      `  ─── PAYMENT DETAILS ───`,
+      "",
+      ...(amount ? [`  Amount Paid:     ${amount}`] : []),
+      `  Payment Method:  ${theme.label}`,
+      `  Booking ID:      ${reservation.id}`,
+      "",
+      divider,
+      "  Thank you for dining with RESEATO!",
+      divider,
     ];
     const blob = new Blob([lines.join("\n")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `RESEATO-Receipt-${r.id.slice(0, 8)}.txt`;
+    a.download = `${theme.label}-Receipt-${refNo}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -237,73 +262,93 @@ function ReceiptModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 12 }}
             transition={{ duration: 0.22 }}
-            className="relative w-full max-w-md rounded-[24px] border border-[#e8e2e3] bg-white p-6 shadow-[0_28px_60px_rgba(15,23,42,0.18)]"
+            className="relative w-full max-w-[380px] overflow-hidden rounded-[20px] bg-white shadow-[0_28px_60px_rgba(15,23,42,0.22)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-[#e5e7eb] bg-[#f8fafc] text-[#6b7280] transition hover:bg-[#f1f1f3]"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#f8ecee] text-[#8b3d4a]">
-                <Receipt className="h-5 w-5" />
-              </div>
-              <h2 className="text-xl font-semibold text-[#1f2937]">Receipt</h2>
+            {/* Provider Header */}
+            <div className={`${theme.bg} px-6 py-5 text-center text-white`}>
+              <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-full bg-white/20 text-lg font-extrabold">{theme.logo}</div>
+              <div className="text-lg font-bold tracking-wide">{theme.label}</div>
+              <div className="mt-1 text-sm opacity-80">Payment Receipt</div>
             </div>
 
-            <div className="mt-5 space-y-3 rounded-2xl border border-[#ece8e9] bg-[#fafafa] p-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[#667085]">Restaurant</span>
-                <span className="font-medium text-[#1f2937]">{reservation.restaurant?.name ?? "N/A"}</span>
+            {/* Success Badge */}
+            <div className="flex justify-center -mt-4">
+              <div className="grid h-8 w-8 place-items-center rounded-full bg-[#22c55e] text-white shadow-md">
+                <CheckCircle className="h-5 w-5" />
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[#667085]">Booking ID</span>
-                <span className="font-mono text-xs text-[#374151]">{reservation.id.slice(0, 8)}...</span>
+            </div>
+
+            {/* Amount */}
+            <div className="mt-3 text-center">
+              <div className="text-xs uppercase tracking-wider text-[#6b7280]">Amount Paid</div>
+              <div className="mt-1 text-3xl font-bold text-[#1f2937]">{amount ?? "—"}</div>
+              <div className="mt-1 inline-flex rounded-full bg-[#dcfce7] px-3 py-0.5 text-xs font-semibold text-[#16a34a]">Successful</div>
+            </div>
+
+            {/* Tear line */}
+            <div className="relative my-4">
+              <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
+              <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
+              <div className="border-t-2 border-dashed border-[#e5e7eb] mx-5" />
+            </div>
+
+            {/* Details */}
+            <div className="px-6 space-y-2.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-[#6b7280]">Ref. No.</span>
+                <span className="font-mono text-xs font-semibold text-[#374151]">{refNo}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[#667085]">Date</span>
-                <span className="font-medium text-[#1f2937]">{reservation.date}</span>
+              <div className="flex justify-between">
+                <span className="text-[#6b7280]">Paid To</span>
+                <span className="font-medium text-[#1f2937]">RESEATO</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[#667085]">Time</span>
-                <span className="font-medium text-[#1f2937]">{to12Hour(reservation.time)}</span>
+              <div className="flex justify-between">
+                <span className="text-[#6b7280]">Restaurant</span>
+                <span className="max-w-[180px] truncate text-right font-medium text-[#1f2937]">{reservation.restaurant?.name ?? "N/A"}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[#667085]">Guests</span>
+              <div className="flex justify-between">
+                <span className="text-[#6b7280]">Date & Time</span>
+                <span className="font-medium text-[#1f2937]">{reservation.date}, {to12Hour(reservation.time)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#6b7280]">Guests</span>
                 <span className="font-medium text-[#1f2937]">{reservation.guests}</span>
               </div>
-              <div className="h-px bg-[#ece8e9]" />
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[#667085]">Status</span>
-                <span className="font-semibold uppercase text-[#1f2937]">{reservation.status}</span>
+              <div className="flex justify-between">
+                <span className="text-[#6b7280]">Payment Method</span>
+                <span className="font-semibold" style={{ color: theme.accent }}>{theme.label}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[#667085]">Payment</span>
-                <span className={`font-semibold uppercase ${isPaid ? "text-[#16a34a]" : "text-[#9a6a19]"}`}>
-                  {paymentStatus}
-                </span>
+              <div className="flex justify-between">
+                <span className="text-[#6b7280]">Transaction Date</span>
+                <span className="text-xs text-[#374151]">{txnDate}</span>
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-xl border border-[#d8dbe2] bg-white px-4 py-2.5 text-sm font-semibold text-[#475467] transition hover:bg-[#f8fafc]"
-              >
-                Close
-              </button>
+            {/* Tear line */}
+            <div className="relative my-4">
+              <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
+              <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
+              <div className="border-t-2 border-dashed border-[#e5e7eb] mx-5" />
+            </div>
+
+            {/* Buttons */}
+            <div className="px-6 pb-5 space-y-2.5">
               <button
                 type="button"
                 onClick={handleDownload}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105"
+                className="w-full rounded-xl py-3 text-sm font-semibold text-white transition hover:brightness-105"
+                style={{ backgroundColor: theme.accent }}
               >
-                <Download className="h-4 w-4" />
-                Download
+                <Download className="mr-2 inline h-4 w-4" />
+                Download Receipt
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full rounded-xl border border-[#e5e7eb] bg-white py-2.5 text-sm font-semibold text-[#475467] transition hover:bg-[#f8fafc]"
+              >
+                Close
               </button>
             </div>
           </motion.div>
@@ -656,49 +701,6 @@ export default function MyReservationsPage() {
         )}
       </section>
 
-      <div className="mt-12 h-16 bg-[#ebecef]" />
-
-      <footer className="border-t border-[#e8e2e3] bg-white text-[#1f2937]">
-        <div className="mx-auto max-w-6xl px-6 py-14">
-          <div className="grid gap-10 md:grid-cols-3">
-            <div>
-              <h3 className="text-3xl font-semibold tracking-wide">RESEATO</h3>
-              <p className="mt-4 max-w-xs text-sm text-[#667085] leading-relaxed">
-                Making restaurant reservations simple and elegant for Cebu's
-                best dining spots.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="text-xl font-semibold">Quick Links</h4>
-              <div className="mt-4 space-y-2 text-sm text-[#667085]">
-                <Link to="/restaurants" className="block hover:text-[#7b2f3b]">
-                  Browse Restaurants
-                </Link>
-                <Link to="/my-reservations" className="block hover:text-[#7b2f3b]">
-                  My Reservations
-                </Link>
-                <Link to="/" className="block hover:text-[#7b2f3b]">
-                  Home
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-xl font-semibold">Contact</h4>
-              <div className="mt-4 space-y-2 text-sm text-[#667085]">
-                <p>SM Seaside, Cebu City</p>
-                <p>support@reseato.com</p>
-                <p>+63 123 456 7890</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-10 border-t border-[#ece8e9] pt-6 text-center text-sm text-[#98a2b3]">
-            � 2026 RESEATO. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
     </>
   );

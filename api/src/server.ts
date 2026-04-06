@@ -420,6 +420,7 @@ function mapRestaurantRow(
     maxGuestsPerTable: parsePositiveInt(row.max_guests_per_table, 4, 1, 50),
     createdAt: row.created_at ?? null,
     galleryImages: Array.isArray(row.gallery_images) ? row.gallery_images.filter((u: unknown) => typeof u === "string" && (u as string).trim()) : [],
+    isFeatured: Boolean(row.is_featured),
   };
 }
 
@@ -1220,6 +1221,30 @@ app.post("/reservations", requireUser, async (req: any, res) => {
         });
       }
       return res.status(500).json({ message: error.message });
+    }
+
+    // Send notification to the customer that the reservation is placed
+    try {
+      const { data: restRow } = await supabase
+        .from("restaurants")
+        .select("name")
+        .eq("id", restaurantId)
+        .maybeSingle();
+      const restaurantName = (restRow as any)?.name ?? "the restaurant";
+
+      await createUserNotification({
+        userId,
+        title: "Reservation Placed",
+        body: `Your reservation at ${restaurantName} for ${String(date)} at ${timeValue} has been placed. Waiting for vendor to confirm.`,
+        type: "reservation_placed",
+        link: "/my-reservations",
+        data: {
+          reservationId: data.id,
+          restaurantId: String(restaurantId),
+        },
+      });
+    } catch {
+      // notification is non-critical, don't fail the reservation
     }
 
     return res.status(201).json({
@@ -3497,6 +3522,61 @@ app.patch("/admin/restaurants/:restaurantId/owner", requireUser, async (req: any
     const status = Number(error?.status ?? 500);
     return res.status(status).json({
       message: error?.message ?? "Failed to update restaurant owner",
+    });
+  }
+});
+
+app.patch("/admin/restaurants/:restaurantId/featured", requireUser, async (req: any, res) => {
+  const actorId = req.user.id;
+  const restaurantId = String(req.params.restaurantId ?? "").trim();
+
+  if (!restaurantId) {
+    return res.status(400).json({ message: "restaurantId is required" });
+  }
+
+  try {
+    await ensureAdminRole(actorId);
+
+    const isFeatured = Boolean(req.body?.isFeatured);
+
+    const { data, error } = await supabase
+      .from("restaurants")
+      .update({ is_featured: isFeatured })
+      .eq("id", restaurantId)
+      .select("*")
+      .single();
+
+    if (error) {
+      if (isUndefinedColumnError(error)) {
+        return res.status(500).json({
+          message:
+            "The is_featured column is not recognized yet. Please run: NOTIFY pgrst, 'reload schema'; in the Supabase SQL editor.",
+        });
+      }
+      if (String(error?.code ?? "").toUpperCase() === "PGRST116") {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+      console.error("[featured-toggle] Supabase error:", error.code, error.message);
+      return res.status(500).json({ message: error.message });
+    }
+
+    try {
+      await writeAdminAuditLog({
+        actorId,
+        action: "restaurant_featured_toggle",
+        targetType: "restaurant",
+        targetId: restaurantId,
+        payload: { isFeatured },
+      });
+    } catch (auditErr) {
+      console.error("[featured-toggle] Audit log write failed (non-critical):", auditErr);
+    }
+
+    return res.json(mapRestaurantRow(data));
+  } catch (error: any) {
+    const status = Number(error?.status ?? 500);
+    return res.status(status).json({
+      message: error?.message ?? "Failed to toggle featured status",
     });
   }
 });

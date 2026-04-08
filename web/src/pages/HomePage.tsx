@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   UtensilsCrossed, X,
   ChevronDown, Star, MapPin, Instagram,
-  Facebook, Twitter, Send
+  Facebook, Twitter, Send,
+  Code2, FileText, Shield, BookOpen
 } from "lucide-react";
 import { useSession } from "../lib/auth/useSession";
 import { getPostAuthRedirect } from "../lib/auth/roleRedirect";
@@ -51,19 +52,106 @@ function ModalBackdrop({ onClose, children }: { onClose: () => void; children: R
 }
 
 /* ─────────────────────────────────────────
-   Divider ornament used inside modals
+   Shared light modal shell — white body + maroon header
 ───────────────────────────────────────── */
-function OrnamentDivider() {
+function LightModalShell({
+  open,
+  onClose,
+  icon,
+  title,
+  subtitle,
+  children,
+  footer,
+  maxWidth = "max-w-md",
+}: {
+  open: boolean;
+  onClose: () => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  footer?: string;
+  maxWidth?: string;
+}) {
   return (
-    <div className="flex items-center gap-3 my-5">
-      <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, transparent, #b46d73)" }} />
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <rect x="6" y="0" width="2" height="14" fill="#b46d73" />
-        <rect x="0" y="6" width="14" height="2" fill="#b46d73" />
-        <rect x="4" y="4" width="6" height="6" fill="#b46d73" opacity="0.4" />
-      </svg>
-      <div className="flex-1 h-px" style={{ background: "linear-gradient(to left, transparent, #b46d73)" }} />
-    </div>
+    <AnimatePresence>
+      {open && (
+        <ModalBackdrop onClose={onClose}>
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.97 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className={`relative w-full ${maxWidth} overflow-hidden bg-white`}
+            style={{
+              borderRadius: "20px",
+              boxShadow: "0 40px 80px rgba(0,0,0,0.5)",
+              maxHeight: "90vh",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Maroon header */}
+            <div
+              className="relative px-8 pt-8 pb-7 text-center"
+              style={{
+                background: "linear-gradient(135deg, #b46d73 0%, #923f4a 100%)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full transition hover:bg-white/30"
+                style={{ background: "rgba(255,255,255,0.2)", color: "#fff" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex justify-center mb-3 text-white">{icon}</div>
+              <h2
+                className="text-2xl font-semibold"
+                style={{
+                  color: "#fff",
+                  fontFamily: "'Cormorant Garamond', serif",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                {title}
+              </h2>
+              {subtitle && (
+                <p
+                  className="mt-1 text-sm"
+                  style={{ color: "rgba(255,255,255,0.85)", fontFamily: "'Jost', sans-serif" }}
+                >
+                  {subtitle}
+                </p>
+              )}
+            </div>
+
+            {/* Body */}
+            <div
+              className="overflow-y-auto px-6 py-6"
+              style={{ maxHeight: "calc(90vh - 240px)", background: "#fff" }}
+            >
+              {children}
+            </div>
+
+            {/* Footer */}
+            {footer && (
+              <div
+                className="px-6 py-4 text-center"
+                style={{ background: "#f7f5f6", borderTop: "1px solid #eee" }}
+              >
+                <p
+                  className="text-xs"
+                  style={{ color: "#9a8a92", fontFamily: "'Jost', sans-serif" }}
+                >
+                  {footer}
+                </p>
+              </div>
+            )}
+          </motion.div>
+        </ModalBackdrop>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -72,75 +160,64 @@ function OrnamentDivider() {
 ───────────────────────────────────────── */
 function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <AnimatePresence>
-      {open && (
-        <ModalBackdrop onClose={onClose}>
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.97 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-lg overflow-hidden"
-            style={{
-              borderRadius: "20px",
-              background: "linear-gradient(160deg, #1c0d10 0%, #14080b 100%)",
-              border: "1px solid rgba(180,109,115,0.22)",
-              boxShadow: "0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(180,109,115,0.15)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Maroon top accent bar */}
-            <div style={{ height: "3px", background: "linear-gradient(to right, transparent, #b46d73 30%, #923f4a 70%, transparent)" }} />
+    <LightModalShell
+      open={open}
+      onClose={onClose}
+      icon={<BookOpen className="h-7 w-7" />}
+      title="Our Story"
+      subtitle="About RESEATO"
+      footer="Crafted with passion · Cebu, Philippines"
+    >
+      <p className="leading-relaxed text-sm" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
+        RESEATO helps you book the best tables at top‑rated restaurants in SM City and SM Seaside Cebu. Skip the line, enjoy the dine — and suggest what's best.
+      </p>
+      <p className="mt-3 leading-relaxed text-sm" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
+        Our platform connects diners with their favourite restaurants, providing seamless online reservations with secure payment processing. Whether you're planning a casual lunch or a special celebration, RESEATO makes it effortless.
+      </p>
+    </LightModalShell>
+  );
+}
 
-            {/* Header */}
-            <div className="px-8 pt-7 pb-0">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs tracking-[0.25em] uppercase mb-1.5" style={{ color: "#b46d73" }}>Our Story</p>
-                  <h2 className="text-2xl font-semibold" style={{ color: "#f5ede4", fontFamily: "'Georgia', serif", letterSpacing: "-0.01em" }}>
-                    About RESEATO
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="mt-1 grid h-8 w-8 place-items-center rounded-full transition"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,109,115,0.2)", color: "#b46d73" }}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <OrnamentDivider />
-            </div>
-
-            {/* Body */}
-            <div className="px-8 pb-8">
-              <p className="leading-relaxed text-sm" style={{ color: "#c4a898" }}>
-                RESEATO helps you book the best tables at top‑rated restaurants in SM City and SM Seaside Cebu. Skip the line, enjoy the dine — and suggest what's best.
-              </p>
-              <p className="mt-3 leading-relaxed text-sm" style={{ color: "#c4a898" }}>
-                Our platform connects diners with their favourite restaurants, providing seamless online reservations with secure payment processing. Whether you're planning a casual lunch or a special celebration, RESEATO makes it effortless.
-              </p>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="mt-7 w-full py-3 text-sm font-semibold tracking-widest uppercase transition hover:brightness-110"
-                style={{
-                  borderRadius: "10px",
-                  background: "linear-gradient(135deg, #b46d73, #923f4a)",
-                  color: "#fff",
-                  letterSpacing: "0.12em",
-                  boxShadow: "0 8px 24px rgba(146,63,74,0.4)",
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </motion.div>
-        </ModalBackdrop>
-      )}
-    </AnimatePresence>
+/* ─────────────────────────────────────────
+   RESTAURANTS MODAL
+───────────────────────────────────────── */
+function RestaurantsModal({
+  open,
+  onClose,
+  onGetStarted,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onGetStarted: () => void;
+}) {
+  return (
+    <LightModalShell
+      open={open}
+      onClose={onClose}
+      icon={<UtensilsCrossed className="h-7 w-7" />}
+      title="Discover Restaurants"
+      subtitle="Cebu's finest dining"
+      footer="Updated daily · Reservations open"
+    >
+      <p className="leading-relaxed text-sm" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
+        Explore our hand‑picked selection of restaurants across SM City Cebu and SM Seaside. From Filipino classics to Korean BBQ and fine dining experiences — discover the perfect spot for any occasion.
+      </p>
+      <button
+        type="button"
+        onClick={() => { onClose(); onGetStarted(); }}
+        className="mt-5 w-full py-3 text-sm font-semibold tracking-widest uppercase transition hover:brightness-110"
+        style={{
+          borderRadius: "10px",
+          background: "linear-gradient(135deg, #b46d73, #923f4a)",
+          color: "#fff",
+          letterSpacing: "0.12em",
+          boxShadow: "0 8px 24px rgba(146,63,74,0.35)",
+          fontFamily: "'Jost', sans-serif",
+        }}
+      >
+        Browse Restaurants
+      </button>
+    </LightModalShell>
   );
 }
 
@@ -148,96 +225,83 @@ function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
    TERMS MODAL
 ───────────────────────────────────────── */
 function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const items: [string, string][] = [
+    ["Acceptance of Terms", "By using RESEATO and completing a reservation, you agree to comply with all policies stated herein."],
+    ["Payment Policy", "All reservation payments made through RESEATO are considered final and non-refundable once successfully processed."],
+    ["No Cancellation Policy", "Once payment has been successfully processed, the reservation is confirmed and cannot be canceled, transferred, or rescheduled."],
+    ["Limitation of Liability", "RESEATO utilizes third-party payment gateway providers. RESEATO shall not be held liable for any data breach, unauthorized access, or compromise of payment details."],
+    ["Accuracy of Information", "Customers are responsible for providing accurate and complete personal and payment information."],
+    ["Restaurant Responsibility", "RESEATO acts as a reservation platform only. The partnered restaurant is solely responsible for food quality, service delivery, and dining experience."],
+    ["Force Majeure", "RESEATO shall not be held liable for failure to fulfil reservations due to events beyond reasonable control."],
+    ["System Availability", "We do not guarantee uninterrupted access due to possible maintenance, updates, or technical issues."],
+    ["Amendments", "RESEATO reserves the right to modify these Terms and Conditions at any time."],
+    ["No-Show Policy", "Payment will be forfeited if the customer fails to appear at the reserved time."],
+    ["Chargeback Protection", "Customers agree not to initiate fraudulent chargebacks."],
+    ["Privacy Policy", "Personal data is collected, stored, and protected in accordance with our privacy practices."],
+    ["User Conduct", "No fraudulent bookings or misuse of the platform is permitted."],
+    ["Time Allowance Policy", "Reservation automatically expires if the customer arrives late (15–30 minutes grace period)."],
+  ];
   return (
-    <AnimatePresence>
-      {open && (
-        <ModalBackdrop onClose={onClose}>
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.97 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-2xl overflow-hidden"
-            style={{
-              borderRadius: "20px",
-              background: "linear-gradient(160deg, #1c0d10 0%, #14080b 100%)",
-              border: "1px solid rgba(180,109,115,0.22)",
-              boxShadow: "0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(180,109,115,0.15)",
-              maxHeight: "88vh",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ height: "3px", background: "linear-gradient(to right, transparent, #b46d73 30%, #923f4a 70%, transparent)" }} />
+    <LightModalShell
+      open={open}
+      onClose={onClose}
+      icon={<FileText className="h-7 w-7" />}
+      title="Terms & Conditions"
+      subtitle="Please read carefully"
+      footer="Last updated · 2026"
+      maxWidth="max-w-2xl"
+    >
+      <p className="text-xs leading-relaxed mb-4" style={{ color: "#7a6a72", fontFamily: "'Jost', sans-serif" }}>
+        By ticking the agreement box and proceeding with payment, you acknowledge that you have read, understood, and agreed to the following Terms and Conditions.
+      </p>
+      <ol className="space-y-3 list-decimal list-outside pl-5">
+        {items.map(([title, body]) => (
+          <li key={title} className="text-sm leading-relaxed" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
+            <span className="font-semibold" style={{ color: "#923f4a" }}>{title}. </span>
+            {body}
+          </li>
+        ))}
+      </ol>
+    </LightModalShell>
+  );
+}
 
-            <div className="px-8 pt-7 pb-0">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs tracking-[0.25em] uppercase mb-1.5" style={{ color: "#b46d73" }}>Legal</p>
-                  <h2 className="text-2xl font-semibold" style={{ color: "#f5ede4", fontFamily: "'Georgia', serif" }}>
-                    Terms & Conditions
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="mt-1 grid h-8 w-8 place-items-center rounded-full transition"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,109,115,0.2)", color: "#b46d73" }}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <OrnamentDivider />
-              <p className="text-xs leading-relaxed mb-4" style={{ color: "#9e7a6b" }}>
-                By ticking the agreement box and proceeding with payment, you acknowledge that you have read, understood, and agreed to the following Terms and Conditions.
-              </p>
-            </div>
-
-            <div className="overflow-y-auto px-8 pb-8" style={{ maxHeight: "52vh" }}>
-              <ol className="space-y-3 list-decimal list-outside pl-5">
-                {[
-                  ["Acceptance of Terms", "By using RESEATO and completing a reservation, you agree to comply with all policies stated herein."],
-                  ["Payment Policy", "All reservation payments made through RESEATO are considered final and non-refundable once successfully processed."],
-                  ["No Cancellation Policy", "Once payment has been successfully processed, the reservation is confirmed and cannot be canceled, transferred, or rescheduled."],
-                  ["Limitation of Liability", "RESEATO utilizes third-party payment gateway providers. RESEATO shall not be held liable for any data breach, unauthorized access, or compromise of payment details."],
-                  ["Accuracy of Information", "Customers are responsible for providing accurate and complete personal and payment information."],
-                  ["Restaurant Responsibility", "RESEATO acts as a reservation platform only. The partnered restaurant is solely responsible for food quality, service delivery, and dining experience."],
-                  ["Force Majeure", "RESEATO shall not be held liable for failure to fulfil reservations due to events beyond reasonable control."],
-                  ["System Availability", "We do not guarantee uninterrupted access due to possible maintenance, updates, or technical issues."],
-                  ["Amendments", "RESEATO reserves the right to modify these Terms and Conditions at any time."],
-                  ["No-Show Policy", "Payment will be forfeited if the customer fails to appear at the reserved time."],
-                  ["Chargeback Protection", "Customers agree not to initiate fraudulent chargebacks."],
-                  ["Privacy Policy", "Personal data is collected, stored, and protected in accordance with our privacy practices."],
-                  ["User Conduct", "No fraudulent bookings or misuse of the platform is permitted."],
-                  ["Time Allowance Policy", "Reservation automatically expires if the customer arrives late (15–30 minutes grace period)."],
-                ].map(([title, body]) => (
-                  <li key={title} className="text-sm leading-relaxed" style={{ color: "#c4a898" }}>
-                    <span className="font-semibold" style={{ color: "#e8cdb8" }}>{title}. </span>
-                    {body}
-                  </li>
-                ))}
-              </ol>
-            </div>
-
-            <div className="px-8 pb-8 pt-4" style={{ borderTop: "1px solid rgba(180,109,115,0.1)" }}>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full py-3 text-sm font-semibold tracking-widest uppercase transition hover:brightness-110"
-                style={{
-                  borderRadius: "10px",
-                  background: "linear-gradient(135deg, #b46d73, #923f4a)",
-                  color: "#fff",
-                  letterSpacing: "0.12em",
-                  boxShadow: "0 8px 24px rgba(146,63,74,0.4)",
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </motion.div>
-        </ModalBackdrop>
-      )}
-    </AnimatePresence>
+/* ─────────────────────────────────────────
+   PRIVACY POLICY MODAL
+───────────────────────────────────────── */
+function PrivacyPolicyModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const sections: [string, string][] = [
+    ["Information We Collect", "We collect personal information you provide when creating an account or making a reservation, including your name, email address, phone number, and payment details."],
+    ["How We Use Your Data", "Your data is used to process reservations, manage your account, send booking confirmations, and improve our services."],
+    ["Data Protection", "We employ industry-standard security measures to protect your personal information against unauthorized access, alteration, or disclosure."],
+    ["Third-Party Services", "We work with trusted third-party payment providers. These partners are bound by their own privacy policies and security standards."],
+    ["Cookies", "We use cookies to enhance your browsing experience, remember your preferences, and analyze platform usage."],
+    ["Your Rights", "You may request access, correction, or deletion of your personal data at any time by contacting our support team."],
+    ["Data Retention", "We retain your information only for as long as necessary to fulfill our services and comply with legal obligations."],
+    ["Contact Us", "For any privacy concerns or data requests, please reach out via the contact details listed on our platform."],
+  ];
+  return (
+    <LightModalShell
+      open={open}
+      onClose={onClose}
+      icon={<Shield className="h-7 w-7" />}
+      title="Privacy Policy"
+      subtitle="Your data, your rights"
+      footer="Effective · 2026"
+      maxWidth="max-w-2xl"
+    >
+      <p className="text-xs leading-relaxed mb-4" style={{ color: "#7a6a72", fontFamily: "'Jost', sans-serif" }}>
+        At RESEATO, we are committed to protecting your privacy. This policy outlines how we collect, use, and safeguard your personal information.
+      </p>
+      <ol className="space-y-3 list-decimal list-outside pl-5">
+        {sections.map(([title, body]) => (
+          <li key={title} className="text-sm leading-relaxed" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
+            <span className="font-semibold" style={{ color: "#923f4a" }}>{title}. </span>
+            {body}
+          </li>
+        ))}
+      </ol>
+    </LightModalShell>
   );
 }
 
@@ -246,88 +310,47 @@ function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 ───────────────────────────────────────── */
 function DevelopersModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const devs = [
-    { name: "John Jecu Noval Cutanda", role: "Full-Stack Developer", initials: "JC" },
-    { name: "Christian Earl James Boyles", role: "Full-Stack Developer", initials: "CB" },
+    { name: "John Jecu Noval Cutanda", role: "Full-Stack Developer", initials: "JC", gradient: "linear-gradient(135deg, #b46d73, #923f4a)" },
+    { name: "Christian Earl James Boyles", role: "Full-Stack Developer", initials: "CB", gradient: "linear-gradient(135deg, #5a7bb8, #3d5d9e)" },
   ];
   return (
-    <AnimatePresence>
-      {open && (
-        <ModalBackdrop onClose={onClose}>
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.97 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-md overflow-hidden"
+    <LightModalShell
+      open={open}
+      onClose={onClose}
+      icon={<Code2 className="h-7 w-7" />}
+      title="Meet the Developers"
+      subtitle="The team behind RESEATO"
+      footer="Built with passion for Cebu's dining community"
+    >
+      <div className="space-y-3">
+        {devs.map((d) => (
+          <div
+            key={d.initials}
+            className="flex items-center gap-4 p-4 rounded-2xl"
             style={{
-              borderRadius: "20px",
-              background: "linear-gradient(160deg, #1c0d10 0%, #14080b 100%)",
-              border: "1px solid rgba(180,109,115,0.22)",
-              boxShadow: "0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(180,109,115,0.15)",
+              background: "#faf7f8",
+              border: "1px solid #eee",
             }}
-            onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ height: "3px", background: "linear-gradient(to right, transparent, #b46d73 30%, #923f4a 70%, transparent)" }} />
-
-            <div className="px-8 pt-7 pb-0">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs tracking-[0.25em] uppercase mb-1.5" style={{ color: "#b46d73" }}>The Team</p>
-                  <h2 className="text-2xl font-semibold" style={{ color: "#f5ede4", fontFamily: "'Georgia', serif" }}>
-                    Our Developers
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="mt-1 grid h-8 w-8 place-items-center rounded-full transition"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,109,115,0.2)", color: "#b46d73" }}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <OrnamentDivider />
+            <div
+              className="h-12 w-12 flex-shrink-0 rounded-full grid place-items-center text-sm font-bold"
+              style={{
+                background: d.gradient,
+                color: "#fff",
+                fontFamily: "'Jost', sans-serif",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {d.initials}
             </div>
-
-            <div className="px-8 pb-2 space-y-4">
-              {devs.map((d) => (
-                <div
-                  key={d.initials}
-                  className="flex items-center gap-5 p-4 rounded-2xl"
-                  style={{
-                    background: "rgba(180,109,115,0.06)",
-                    border: "1px solid rgba(180,109,115,0.14)",
-                  }}
-                >
-                  <div
-                    className="h-14 w-14 flex-shrink-0 rounded-full grid place-items-center text-base font-bold"
-                    style={{
-                      background: "linear-gradient(135deg, #b46d73, #923f4a)",
-                      color: "#f5ede4",
-                      boxShadow: "0 4px 16px rgba(146,63,74,0.45)",
-                      fontFamily: "'Georgia', serif",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    {d.initials}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-sm" style={{ color: "#f0ddd0" }}>{d.name}</div>
-                    <div className="text-xs mt-0.5" style={{ color: "#b46d73" }}>{d.role}</div>
-                  </div>
-                </div>
-              ))}
+            <div>
+              <div className="font-semibold text-sm" style={{ color: "#2d1a22", fontFamily: "'Jost', sans-serif" }}>{d.name}</div>
+              <div className="text-xs mt-0.5" style={{ color: "#9a8a92", fontFamily: "'Jost', sans-serif" }}>{d.role}</div>
             </div>
-
-            <div className="px-8 py-5 mt-1 text-center" style={{ borderTop: "1px solid rgba(180,109,115,0.1)" }}>
-              <p className="text-xs tracking-wider uppercase" style={{ color: "#6b4535", letterSpacing: "0.15em" }}>
-                Crafted with passion · Cebu, Philippines
-              </p>
-            </div>
-          </motion.div>
-        </ModalBackdrop>
-      )}
-    </AnimatePresence>
+          </div>
+        ))}
+      </div>
+    </LightModalShell>
   );
 }
 
@@ -340,6 +363,8 @@ export default function HomePage() {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showDevModal, setShowDevModal] = useState(false);
+  const [showRestaurantsModal, setShowRestaurantsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [featured, setFeatured] = useState<FeaturedRestaurant[]>([]);
 
   useEffect(() => {
@@ -422,11 +447,16 @@ export default function HomePage() {
         .nav-link:hover::after { width: 100%; }
 
         .card-hover {
-          transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.4s;
+          transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.4s, border-color 0.4s;
         }
         .card-hover:hover {
           transform: translateY(-6px);
-          box-shadow: 0 24px 60px rgba(146,63,74,0.22), 0 0 0 1px rgba(180,109,115,0.18) !important;
+          box-shadow:
+            0 0 0 1px rgba(201,160,122,0.55),
+            0 18px 50px rgba(201,160,122,0.28),
+            0 0 80px rgba(201,160,122,0.22),
+            inset 0 1px 0 rgba(245,237,228,0.06) !important;
+          border-color: rgba(201,160,122,0.55) !important;
         }
 
         ::-webkit-scrollbar { width: 6px; }
@@ -437,6 +467,8 @@ export default function HomePage() {
       <AboutModal open={showAboutModal} onClose={() => setShowAboutModal(false)} />
       <TermsModal open={showTermsModal} onClose={() => setShowTermsModal(false)} />
       <DevelopersModal open={showDevModal} onClose={() => setShowDevModal(false)} />
+      <RestaurantsModal open={showRestaurantsModal} onClose={() => setShowRestaurantsModal(false)} onGetStarted={onGetStarted} />
+      <PrivacyPolicyModal open={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
 
       <div style={{ background: "#0a0507", color: "#f5ede4", fontFamily: "'Jost', sans-serif" }}>
 
@@ -524,7 +556,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, letterSpacing: "0.28em" }}
                 transition={{ duration: 0.9, delay: 0.1 }}
                 className="text-xs font-light uppercase mb-5"
-                style={{ color: "#c9a07a", fontFamily: "'Jost', sans-serif", letterSpacing: "0.28em" }}
+                style={{ color: "#ffffff", fontFamily: "'Jost', sans-serif", letterSpacing: "0.28em" }}
               >
                 Fine Dining · Cebu City
               </motion.p>
@@ -624,14 +656,23 @@ export default function HomePage() {
         </div>
 
         {/* ══════════════════════════════
-            FEATURED RESTAURANTS
+            FEATURED RESTAURANTS — unified dark luxury theme
         ══════════════════════════════ */}
         {featured.length > 0 && (
           <section
             id="featured-section"
-            className="relative px-6 py-20 sm:py-28"
-            style={{ background: "linear-gradient(180deg, #0a0507 0%, #fdfcfb 25%, #ffffff 100%)" }}
+            className="relative px-6 py-24 sm:py-32"
+            style={{
+              background:
+                "radial-gradient(ellipse at top, rgba(146,63,74,0.18) 0%, transparent 55%), linear-gradient(180deg, #0a0507 0%, #120709 50%, #0a0507 100%)",
+            }}
           >
+            {/* Decorative top accent line — replaces the broken divider */}
+            <div
+              className="absolute left-1/2 top-0 -translate-x-1/2 h-px w-[60%] max-w-[640px]"
+              style={{ background: "linear-gradient(to right, transparent, rgba(180,109,115,0.45), transparent)" }}
+            />
+
             {/* Section header */}
             <motion.div
               initial={{ opacity: 0, y: 28 }}
@@ -640,7 +681,10 @@ export default function HomePage() {
               transition={{ duration: 0.6 }}
               className="text-center mb-16"
             >
-              <p className="text-xs tracking-[0.3em] uppercase mb-3" style={{ color: "#b46d73", fontFamily: "'Jost', sans-serif" }}>
+              <p
+                className="text-xs tracking-[0.32em] uppercase mb-4"
+                style={{ color: "#c9a07a", fontFamily: "'Jost', sans-serif" }}
+              >
                 Curated Selection
               </p>
               <h2
@@ -648,28 +692,37 @@ export default function HomePage() {
                 style={{
                   fontFamily: "'Cormorant Garamond', serif",
                   fontSize: "clamp(2.4rem, 5vw, 3.6rem)",
-                  color: "#1c0d10",
+                  color: "#c9a07a",
                   letterSpacing: "-0.01em",
                   lineHeight: 1.1,
                 }}
               >
                 Featured Restaurants
               </h2>
-              <div className="flex items-center justify-center gap-4 mt-5">
-                <div className="h-px w-12" style={{ background: "linear-gradient(to right, transparent, #b46d73)" }} />
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                  <rect x="3" y="0" width="2" height="8" fill="#b46d73" />
-                  <rect x="0" y="3" width="8" height="2" fill="#b46d73" />
+              <div className="flex items-center justify-center gap-4 mt-6">
+                <div
+                  className="h-px w-20"
+                  style={{ background: "linear-gradient(to right, transparent, rgba(201,160,122,0.85))" }}
+                />
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <rect x="4" y="0" width="2" height="10" fill="#c9a07a" />
+                  <rect x="0" y="4" width="10" height="2" fill="#c9a07a" />
                 </svg>
-                <div className="h-px w-12" style={{ background: "linear-gradient(to left, transparent, #b46d73)" }} />
+                <div
+                  className="h-px w-20"
+                  style={{ background: "linear-gradient(to left, transparent, rgba(201,160,122,0.85))" }}
+                />
               </div>
-              <p className="mt-4 text-sm font-light" style={{ color: "#6b7280", fontFamily: "'Jost', sans-serif" }}>
+              <p
+                className="mt-5 text-sm font-light"
+                style={{ color: "rgba(245,237,228,0.6)", fontFamily: "'Jost', sans-serif" }}
+              >
                 Hand‑picked dining experiences from Cebu's finest establishments
               </p>
             </motion.div>
 
             {/* Cards */}
-            <div className="mx-auto max-w-[1200px] grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mx-auto max-w-[1200px] grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
               {featured.map((r, i) => (
                 <motion.div
                   key={r.id}
@@ -678,11 +731,15 @@ export default function HomePage() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
                   onClick={onGetStarted}
-                  className="card-hover cursor-pointer overflow-hidden"
+                  className="card-hover group cursor-pointer overflow-hidden"
                   style={{
-                    borderRadius: "16px",
-                    background: "#fff",
-                    boxShadow: "0 8px 32px rgba(10,5,7,0.12), 0 0 0 1px rgba(146,63,74,0.08)",
+                    borderRadius: "18px",
+                    background:
+                      "linear-gradient(180deg, rgba(28,13,16,0.85) 0%, rgba(18,7,9,0.95) 100%)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(201,160,122,0.22)",
+                    boxShadow:
+                      "0 18px 50px rgba(0,0,0,0.55), 0 0 0 1px rgba(201,160,122,0.10), inset 0 1px 0 rgba(245,237,228,0.04)",
                   }}
                 >
                   {/* Image */}
@@ -693,20 +750,27 @@ export default function HomePage() {
                       loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
-                    <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,5,7,0.72) 0%, transparent 55%)" }} />
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to top, rgba(10,5,7,0.92) 0%, rgba(10,5,7,0.25) 55%, transparent 100%)",
+                      }}
+                    />
 
                     {/* Rating */}
                     <div
                       className="absolute left-3 top-3 flex items-center gap-1 px-2.5 py-1 text-xs font-semibold"
                       style={{
                         borderRadius: "20px",
-                        background: "rgba(255,255,255,0.92)",
-                        color: "#1f2937",
-                        backdropFilter: "blur(8px)",
+                        background: "rgba(10,5,7,0.72)",
+                        color: "#f5ede4",
+                        backdropFilter: "blur(10px)",
+                        border: "1px solid rgba(180,109,115,0.35)",
                         fontFamily: "'Jost', sans-serif",
                       }}
                     >
-                      <Star className="h-3 w-3" style={{ fill: "#d97706", color: "#d97706" }} />
+                      <Star className="h-3 w-3" style={{ fill: "#d4a373", color: "#d4a373" }} />
                       {r.rating.toFixed(1)}
                     </div>
 
@@ -719,6 +783,7 @@ export default function HomePage() {
                         color: "#fff",
                         fontFamily: "'Jost', sans-serif",
                         letterSpacing: "0.1em",
+                        boxShadow: "0 4px 14px rgba(146,63,74,0.45)",
                       }}
                     >
                       {PRICE_LABELS[Math.min(4, Math.max(1, r.priceLevel))] ?? "Budget Friendly"}
@@ -726,20 +791,45 @@ export default function HomePage() {
 
                     {/* Name overlay */}
                     <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <p className="text-[10px] tracking-[0.2em] uppercase mb-0.5" style={{ color: "#b46d73", fontFamily: "'Jost', sans-serif" }}>{r.cuisine}</p>
-                      <h3 className="text-lg font-light" style={{ color: "#f5ede4", fontFamily: "'Cormorant Garamond', serif", fontSize: "1.35rem" }}>{r.name}</h3>
+                      <p
+                        className="text-[10px] tracking-[0.22em] uppercase mb-1"
+                        style={{ color: "#b46d73", fontFamily: "'Jost', sans-serif" }}
+                      >
+                        {r.cuisine}
+                      </p>
+                      <h3
+                        className="font-light"
+                        style={{
+                          color: "#f5ede4",
+                          fontFamily: "'Cormorant Garamond', serif",
+                          fontSize: "1.5rem",
+                          letterSpacing: "0.01em",
+                        }}
+                      >
+                        {r.name}
+                      </h3>
                     </div>
                   </div>
 
                   {/* Card footer */}
-                  <div className="px-4 py-3.5 flex items-center justify-between" style={{ borderTop: "1px solid rgba(146,63,74,0.08)" }}>
-                    <div className="flex items-center gap-1.5 text-xs" style={{ color: "#9b7a6d", fontFamily: "'Jost', sans-serif" }}>
-                      <MapPin className="h-3 w-3" style={{ color: "#923f4a" }} />
+                  <div
+                    className="px-4 py-3.5 flex items-center justify-between"
+                    style={{ borderTop: "1px solid rgba(201,160,122,0.18)" }}
+                  >
+                    <div
+                      className="flex items-center gap-1.5 text-xs min-w-0"
+                      style={{ color: "rgba(245,237,228,0.55)", fontFamily: "'Jost', sans-serif" }}
+                    >
+                      <MapPin className="h-3 w-3 flex-shrink-0" style={{ color: "#c9a07a" }} />
                       <span className="truncate">{r.location}</span>
                     </div>
                     <span
-                      className="text-xs font-medium tracking-wider uppercase"
-                      style={{ color: "#b46d73", fontFamily: "'Jost', sans-serif", letterSpacing: "0.1em" }}
+                      className="text-xs font-medium tracking-wider uppercase whitespace-nowrap ml-2"
+                      style={{
+                        color: "#c9a07a",
+                        fontFamily: "'Jost', sans-serif",
+                        letterSpacing: "0.1em",
+                      }}
                     >
                       View & Book →
                     </span>
@@ -816,26 +906,26 @@ export default function HomePage() {
 
               {/* Quick Links */}
               <div>
-                <h4 className="text-xs tracking-[0.2em] uppercase mb-6 text-[#b46d73] font-semibold">Explore</h4>
+                <h4 className="text-xs tracking-[0.2em] uppercase mb-6 text-[#c9a07a] font-semibold">Explore</h4>
                 <ul className="flex flex-col gap-4">
                   <li><button onClick={() => setShowAboutModal(true)} className="text-sm text-white/60 hover:text-white transition-colors">Our Story</button></li>
-                  <li><button onClick={onGetStarted} className="text-sm text-white/60 hover:text-white transition-colors">Restaurants</button></li>
+                  <li><button onClick={() => setShowRestaurantsModal(true)} className="text-sm text-white/60 hover:text-white transition-colors">Restaurants</button></li>
                   <li><button onClick={() => setShowDevModal(true)} className="text-sm text-white/60 hover:text-white transition-colors">Developers</button></li>
                 </ul>
               </div>
 
               {/* Legal */}
               <div>
-                <h4 className="text-xs tracking-[0.2em] uppercase mb-6 text-[#b46d73] font-semibold">Legal</h4>
+                <h4 className="text-xs tracking-[0.2em] uppercase mb-6 text-[#c9a07a] font-semibold">Legal</h4>
                 <ul className="flex flex-col gap-4">
                   <li><button onClick={() => setShowTermsModal(true)} className="text-sm text-white/60 hover:text-white transition-colors">Terms & Conditions</button></li>
-                  <li><button className="text-sm text-white/60 hover:text-white transition-colors">Privacy Policy</button></li>
+                  <li><button onClick={() => setShowPrivacyModal(true)} className="text-sm text-white/60 hover:text-white transition-colors">Privacy Policy</button></li>
                 </ul>
               </div>
 
               {/* Newsletter */}
               <div>
-                <h4 className="text-xs tracking-[0.2em] uppercase mb-6 text-[#b46d73] font-semibold">Newsletter</h4>
+                <h4 className="text-xs tracking-[0.2em] uppercase mb-6 text-[#c9a07a] font-semibold">Newsletter</h4>
                 <p className="text-sm text-white/50 mb-4">Subscribe for exclusive dining invites and news.</p>
                 <div className="relative">
                   <input 

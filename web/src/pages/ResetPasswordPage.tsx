@@ -73,19 +73,31 @@ function mapRecoveryError(code: string | null, description: string | null) {
   return "Unable to validate reset link. Please request a new one.";
 }
 
+const SERIF = "'Cormorant Garamond', serif";
+const SANS = "'Jost', sans-serif";
+
 function RequirementItem(props: { ok: boolean; text: string }) {
   return (
     <li
-      className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] transition-colors ${
+      className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] transition-colors"
+      style={
         props.ok
-          ? "border-[#cfe8d8] bg-[#ecfdf3] text-[#166534]"
-          : "border-[#e6e5e6] bg-[#fafafa] text-[#4b5563]"
-      }`}
+          ? {
+              border: "1px solid rgba(134,191,150,0.35)",
+              background: "rgba(18,52,32,0.35)",
+              color: "#c8eecf",
+            }
+          : {
+              border: "1px solid rgba(212,181,138,0.18)",
+              background: "rgba(10,5,7,0.4)",
+              color: "#c9b99d",
+            }
+      }
     >
       {props.ok ? (
         <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
       ) : (
-        <Circle className="h-3.5 w-3.5 shrink-0 text-[#9ca3af]" />
+        <Circle className="h-3.5 w-3.5 shrink-0" style={{ color: "#8a7666" }} />
       )}
       <span>{props.text}</span>
     </li>
@@ -296,13 +308,34 @@ export default function ResetPasswordPage() {
     }
   }
 
+  const inputWrapStyle = {
+    border: "1px solid rgba(212,181,138,0.3)",
+    background: "rgba(10,5,7,0.55)",
+  } as const;
+
+  const labelStyle = { color: "#d4b58a" } as const;
+
   return (
-    <div className="min-h-screen bg-[#f3f3f4] px-6 py-10 text-[#1f2937]">
-      <div className="mx-auto max-w-6xl">
+    <div
+      className="min-h-screen px-6 py-10"
+      style={{
+        background:
+          "radial-gradient(120% 90% at 50% 0%, #1a0e12 0%, #0a0507 55%, #05030a 100%)",
+        color: "#f5ede4",
+        fontFamily: SANS,
+      }}
+    >
+      <div className="relative mx-auto max-w-6xl">
         <div className="mb-6">
           <Link
             to="/log-in-sign-up"
-            className="inline-flex items-center gap-2 rounded-2xl border border-[#ded7d9] bg-white px-4 py-2.5 text-sm font-medium text-[#6b7280] shadow-[0_6px_18px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#cdb8bd] hover:text-[#7b2f3b]"
+            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] transition-all hover:-translate-y-0.5"
+            style={{
+              border: "1px solid rgba(212,181,138,0.35)",
+              background: "rgba(36,22,26,0.6)",
+              color: "#d4b58a",
+              backdropFilter: "blur(8px)",
+            }}
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Sign In
@@ -310,21 +343,58 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="grid min-h-[calc(100vh-150px)] place-items-center">
-          <section className="w-full max-w-[460px] rounded-[28px] border border-[#e6e2e4] bg-white p-8 shadow-[0_18px_40px_rgba(15,23,42,0.08)] md:p-10">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#8b3d4a] text-white shadow-[0_10px_20px_rgba(139,61,74,0.3)]">
-              <UtensilsCrossed className="h-6 w-6" />
+          <section
+            className="w-full max-w-[460px] rounded-[28px] p-8 md:p-10"
+            style={{
+              border: "1px solid rgba(212,181,138,0.28)",
+              background: "rgba(26,14,18,0.85)",
+              backdropFilter: "blur(14px)",
+              boxShadow:
+                "0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,181,138,0.15)",
+            }}
+          >
+            <div
+              className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl"
+              style={{
+                background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                boxShadow:
+                  "0 18px 30px rgba(146,63,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+              }}
+            >
+              <UtensilsCrossed className="h-7 w-7 text-[#faf4ea]" />
             </div>
 
-            <h1 className="mt-6 text-center text-4xl font-semibold tracking-tight text-[#1f2937]">
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <span className="h-px w-10" style={{ background: "rgba(212,181,138,0.4)" }} />
+              <span
+                className="text-[10px] uppercase tracking-[0.3em]"
+                style={{ color: "#d4b58a" }}
+              >
+                RESEATO
+              </span>
+              <span className="h-px w-10" style={{ background: "rgba(212,181,138,0.4)" }} />
+            </div>
+
+            <h1
+              className="mt-4 text-center text-4xl font-semibold tracking-tight"
+              style={{ fontFamily: SERIF, color: "#faf4ea" }}
+            >
               Reset Password
             </h1>
-            <p className="mt-2 text-center text-sm text-[#6b7280]">Enter your new password below.</p>
+            <p className="mt-2 text-center text-sm" style={{ color: "#c9b99d" }}>
+              Enter your new password below.
+            </p>
 
             <form onSubmit={onSubmit} className="mt-7 space-y-4">
               <label className="block space-y-1.5">
-                <div className="text-sm font-medium text-[#4b5563]">New Password</div>
-                <div className="flex items-center gap-2 rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5">
-                  <span className="text-[#9ca3af]">
+                <div
+                  className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                  style={labelStyle}
+                >
+                  New Password
+                </div>
+                <div className="flex items-center gap-2 rounded-xl px-3 py-3" style={inputWrapStyle}>
+                  <span style={labelStyle}>
                     <Lock className="h-4 w-4" />
                   </span>
                   <input
@@ -332,12 +402,13 @@ export default function ResetPasswordPage() {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="New password"
-                    className="w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
+                    className="w-full bg-transparent text-sm outline-none"
+                    style={{ color: "#f5ede4" }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="text-[#9ca3af] hover:text-[#6b7280]"
+                    style={{ color: "#d4b58a" }}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -345,9 +416,14 @@ export default function ResetPasswordPage() {
               </label>
 
               <label className="block space-y-1.5">
-                <div className="text-sm font-medium text-[#4b5563]">Confirm New Password</div>
-                <div className="flex items-center gap-2 rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5">
-                  <span className="text-[#9ca3af]">
+                <div
+                  className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                  style={labelStyle}
+                >
+                  Confirm New Password
+                </div>
+                <div className="flex items-center gap-2 rounded-xl px-3 py-3" style={inputWrapStyle}>
+                  <span style={labelStyle}>
                     <Lock className="h-4 w-4" />
                   </span>
                   <input
@@ -355,20 +431,32 @@ export default function ResetPasswordPage() {
                     value={confirmPassword}
                     onChange={(event) => setConfirmPassword(event.target.value)}
                     placeholder="Confirm password"
-                    className="w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
+                    className="w-full bg-transparent text-sm outline-none"
+                    style={{ color: "#f5ede4" }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    className="text-[#9ca3af] hover:text-[#6b7280]"
+                    style={{ color: "#d4b58a" }}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </label>
 
-              <div className="rounded-2xl border border-[#e8d8dc] bg-[#fff9fa] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-                <p className="text-[11px] uppercase tracking-[0.15em] text-[#8b3d4a]">Password Requirements</p>
+              <div
+                className="rounded-2xl px-4 py-3"
+                style={{
+                  border: "1px solid rgba(212,181,138,0.25)",
+                  background: "rgba(10,5,7,0.4)",
+                }}
+              >
+                <p
+                  className="text-[11px] uppercase tracking-[0.2em]"
+                  style={{ color: "#d4b58a" }}
+                >
+                  Password Requirements
+                </p>
                 <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                   <RequirementItem ok={passwordChecks.minLength} text="At least 6 characters" />
                   <RequirementItem ok={passwordChecks.uppercase} text="Uppercase letter" />
@@ -379,19 +467,40 @@ export default function ResetPasswordPage() {
               </div>
 
               {checkingSession && (
-                <div className="rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 py-3 text-sm text-[#475467]">
+                <div
+                  className="rounded-xl px-4 py-3 text-sm"
+                  style={{
+                    border: "1px solid rgba(212,181,138,0.25)",
+                    background: "rgba(10,5,7,0.4)",
+                    color: "#c9b99d",
+                  }}
+                >
                   Validating reset link...
                 </div>
               )}
 
               {errorMsg && (
-                <div className="rounded-xl border border-[#ead9dd] bg-[#fff7f8] px-4 py-3 text-sm text-[#7b2f3b]">
+                <div
+                  className="rounded-xl px-4 py-3 text-sm"
+                  style={{
+                    border: "1px solid rgba(225,93,93,0.35)",
+                    background: "rgba(70,20,25,0.5)",
+                    color: "#f5c6ca",
+                  }}
+                >
                   {errorMsg}
                 </div>
               )}
 
               {successMsg && (
-                <div className="rounded-xl border border-[#cfe8d8] bg-[#ecfdf3] px-4 py-3 text-sm text-[#166534]">
+                <div
+                  className="rounded-xl px-4 py-3 text-sm"
+                  style={{
+                    border: "1px solid rgba(134,191,150,0.35)",
+                    background: "rgba(18,52,32,0.5)",
+                    color: "#c8eecf",
+                  }}
+                >
                   {successMsg}
                 </div>
               )}
@@ -399,7 +508,8 @@ export default function ResetPasswordPage() {
               {!readyForReset && !checkingSession && (
                 <Link
                   to="/forgot-password"
-                  className="block text-center text-xs font-semibold text-[#7b2f3b] hover:text-[#923f4a]"
+                  className="block text-center text-xs font-semibold underline-offset-4 hover:underline"
+                  style={{ color: "#d4b58a" }}
                 >
                   Request a new reset link
                 </Link>
@@ -408,7 +518,13 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={loading || checkingSession || !canSubmit}
-                className="w-full rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.15em] transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                  color: "#faf4ea",
+                  boxShadow:
+                    "0 16px 30px rgba(146,63,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+                }}
               >
                 {loading ? "Updating..." : "Update Password"}
               </button>

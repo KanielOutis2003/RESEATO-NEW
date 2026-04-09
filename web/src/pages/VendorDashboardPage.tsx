@@ -36,14 +36,6 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function toCurrency(minor: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 2,
-  }).format((Number(minor) || 0) / 100);
-}
-
 function csvCell(value: string | number | boolean) {
   const text = String(value ?? "");
   if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
@@ -249,7 +241,6 @@ function VendorLineChart({ points }: { points: TrendPoint[] }) {
           <div>Completed: {tooltip.point.completed}</div>
           <div>Cancelled: {tooltip.point.cancelled}</div>
           <div>Paid: {tooltip.point.paid}</div>
-          <div>Revenue: {toCurrency(tooltip.point.revenueMinor)}</div>
         </div>
       )}
     </div>
@@ -528,12 +519,12 @@ export default function VendorDashboardPage() {
                 )}
               </article>
 
-              {/* Revenue & Quick Stats */}
+              {/* Booking Snapshot & Quick Stats */}
               <div className="grid gap-[14px] content-start">
                 {/* Day snapshot or all-time stats */}
                 <article className="rounded-[24px] border border-[#e7e3e5] bg-white p-[22px] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-extrabold text-[#1f2937]">💰 Revenue Snapshot</h3>
+                    <h3 className="text-lg font-extrabold text-[#1f2937]">📋 Booking Snapshot</h3>
                     <span className="text-[13px] text-[#667085]">
                       {selectedDate && daySnapshot ? formatDayLabel(selectedDate) : selectedDate && dayLoading ? "Loading..." : "All time"}
                     </span>
@@ -542,43 +533,38 @@ export default function VendorDashboardPage() {
                   {dayLoading ? (
                     <div className="grid place-items-center py-8"><Loader2 className="h-5 w-5 animate-spin text-[#8b3d4a]" /></div>
                   ) : selectedDate && daySnapshot ? (
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { label: "Total", value: daySnapshot.total },
-                          { label: "Pending", value: daySnapshot.pending },
-                          { label: "Confirmed", value: daySnapshot.confirmed },
-                          { label: "Completed", value: daySnapshot.completed },
-                          { label: "Cancelled", value: daySnapshot.cancelled },
-                          { label: "Paid", value: daySnapshot.paid },
-                        ].map((item) => (
-                          <div key={item.label} className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
-                            <div className="text-[11px] text-[#667085]">{item.label}</div>
-                            <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{item.value}</div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
-                        <div className="text-[11px] text-[#667085]">Revenue</div>
-                        <div className="mt-1 text-2xl font-extrabold text-[#7b2f3b]">{toCurrency(daySnapshot.revenueMinor)}</div>
-                      </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: "Total", value: daySnapshot.total },
+                        { label: "Pending", value: daySnapshot.pending },
+                        { label: "Confirmed", value: daySnapshot.confirmed },
+                        { label: "Completed", value: daySnapshot.completed },
+                        { label: "Cancelled", value: daySnapshot.cancelled },
+                        { label: "Paid", value: daySnapshot.paid },
+                      ].map((item) => (
+                        <div key={item.label} className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
+                          <div className="text-[11px] text-[#667085]">{item.label}</div>
+                          <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{item.value}</div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
-                        <div className="text-[11px] text-[#667085]">Collected Fees</div>
-                        <div className="mt-1 text-2xl font-extrabold text-[#7b2f3b]">{toCurrency(overview?.totalPaidAmountMinor ?? 0)}</div>
-                        <div className="mt-0.5 text-[11px] text-[#667085]">Estimated monthly revenue</div>
+                        <div className="text-[11px] text-[#667085]">Paid Bookings</div>
+                        <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{overview?.paidCount ?? 0}</div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
-                          <div className="text-[11px] text-[#667085]">Paid</div>
-                          <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{overview?.paidCount ?? 0}</div>
-                        </div>
-                        <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
-                          <div className="text-[11px] text-[#667085]">Restaurants</div>
-                          <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{restaurants.length}</div>
-                        </div>
+                      <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
+                        <div className="text-[11px] text-[#667085]">Restaurants</div>
+                        <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{restaurants.length}</div>
+                      </div>
+                      <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
+                        <div className="text-[11px] text-[#667085]">Confirmed</div>
+                        <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{overview?.confirmedCount ?? 0}</div>
+                      </div>
+                      <div className="rounded-[14px] border border-[#e7e3e5] bg-[#fcfafb] p-3">
+                        <div className="text-[11px] text-[#667085]">Completed</div>
+                        <div className="mt-0.5 text-lg font-extrabold text-[#1f2937]">{overview?.completedCount ?? 0}</div>
                       </div>
                     </div>
                   )}

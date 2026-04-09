@@ -8,6 +8,8 @@ import {
 import { createReservation, getSlots, Slot } from "../lib/api/reservations.api";
 import { useAuth } from "../lib/auth/useAuth";
 import { ApiError } from "../lib/api/client";
+import LuxuryNavbar from "../components/layouts/LuxuryNavbar";
+import LuxuryFooter from "../components/layouts/LuxuryFooter";
 import {
   ArrowLeft,
   CalendarDays,
@@ -21,6 +23,15 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react";
+
+const GOLD = "#c9a07a";
+const CREAM = "#f5ede4";
+const DARK_BG = "#0a0507";
+const CARD_BG = "rgba(16,8,10,0.75)";
+const CARD_BORDER = "1px solid rgba(201,160,122,0.18)";
+const GOLD_BORDER = "1px solid rgba(201,160,122,0.28)";
+const SERIF = "'Cormorant Garamond', serif";
+const SANS = "'Jost', sans-serif";
 
 function todayISO() {
   const d = new Date();
@@ -113,21 +124,40 @@ function GalleryLightbox({ images, startIndex, onClose }: { images: string[]; st
   }, [onClose, next, prev]);
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-sm"
+      style={{ background: "rgba(5,2,3,0.85)" }}
+      onClick={onClose}
+    >
       <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute -top-3 -right-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-[#1f2937] shadow-lg transition hover:bg-white">
+        <button
+          onClick={onClose}
+          className="absolute -top-3 -right-3 z-10 grid h-9 w-9 place-items-center rounded-full shadow-lg transition hover:brightness-110"
+          style={{ background: CREAM, color: DARK_BG, border: GOLD_BORDER }}
+        >
           <X className="h-4 w-4" />
         </button>
-        <img src={images[idx]} alt={`Gallery ${idx + 1}`} className="max-h-[85vh] max-w-[88vw] rounded-2xl object-contain shadow-2xl" />
+        <img src={images[idx]} alt={`Gallery ${idx + 1}`} className="max-h-[85vh] max-w-[88vw] rounded-2xl object-contain shadow-2xl" style={{ border: GOLD_BORDER }} />
         {images.length > 1 && (
           <>
-            <button onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70">
+            <button
+              onClick={prev}
+              className="absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full backdrop-blur transition hover:brightness-125"
+              style={{ background: "rgba(16,8,10,0.8)", color: GOLD, border: GOLD_BORDER }}
+            >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <button onClick={next} className="absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70">
+            <button
+              onClick={next}
+              className="absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full backdrop-blur transition hover:brightness-125"
+              style={{ background: "rgba(16,8,10,0.8)", color: GOLD, border: GOLD_BORDER }}
+            >
               <ChevronRight className="h-5 w-5" />
             </button>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white backdrop-blur">
+            <div
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-xs backdrop-blur"
+              style={{ background: "rgba(16,8,10,0.8)", color: CREAM, border: GOLD_BORDER, fontFamily: SANS }}
+            >
               {idx + 1} / {images.length}
             </div>
           </>
@@ -259,29 +289,44 @@ export default function RestaurantDetailsPage() {
   /* Loading state */
   if (loadingRestaurant) {
     return (
-      <div className="relative min-h-[calc(100vh-72px)] w-full overflow-hidden bg-[#f3f3f4] text-[#1f2937]">
-        <div className="pointer-events-none absolute -left-20 -top-16 h-64 w-64 rounded-full bg-[#f2dde2] blur-3xl" />
-        <div className="pointer-events-none absolute -right-16 top-28 h-72 w-72 rounded-full bg-[#f8ecee] blur-3xl" />
-        <div className="mx-auto flex min-h-[calc(100vh-72px)] max-w-6xl flex-col justify-center px-6 py-10">
+      <div
+        className="relative min-h-screen w-full"
+        style={{
+          background: `radial-gradient(ellipse at top, rgba(180,109,115,0.08), transparent 60%), ${DARK_BG}`,
+          color: CREAM,
+          fontFamily: SANS,
+        }}
+      >
+        <LuxuryNavbar />
+        <div className="mx-auto flex min-h-[70vh] max-w-[1480px] flex-col justify-center px-6 sm:px-10 lg:px-14 py-10">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mb-6 flex items-center gap-3">
-            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2.2, ease: "linear" }} className="grid h-11 w-11 place-items-center rounded-xl bg-[#8b3d4a] text-white shadow-[0_10px_22px_rgba(139,61,74,0.26)]">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 2.2, ease: "linear" }}
+              className="grid h-12 w-12 place-items-center rounded-xl text-white"
+              style={{ background: "linear-gradient(135deg, #b46d73, #923f4a)", boxShadow: "0 18px 40px rgba(146,63,74,0.35)" }}
+            >
               <UtensilsCrossed className="h-5 w-5" />
             </motion.div>
             <div>
-              <div className="text-sm font-semibold uppercase tracking-[0.14em] text-[#8b3d4a]">RESEATO</div>
-              <div className="text-lg font-medium text-[#374151]">Preparing restaurant details...</div>
+              <div className="text-xs tracking-[0.3em] uppercase" style={{ color: GOLD }}>RESEATO</div>
+              <div className="text-lg font-light" style={{ color: CREAM, fontFamily: SERIF }}>Preparing restaurant details...</div>
             </div>
           </motion.div>
-          <motion.div animate={{ opacity: [0.55, 1, 0.55] }} transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }} className="rounded-[28px] border border-[#e8e2e3] bg-white p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
-            <div className="h-8 w-64 rounded-xl bg-[#f3ecef]" />
-            <div className="mt-4 h-4 w-[520px] max-w-full rounded-lg bg-[#f4eff1]" />
-            <div className="mt-2 h-4 w-[460px] max-w-full rounded-lg bg-[#f4eff1]" />
+          <motion.div
+            animate={{ opacity: [0.55, 1, 0.55] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+            className="rounded-[28px] p-6"
+            style={{ background: CARD_BG, border: CARD_BORDER, backdropFilter: "blur(12px)" }}
+          >
+            <div className="h-8 w-64 rounded-xl" style={{ background: "rgba(201,160,122,0.12)" }} />
+            <div className="mt-4 h-4 w-[520px] max-w-full rounded-lg" style={{ background: "rgba(201,160,122,0.08)" }} />
+            <div className="mt-2 h-4 w-[460px] max-w-full rounded-lg" style={{ background: "rgba(201,160,122,0.08)" }} />
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="h-24 rounded-2xl bg-[#f2e5e8]" />
-              <div className="h-24 rounded-2xl bg-[#f2e5e8]" />
+              <div className="h-24 rounded-2xl" style={{ background: "rgba(201,160,122,0.1)" }} />
+              <div className="h-24 rounded-2xl" style={{ background: "rgba(201,160,122,0.1)" }} />
             </div>
           </motion.div>
-          <div className="mt-6 text-sm text-[#7b8498]">Loading restaurant...</div>
         </div>
       </div>
     );
@@ -289,9 +334,24 @@ export default function RestaurantDetailsPage() {
 
   if (!data) {
     return (
-      <div className="relative min-h-[calc(100vh-72px)] w-full bg-[#f3f3f4] text-[#1f2937]">
-        <div className="mx-auto max-w-6xl px-6 py-10">
-          <div className="rounded-2xl border border-[#f0cdd4] bg-[#fff6f7] px-4 py-3 text-sm text-[#9f1239]">
+      <div
+        className="relative min-h-screen w-full"
+        style={{
+          background: `radial-gradient(ellipse at top, rgba(180,109,115,0.08), transparent 60%), ${DARK_BG}`,
+          color: CREAM,
+          fontFamily: SANS,
+        }}
+      >
+        <LuxuryNavbar />
+        <div className="mx-auto max-w-[1480px] px-6 sm:px-10 lg:px-14 py-10">
+          <div
+            className="rounded-2xl px-5 py-4 text-sm"
+            style={{
+              background: "rgba(201,74,85,0.10)",
+              border: "1px solid rgba(232,139,147,0.3)",
+              color: "#e88b93",
+            }}
+          >
             {msg ?? "Unable to load restaurant details."}
           </div>
         </div>
@@ -302,40 +362,89 @@ export default function RestaurantDetailsPage() {
   const ratingStars = Array.from({ length: 5 }, (_, i) => i < Math.round(Number(data.rating)));
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] w-full bg-[#f3f3f4] text-[#1f2937]">
-      {/* ── Hero (contained card like RestaurantsPage) ── */}
-      <section className="mx-auto max-w-6xl px-4 pt-8 sm:px-6">
-        <button onClick={() => navigate(-1)} className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ddd7d9] bg-white px-4 py-2 text-sm text-[#6b7280] shadow-[0_6px_16px_rgba(15,23,42,0.06)] transition hover:text-[#7b2f3b]">
-          <ArrowLeft className="h-4 w-4" /> Back
+    <div
+      className="relative min-h-screen w-full"
+      style={{
+        background: `radial-gradient(ellipse at top, rgba(180,109,115,0.08), transparent 60%), ${DARK_BG}`,
+        color: CREAM,
+        fontFamily: SANS,
+      }}
+    >
+      <LuxuryNavbar />
+
+      {/* ── Hero ── */}
+      <section className="mx-auto max-w-[1480px] px-6 sm:px-10 lg:px-14 pt-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs tracking-[0.2em] uppercase transition hover:brightness-125"
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: GOLD_BORDER,
+            color: GOLD,
+          }}
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Back
         </button>
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="relative h-[280px] overflow-hidden rounded-[28px] sm:h-[320px]"
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="relative h-[340px] overflow-hidden rounded-[28px] sm:h-[420px]"
+          style={{ border: GOLD_BORDER, boxShadow: "0 30px 80px rgba(0,0,0,0.5)" }}
         >
           <img src={heroUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/40" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(0,0,0,0.4),transparent_58%)]" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(10,5,7,0.3) 0%, rgba(10,5,7,0.55) 50%, rgba(10,5,7,0.92) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(circle at 80% 20%, rgba(180,109,115,0.25), transparent 55%)",
+            }}
+          />
 
-          <div className="relative flex h-full flex-col justify-end px-6 pb-7 sm:px-8">
+          <div className="relative flex h-full flex-col justify-end px-7 pb-9 sm:px-10">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-md border border-white/10">{data.cuisine}</span>
+              <span
+                className="rounded-full px-3 py-1 text-[10px] tracking-[0.2em] uppercase backdrop-blur-md"
+                style={{ background: "rgba(201,160,122,0.15)", color: GOLD, border: "1px solid rgba(201,160,122,0.4)" }}
+              >
+                {data.cuisine}
+              </span>
               {data.priceLevel && (
-                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-md border border-white/10">
+                <span
+                  className="rounded-full px-3 py-1 text-[10px] tracking-[0.2em] uppercase backdrop-blur-md"
+                  style={{ background: "rgba(201,160,122,0.15)", color: GOLD, border: "1px solid rgba(201,160,122,0.4)" }}
+                >
                   {priceLabel(data.priceLevel)}
                 </span>
               )}
             </div>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>{data.name}</h1>
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-white/90">
-              <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {data.location}</span>
+            <h1
+              className="mt-4 text-4xl font-light leading-none tracking-tight sm:text-5xl lg:text-6xl"
+              style={{ color: CREAM, fontFamily: SERIF, textShadow: "0 2px 20px rgba(0,0,0,0.7)" }}
+            >
+              {data.name}
+            </h1>
+            <div className="mt-4 flex flex-wrap items-center gap-5 text-sm" style={{ color: "rgba(245,237,228,0.85)" }}>
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" style={{ color: GOLD }} /> {data.location}
+              </span>
               <span className="inline-flex items-center gap-1">
                 {ratingStars.map((filled, i) => (
-                  <Star key={i} className={cx("h-3.5 w-3.5", filled ? "fill-amber-400 text-amber-400" : "text-white/40")} />
+                  <Star
+                    key={i}
+                    className="h-3.5 w-3.5"
+                    style={filled ? { fill: GOLD, color: GOLD } : { color: "rgba(245,237,228,0.3)" }}
+                  />
                 ))}
-                <span className="ml-1 font-semibold">{Number(data.rating).toFixed(1)}</span>
+                <span className="ml-1.5 font-semibold" style={{ color: GOLD }}>{Number(data.rating).toFixed(1)}</span>
               </span>
             </div>
           </div>
@@ -343,57 +452,95 @@ export default function RestaurantDetailsPage() {
       </section>
 
       {/* ── Content ── */}
-      <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
+      <section className="mx-auto max-w-[1480px] px-6 sm:px-10 lg:px-14 pb-32">
         {/* Quick info bar */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <div className="flex items-center gap-3 rounded-2xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f8ecee] text-[#8b3d4a]"><Phone className="h-4 w-4" /></div>
-            <div className="min-w-0">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#98a2b3]">Phone</div>
-              <div className="truncate text-sm font-medium text-[#1f2937]">{data.contactPhone || "Not available"}</div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          {[
+            { Icon: Phone, label: "Phone", value: data.contactPhone || "Not available" },
+            { Icon: Mail, label: "Email", value: data.contactEmail || "support@reseato.com" },
+            { Icon: Clock, label: "Hours", value: "10:00 AM - 10:00 PM" },
+          ].map(({ Icon, label, value }) => (
+            <div
+              key={label}
+              className="flex items-center gap-4 rounded-2xl px-5 py-4"
+              style={{
+                background: CARD_BG,
+                border: CARD_BORDER,
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 16px 40px rgba(0,0,0,0.25)",
+              }}
+            >
+              <div
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+                style={{ background: "rgba(201,160,122,0.1)", border: "1px solid rgba(201,160,122,0.3)", color: GOLD }}
+              >
+                <Icon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>{label}</div>
+                <div className="truncate text-sm" style={{ color: CREAM }}>{value}</div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f8ecee] text-[#8b3d4a]"><Mail className="h-4 w-4" /></div>
-            <div className="min-w-0">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#98a2b3]">Email</div>
-              <div className="truncate text-sm font-medium text-[#1f2937]">{data.contactEmail || "support@reseato.com"}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f8ecee] text-[#8b3d4a]"><Clock className="h-4 w-4" /></div>
-            <div className="min-w-0">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#98a2b3]">Hours</div>
-              <div className="truncate text-sm font-medium text-[#1f2937]">10:00 AM - 10:00 PM</div>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Main content */}
-        <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_340px]">
+        <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
           <div className="space-y-6">
             {/* About */}
-            <div className="rounded-3xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-6 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
-              <h2 className="text-xl font-bold text-[#1f2937]">About</h2>
-              <p className="mt-3 leading-relaxed text-[#475467]">{data.description || "A wonderful dining experience awaits you at this restaurant."}</p>
+            <div
+              className="rounded-3xl p-7"
+              style={{
+                background: CARD_BG,
+                border: CARD_BORDER,
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+              }}
+            >
+              <div className="text-[10px] tracking-[0.3em] uppercase mb-2" style={{ color: GOLD }}>The Story</div>
+              <h2 className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>About</h2>
+              <p className="mt-4 leading-relaxed text-[15px]" style={{ color: "rgba(245,237,228,0.7)" }}>
+                {data.description || "A wonderful dining experience awaits you at this restaurant."}
+              </p>
             </div>
 
             {/* Gallery */}
-            <div className="rounded-3xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-6 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
+            <div
+              className="rounded-3xl p-7"
+              style={{
+                background: CARD_BG,
+                border: CARD_BORDER,
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+              }}
+            >
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#1f2937]">Gallery</h2>
-                <span className="rounded-full border border-[#e5e7eb] bg-[#f8fafc] px-3 py-1 text-xs font-medium text-[#6b7280]">
+                <div>
+                  <div className="text-[10px] tracking-[0.3em] uppercase mb-2" style={{ color: GOLD }}>Visual Experience</div>
+                  <h2 className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>Gallery</h2>
+                </div>
+                <span
+                  className="rounded-full px-3 py-1 text-[10px] tracking-[0.2em] uppercase"
+                  style={{ background: "rgba(201,160,122,0.1)", border: "1px solid rgba(201,160,122,0.3)", color: GOLD }}
+                >
                   {gallery.length} {gallery.length === 1 ? "item" : "items"}
                 </span>
               </div>
               {gallery.length === 0 ? (
-                <div className="mt-4 flex items-center gap-3 rounded-2xl border border-[#ece8e9] bg-[#fafafa] px-4 py-5 text-sm text-[#667085]">
-                  <UtensilsCrossed className="h-5 w-5 text-[#c9b5b9]" />
+                <div
+                  className="mt-5 flex items-center gap-3 rounded-2xl px-4 py-5 text-sm"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(201,160,122,0.12)",
+                    color: "rgba(245,237,228,0.55)",
+                  }}
+                >
+                  <UtensilsCrossed className="h-5 w-5" style={{ color: GOLD }} />
                   No gallery items available yet.
                 </div>
               ) : (
                 <div className={cx(
-                  "mt-4 grid gap-2",
+                  "mt-5 grid gap-2.5",
                   gallery.length === 1 && "grid-cols-1",
                   gallery.length === 2 && "grid-cols-2",
                   gallery.length >= 3 && "grid-cols-2 sm:grid-cols-3",
@@ -404,16 +551,17 @@ export default function RestaurantDetailsPage() {
                       type="button"
                       onClick={() => setLightboxIndex(i)}
                       className={cx(
-                        "group relative overflow-hidden rounded-2xl border border-[#ece8e9]",
+                        "group relative overflow-hidden rounded-2xl",
                         i === 0 && gallery.length >= 3 && "col-span-2 sm:col-span-1",
                       )}
+                      style={{ border: "1px solid rgba(201,160,122,0.2)" }}
                     >
                       <img
                         src={url}
                         alt={`${data.name} gallery ${i + 1}`}
-                        className="h-44 w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
-                      <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
+                      <div className="absolute inset-0 transition-colors duration-300 group-hover:bg-black/20" />
                     </button>
                   ))}
                 </div>
@@ -421,24 +569,36 @@ export default function RestaurantDetailsPage() {
             </div>
 
             {/* Location Map */}
-            <div className="rounded-3xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-6 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
+            <div
+              className="rounded-3xl p-7"
+              style={{
+                background: CARD_BG,
+                border: CARD_BORDER,
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+              }}
+            >
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#1f2937]">Location</h2>
+                <div>
+                  <div className="text-[10px] tracking-[0.3em] uppercase mb-2" style={{ color: GOLD }}>Find Us</div>
+                  <h2 className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>Location</h2>
+                </div>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getMapQuery(data.name))}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-[#7b2f3b] hover:underline"
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] tracking-[0.2em] uppercase transition hover:brightness-125"
+                  style={{ background: "rgba(201,160,122,0.1)", border: "1px solid rgba(201,160,122,0.3)", color: GOLD }}
                 >
                   <MapPin className="h-3 w-3" /> Open in Maps
                 </a>
               </div>
-              <div className="mt-3 overflow-hidden rounded-2xl border border-[#ece8e9]">
+              <div className="mt-5 overflow-hidden rounded-2xl" style={{ border: "1px solid rgba(201,160,122,0.2)" }}>
                 <iframe
                   title="Restaurant Location"
                   width="100%"
-                  height="260"
-                  style={{ border: 0 }}
+                  height="280"
+                  style={{ border: 0, filter: "grayscale(0.3) brightness(0.85)" }}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   src={`https://maps.google.com/maps?q=${encodeURIComponent(getMapQuery(data.name))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
@@ -451,42 +611,68 @@ export default function RestaurantDetailsPage() {
           {/* Right sidebar */}
           <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
             {/* House Rules */}
-            <div className="rounded-3xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-6 shadow-[0_8px_20px_rgba(15,23,42,0.05)]">
-              <h3 className="text-base font-bold text-[#1f2937]">House Rules</h3>
-              <ul className="mt-3 space-y-2 text-sm text-[#667085]">
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c98d98]" />
-                  Please arrive 10 minutes before your reservation
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c98d98]" />
-                  Reservations may be released after a 15-min grace period
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c98d98]" />
-                  Special requests are subject to availability
-                </li>
+            <div
+              className="rounded-3xl p-6"
+              style={{
+                background: CARD_BG,
+                border: CARD_BORDER,
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 16px 40px rgba(0,0,0,0.3)",
+              }}
+            >
+              <div className="text-[10px] tracking-[0.3em] uppercase mb-2" style={{ color: GOLD }}>Etiquette</div>
+              <h3 className="text-2xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>House Rules</h3>
+              <ul className="mt-4 space-y-3 text-sm" style={{ color: "rgba(245,237,228,0.7)" }}>
+                {[
+                  "Please arrive 10 minutes before your reservation",
+                  "Reservations may be released after a 15-min grace period",
+                  "Special requests are subject to availability",
+                ].map((rule) => (
+                  <li key={rule} className="flex items-start gap-2.5">
+                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full" style={{ background: GOLD }} />
+                    {rule}
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* Rating card */}
-            <div className="rounded-3xl border border-[#e8e2e3] bg-gradient-to-br from-[#fdfbfc] via-[#faf5f7] to-[#f5ecef] p-6 shadow-[0_8px_20px_rgba(15,23,42,0.05)]">
-              <h3 className="text-base font-bold text-[#1f2937]">Rating</h3>
-              <div className="mt-3 flex items-center gap-3">
-                <div className="text-4xl font-bold text-[#1f2937]">{Number(data.rating).toFixed(1)}</div>
+            <div
+              className="rounded-3xl p-6"
+              style={{
+                background: CARD_BG,
+                border: CARD_BORDER,
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 16px 40px rgba(0,0,0,0.3)",
+              }}
+            >
+              <div className="text-[10px] tracking-[0.3em] uppercase mb-2" style={{ color: GOLD }}>Acclaim</div>
+              <h3 className="text-2xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>Rating</h3>
+              <div className="mt-4 flex items-center gap-4">
+                <div className="text-5xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>
+                  {Number(data.rating).toFixed(1)}
+                </div>
                 <div>
                   <div className="flex gap-0.5">
                     {ratingStars.map((filled, i) => (
-                      <Star key={i} className={cx("h-4 w-4", filled ? "fill-amber-400 text-amber-400" : "text-[#d1d5db]")} />
+                      <Star
+                        key={i}
+                        className="h-4 w-4"
+                        style={filled ? { fill: GOLD, color: GOLD } : { color: "rgba(245,237,228,0.25)" }}
+                      />
                     ))}
                   </div>
-                  <div className="mt-0.5 text-xs text-[#98a2b3]">Restaurant rating</div>
+                  <div className="mt-1 text-[10px] tracking-[0.2em] uppercase" style={{ color: "rgba(245,237,228,0.5)" }}>
+                    Restaurant rating
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      <LuxuryFooter />
 
       {/* ── Floating Book Button ── */}
       <motion.button
@@ -495,7 +681,13 @@ export default function RestaurantDetailsPage() {
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5, type: "spring", stiffness: 260, damping: 20 }}
-        className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2.5 rounded-2xl border border-[#d5bcc2] bg-[linear-gradient(135deg,#9b4b56,#7f3a41)] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(139,61,74,0.35)] transition-all hover:scale-105 hover:shadow-[0_16px_40px_rgba(139,61,74,0.45)]"
+        className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2.5 rounded-2xl px-6 py-3.5 text-xs font-semibold tracking-[0.2em] uppercase text-white transition-all hover:scale-105"
+        style={{
+          background: "linear-gradient(135deg, #b46d73, #923f4a)",
+          border: "1px solid rgba(201,160,122,0.45)",
+          boxShadow: "0 18px 44px rgba(146,63,74,0.5)",
+          fontFamily: SANS,
+        }}
       >
         <CalendarDays className="h-4 w-4" />
         Book a Table
@@ -513,7 +705,8 @@ export default function RestaurantDetailsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm px-4"
+            style={{ background: "rgba(5,2,3,0.75)" }}
             onClick={() => setBookingOpen(false)}
           >
             <motion.div
@@ -521,61 +714,126 @@ export default function RestaurantDetailsPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.25 }}
-              className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border border-[#e8e2e3] bg-white p-7 shadow-[0_28px_60px_rgba(15,23,42,0.2)]"
+              className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl p-7"
+              style={{
+                background: "rgba(16,8,10,0.98)",
+                border: GOLD_BORDER,
+                boxShadow: "0 28px 80px rgba(0,0,0,0.7)",
+              }}
               onClick={(e) => e.stopPropagation()}
             >
-              <button type="button" onClick={() => setBookingOpen(false)} className="absolute top-4 right-4 rounded-full border border-[#e8e2e3] p-2 text-[#6b7280] transition hover:bg-[#f8f8f8] hover:text-[#1f2937]">
+              <button
+                type="button"
+                onClick={() => setBookingOpen(false)}
+                className="absolute top-4 right-4 rounded-full p-2 transition hover:brightness-125"
+                style={{ background: "rgba(255,255,255,0.04)", border: GOLD_BORDER, color: CREAM }}
+              >
                 <X className="h-4 w-4" />
               </button>
 
-              <div className="pr-8">
-                <h2 className="text-xl font-bold text-[#1f2937] sm:text-2xl">Book a Table</h2>
-                <p className="mt-1 text-sm text-[#6b7280]">{data?.name ?? "Restaurant"} &middot; {formatPrettyDate(date)}</p>
+              <div className="pr-10">
+                <div className="text-[10px] tracking-[0.3em] uppercase mb-1" style={{ color: GOLD }}>Reservation</div>
+                <h2 className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>Book a Table</h2>
+                <p className="mt-1 text-sm" style={{ color: "rgba(245,237,228,0.55)" }}>
+                  {data?.name ?? "Restaurant"} &middot; {formatPrettyDate(date)}
+                </p>
               </div>
 
               {authLoading ? (
-                <p className="mt-4 text-[#6b7280]">Checking session...</p>
+                <p className="mt-4" style={{ color: "rgba(245,237,228,0.55)" }}>Checking session...</p>
               ) : !isAuthed ? (
-                <div className="mt-4 rounded-2xl border border-[#e8e2e3] bg-[#fafafa] p-4">
-                  <p className="text-sm text-[#475467]">You must be logged in to make a reservation.</p>
-                  <Link to="/log-in-sign-up" state={{ from: location.pathname }} className="mt-3 inline-flex w-full justify-center rounded-xl border border-[#d8c0c6] bg-[#f8ecee] px-4 py-2 text-sm font-medium text-[#7b2f3b] transition hover:bg-[#f2dde2]">
+                <div
+                  className="mt-5 rounded-2xl p-4"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(201,160,122,0.15)",
+                  }}
+                >
+                  <p className="text-sm" style={{ color: "rgba(245,237,228,0.7)" }}>
+                    You must be logged in to make a reservation.
+                  </p>
+                  <Link
+                    to="/log-in-sign-up"
+                    state={{ from: location.pathname }}
+                    className="mt-3 inline-flex w-full justify-center rounded-xl px-4 py-2.5 text-xs font-semibold tracking-[0.2em] uppercase transition hover:brightness-110"
+                    style={{
+                      background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                      color: "#fff",
+                      border: "1px solid rgba(201,160,122,0.4)",
+                    }}
+                  >
                     Login / Sign up
                   </Link>
                 </div>
               ) : (
                 <>
                   <div className="mt-5">
-                    <div className="text-xs uppercase tracking-wider text-[#7b8498]">Select date</div>
-                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-2 w-full rounded-2xl border border-[#ddd8da] bg-white px-4 py-3 text-sm text-[#111827] outline-none focus:border-[#b46d73]" />
+                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Select date</div>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none transition"
+                      style={{
+                        background: "rgba(10,5,7,0.7)",
+                        border: GOLD_BORDER,
+                        color: CREAM,
+                        colorScheme: "dark",
+                      }}
+                    />
                   </div>
 
                   <div className="mt-5">
-                    <div className="text-xs uppercase tracking-wider text-[#7b8498]">Number of guests</div>
-                    <div className="mt-2 flex items-center justify-between rounded-2xl border border-[#ece8e9] bg-[#fafafa] px-4 py-3">
-                      <button type="button" onClick={decGuests} className="h-10 w-10 rounded-full border border-[#ddd8da] bg-white text-[#1f2937] transition hover:bg-[#f5f2f3]">-</button>
+                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Number of guests</div>
+                    <div
+                      className="mt-2 flex items-center justify-between rounded-2xl px-4 py-3"
+                      style={{ background: "rgba(10,5,7,0.7)", border: GOLD_BORDER }}
+                    >
+                      <button
+                        type="button"
+                        onClick={decGuests}
+                        className="h-10 w-10 rounded-full transition hover:brightness-125"
+                        style={{ background: "rgba(201,160,122,0.1)", border: "1px solid rgba(201,160,122,0.3)", color: GOLD }}
+                      >
+                        -
+                      </button>
                       <div className="text-center">
-                        <div className="text-2xl font-semibold text-[#1f2937]">{guests}</div>
-                        <div className="text-xs text-[#667085]">Guests</div>
+                        <div className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>{guests}</div>
+                        <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: "rgba(245,237,228,0.5)" }}>Guests</div>
                       </div>
-                      <button type="button" onClick={incGuests} className="h-10 w-10 rounded-full border border-[#ddd8da] bg-white text-[#1f2937] transition hover:bg-[#f5f2f3]">+</button>
+                      <button
+                        type="button"
+                        onClick={incGuests}
+                        className="h-10 w-10 rounded-full transition hover:brightness-125"
+                        style={{ background: "rgba(201,160,122,0.1)", border: "1px solid rgba(201,160,122,0.3)", color: GOLD }}
+                      >
+                        +
+                      </button>
                     </div>
                   </div>
 
                   <div className="mt-5">
-                    <div className="text-xs uppercase tracking-wider text-[#7b8498]">Select time slot</div>
-                    <div className="mt-2 overflow-hidden rounded-2xl border border-[#ece8e9]">
+                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Select time slot</div>
+                    <div
+                      className="mt-2 overflow-hidden rounded-2xl"
+                      style={{ border: GOLD_BORDER, background: "rgba(10,5,7,0.7)" }}
+                    >
                       {loadingSlots ? (
-                        <div className="bg-[#fafafa] px-4 py-6 text-center text-sm text-[#667085]">Loading slots...</div>
+                        <div className="px-4 py-6 text-center text-sm" style={{ color: "rgba(245,237,228,0.55)" }}>
+                          Loading slots...
+                        </div>
                       ) : availableTimes.length === 0 ? (
-                        <div className="bg-[#fafafa] px-4 py-6 text-center text-sm text-[#667085]">No available slots for this date.</div>
+                        <div className="px-4 py-6 text-center text-sm" style={{ color: "rgba(245,237,228,0.55)" }}>
+                          No available slots for this date.
+                        </div>
                       ) : (
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="border-b border-[#ece8e9] bg-[#f8fafc]">
-                              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Period</th>
-                              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Time</th>
-                              <th className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Tables Left</th>
-                              <th className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[#7b8498]">Status</th>
+                            <tr style={{ borderBottom: "1px solid rgba(201,160,122,0.18)", background: "rgba(201,160,122,0.05)" }}>
+                              <th className="px-3 py-2.5 text-left text-[10px] tracking-[0.15em] uppercase" style={{ color: GOLD }}>Period</th>
+                              <th className="px-3 py-2.5 text-left text-[10px] tracking-[0.15em] uppercase" style={{ color: GOLD }}>Time</th>
+                              <th className="px-3 py-2.5 text-center text-[10px] tracking-[0.15em] uppercase" style={{ color: GOLD }}>Tables</th>
+                              <th className="px-3 py-2.5 text-center text-[10px] tracking-[0.15em] uppercase" style={{ color: GOLD }}>Status</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -589,31 +847,87 @@ export default function RestaurantDetailsPage() {
                                   key={s.time}
                                   onClick={() => canFit && setTime(s.time)}
                                   className={cx(
-                                    "border-b border-[#f1f5f9] transition",
-                                    canFit ? "cursor-pointer" : "cursor-default opacity-50",
-                                    isSelected ? "bg-[#f8ecee]" : canFit ? "hover:bg-[#faf7f8]" : "bg-[#fafafa]",
+                                    "transition",
+                                    canFit ? "cursor-pointer" : "cursor-default opacity-40",
                                   )}
+                                  style={{
+                                    borderBottom: "1px solid rgba(201,160,122,0.08)",
+                                    background: isSelected
+                                      ? "rgba(201,160,122,0.12)"
+                                      : "transparent",
+                                  }}
                                 >
                                   <td className="px-3 py-2.5">
-                                    <span className={cx("inline-flex rounded-md px-2 py-0.5 text-[11px] font-medium", hour < 12 ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-blue-50 text-blue-700 border border-blue-200")}>{period}</span>
+                                    <span
+                                      className="inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium"
+                                      style={
+                                        hour < 12
+                                          ? { background: "rgba(201,160,122,0.1)", border: "1px solid rgba(201,160,122,0.3)", color: GOLD }
+                                          : { background: "rgba(99,155,224,0.1)", border: "1px solid rgba(168,200,234,0.3)", color: "#a8c8ea" }
+                                      }
+                                    >
+                                      {period}
+                                    </span>
                                   </td>
-                                  <td className={cx("px-3 py-2.5 font-medium", isSelected ? "text-[#7b2f3b]" : "text-[#374151]")}>{to12Hour(s.time)}</td>
+                                  <td
+                                    className="px-3 py-2.5 font-medium"
+                                    style={{ color: isSelected ? GOLD : CREAM, fontFamily: SERIF }}
+                                  >
+                                    {to12Hour(s.time)}
+                                  </td>
                                   <td className="px-3 py-2.5 text-center">
                                     {s.remainingTables != null ? (
-                                      <span className={cx("text-[11px] font-medium", s.remainingTables === 0 ? "text-[#be123c]" : s.remainingTables <= 2 ? "text-amber-600" : "text-emerald-700")}>
+                                      <span
+                                        className="text-[11px] font-medium"
+                                        style={{
+                                          color:
+                                            s.remainingTables === 0
+                                              ? "#e88b93"
+                                              : s.remainingTables <= 2
+                                                ? "#e0b87a"
+                                                : "#7dd9a6",
+                                        }}
+                                      >
                                         {s.remainingTables} table{s.remainingTables !== 1 ? "s" : ""}
                                       </span>
                                     ) : (
-                                      <span className="text-[11px] text-[#98a2b3]">—</span>
+                                      <span className="text-[11px]" style={{ color: "rgba(245,237,228,0.4)" }}>—</span>
                                     )}
                                   </td>
                                   <td className="px-3 py-2.5 text-center">
                                     {!canFit ? (
-                                      <span className="inline-flex rounded-full border border-[#f0cdd4] bg-[#fff6f7] px-2 py-0.5 text-[11px] font-medium text-[#be123c]">Full</span>
+                                      <span
+                                        className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium"
+                                        style={{
+                                          background: "rgba(201,74,85,0.12)",
+                                          border: "1px solid rgba(232,139,147,0.35)",
+                                          color: "#e88b93",
+                                        }}
+                                      >
+                                        Full
+                                      </span>
                                     ) : isSelected ? (
-                                      <span className="inline-flex rounded-full border border-[#c98d98] bg-[#f8ecee] px-2 py-0.5 text-[11px] font-semibold text-[#7b2f3b]">Selected</span>
+                                      <span
+                                        className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                        style={{
+                                          background: "rgba(201,160,122,0.15)",
+                                          border: "1px solid rgba(201,160,122,0.45)",
+                                          color: GOLD,
+                                        }}
+                                      >
+                                        Selected
+                                      </span>
                                     ) : (
-                                      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Open</span>
+                                      <span
+                                        className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium"
+                                        style={{
+                                          background: "rgba(76,175,115,0.1)",
+                                          border: "1px solid rgba(125,217,166,0.3)",
+                                          color: "#7dd9a6",
+                                        }}
+                                      >
+                                        Open
+                                      </span>
                                     )}
                                   </td>
                                 </tr>
@@ -623,37 +937,85 @@ export default function RestaurantDetailsPage() {
                         </table>
                       )}
                     </div>
-                    <div className="mt-2 text-[11px] text-[#98a2b3]">Click on a row to select your preferred time slot.</div>
+                    <div className="mt-2 text-[10px] tracking-wider" style={{ color: "rgba(245,237,228,0.4)" }}>
+                      Click on a row to select your preferred time slot.
+                    </div>
                   </div>
 
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <div>
-                      <div className="text-xs uppercase tracking-wider text-[#7b8498]">Your name</div>
-                      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" className="mt-2 w-full rounded-2xl border border-[#ddd8da] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#98a2b3] outline-none focus:border-[#b46d73]" />
+                      <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Your name</div>
+                      <input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Your full name"
+                        className="mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                        style={{
+                          background: "rgba(10,5,7,0.7)",
+                          border: GOLD_BORDER,
+                          color: CREAM,
+                        }}
+                      />
                     </div>
                     <div>
-                      <div className="text-xs uppercase tracking-wider text-[#7b8498]">Phone</div>
-                      <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xxxxxxxxx" className="mt-2 w-full rounded-2xl border border-[#ddd8da] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#98a2b3] outline-none focus:border-[#b46d73]" />
+                      <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Phone</div>
+                      <input
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="09xxxxxxxxx"
+                        className="mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                        style={{
+                          background: "rgba(10,5,7,0.7)",
+                          border: GOLD_BORDER,
+                          color: CREAM,
+                        }}
+                      />
                     </div>
                   </div>
 
                   <div className="mt-5">
-                    <div className="text-xs uppercase tracking-wider text-[#7b8498]">Special requests</div>
-                    <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g., birthday celebration, window seat..." className="mt-2 min-h-[80px] w-full resize-none rounded-2xl border border-[#ddd8da] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#98a2b3] outline-none focus:border-[#b46d73]" />
+                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Special requests</div>
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="e.g., birthday celebration, window seat..."
+                      className="mt-2 min-h-[80px] w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none"
+                      style={{
+                        background: "rgba(10,5,7,0.7)",
+                        border: GOLD_BORDER,
+                        color: CREAM,
+                      }}
+                    />
                   </div>
 
                   {msg && (
-                    <div className="mt-4 rounded-2xl border border-[#f0cdd4] bg-[#fff6f7] px-4 py-3 text-sm text-[#9f1239]">{msg}</div>
+                    <div
+                      className="mt-4 rounded-2xl px-4 py-3 text-sm"
+                      style={{
+                        background: "rgba(201,74,85,0.10)",
+                        border: "1px solid rgba(232,139,147,0.3)",
+                        color: "#e88b93",
+                      }}
+                    >
+                      {msg}
+                    </div>
                   )}
 
                   <button
                     onClick={onReserve}
                     disabled={submitting || !time || availableTimes.length === 0 || !name.trim() || !phone.trim()}
-                    className="mt-5 w-full rounded-2xl border border-[#d5bcc2] bg-gradient-to-r from-[#9b4b56] to-[#7f3a41] px-6 py-3 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-60"
+                    className="mt-6 w-full rounded-2xl px-6 py-3.5 text-xs font-semibold tracking-[0.2em] uppercase text-white transition hover:brightness-110 disabled:opacity-50"
+                    style={{
+                      background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                      border: "1px solid rgba(201,160,122,0.45)",
+                      boxShadow: "0 14px 32px rgba(146,63,74,0.4)",
+                    }}
                   >
                     {submitting ? "Reserving..." : "Proceed to Payment"}
                   </button>
-                  <div className="mt-2 text-center text-[11px] text-[#98a2b3]">Reservation payment is required to secure your slot.</div>
+                  <div className="mt-2 text-center text-[10px] tracking-wider" style={{ color: "rgba(245,237,228,0.4)" }}>
+                    Reservation payment is required to secure your slot.
+                  </div>
                 </>
               )}
             </motion.div>

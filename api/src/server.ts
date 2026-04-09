@@ -50,7 +50,7 @@ const APP_BASE_URL = (process.env.APP_BASE_URL ?? WEB_ORIGIN).replace(
 const PAYMONGO_BASE_URL =
   process.env.PAYMONGO_BASE_URL ?? "https://api.paymongo.com/v1";
 const PAYMONGO_SECRET_KEY = process.env.PAYMONGO_SECRET_KEY ?? "";
-const RESERVATION_FEE_PHP = Number(process.env.RESERVATION_FEE_PHP ?? 100);
+const RESERVATION_FEE_PHP = Number(process.env.RESERVATION_FEE_PHP ?? 20);
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "";
 
@@ -302,7 +302,7 @@ async function createUserNotification(input: {
 
 function defaultReservationFeeMinor() {
   const value = Math.round(RESERVATION_FEE_PHP * 100);
-  if (!Number.isFinite(value) || value <= 0) return 10000;
+  if (!Number.isFinite(value) || value <= 0) return 2000;
   return value;
 }
 

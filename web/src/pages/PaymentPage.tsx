@@ -12,11 +12,24 @@ import {
   UtensilsCrossed,
   Wallet,
 } from "lucide-react";
+import LuxuryNavbar from "../components/layouts/LuxuryNavbar";
+import LuxuryFooter from "../components/layouts/LuxuryFooter";
 import {
   createCheckoutSession,
   getReservationPaymentDetails,
   ReservationPaymentDetails,
 } from "../lib/api/payments.api";
+
+const GOLD = "#d4b58a";
+const CREAM = "#faf4ea";
+const DARK_BG = "#130a0d";
+const CARD_BG = "rgba(36,22,26,0.85)";
+const CARD_BORDER = "1px solid rgba(212,181,138,0.22)";
+const GOLD_BORDER = "1px solid rgba(212,181,138,0.35)";
+const TEXT_MUTED = "rgba(250,244,234,0.72)";
+const TEXT_DIM = "rgba(250,244,234,0.55)";
+const SERIF = "'Cormorant Garamond', serif";
+const SANS = "'Jost', sans-serif";
 
 function formatAmount(amount: number) {
   return new Intl.NumberFormat("en-PH", {
@@ -51,19 +64,176 @@ function paymentStatusTone(paymentStatus: string) {
   const value = paymentStatus.trim().toLowerCase();
 
   if (value === "paid") {
-    return "border-[#bfe6d0] bg-[#e6f7ef] text-[#227a4c]";
+    return { bg: "rgba(76,175,115,0.15)", color: "#9ef2c1", border: "1px solid rgba(158,242,193,0.35)" };
   }
-
   if (value === "processing") {
-    return "border-[#bdd8f2] bg-[#eaf4ff] text-[#1d5f93]";
+    return { bg: "rgba(85,145,215,0.15)", color: "#9ec6f0", border: "1px solid rgba(158,198,240,0.35)" };
   }
-
   if (value === "failed") {
-    return "border-[#f4c3c3] bg-[#ffecec] text-[#a63d3d]";
+    return { bg: "rgba(215,85,95,0.15)", color: "#f0a5ac", border: "1px solid rgba(240,165,172,0.35)" };
+  }
+  return { bg: "rgba(215,170,85,0.15)", color: "#f0d9a5", border: "1px solid rgba(240,217,165,0.35)" };
+}
+
+function downloadReceiptAsImage(config: {
+  provider: { accent: string; logo: string; label: string };
+  amount: string | null;
+  refNo: string;
+  restaurant: string;
+  dateLabel: string;
+  timeLabel: string;
+  guests: number;
+  bookingId: string;
+  txnDate: string;
+}) {
+  const { provider, amount, refNo, restaurant, dateLabel, timeLabel, guests, bookingId, txnDate } = config;
+  const W = 440;
+  const H = 760;
+  const canvas = document.createElement("canvas");
+  canvas.width = W * 2;
+  canvas.height = H * 2;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.scale(2, 2);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = provider.accent;
+  ctx.fillRect(0, 0, W, 150);
+
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.beginPath();
+  ctx.arc(W / 2, 50, 26, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 22px system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(provider.logo, W / 2, 51);
+
+  ctx.font = "bold 22px system-ui, -apple-system, sans-serif";
+  ctx.fillText(provider.label, W / 2, 100);
+
+  ctx.font = "14px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.fillText("Payment Receipt", W / 2, 125);
+
+  ctx.fillStyle = "#22c55e";
+  ctx.beginPath();
+  ctx.arc(W / 2, 155, 19, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - 8, 155);
+  ctx.lineTo(W / 2 - 2, 162);
+  ctx.lineTo(W / 2 + 10, 148);
+  ctx.stroke();
+
+  ctx.fillStyle = "#6b7280";
+  ctx.font = "11px system-ui, -apple-system, sans-serif";
+  ctx.fillText("AMOUNT PAID", W / 2, 200);
+
+  ctx.fillStyle = "#1f2937";
+  ctx.font = "bold 34px system-ui, -apple-system, sans-serif";
+  ctx.fillText(amount ?? "—", W / 2, 235);
+
+  const badgeW = 96;
+  const badgeH = 24;
+  const badgeX = W / 2 - badgeW / 2;
+  const badgeY = 260;
+  ctx.fillStyle = "#dcfce7";
+  ctx.beginPath();
+  const r = 12;
+  ctx.moveTo(badgeX + r, badgeY);
+  ctx.lineTo(badgeX + badgeW - r, badgeY);
+  ctx.quadraticCurveTo(badgeX + badgeW, badgeY, badgeX + badgeW, badgeY + r);
+  ctx.lineTo(badgeX + badgeW, badgeY + badgeH - r);
+  ctx.quadraticCurveTo(badgeX + badgeW, badgeY + badgeH, badgeX + badgeW - r, badgeY + badgeH);
+  ctx.lineTo(badgeX + r, badgeY + badgeH);
+  ctx.quadraticCurveTo(badgeX, badgeY + badgeH, badgeX, badgeY + badgeH - r);
+  ctx.lineTo(badgeX, badgeY + r);
+  ctx.quadraticCurveTo(badgeX, badgeY, badgeX + r, badgeY);
+  ctx.fill();
+  ctx.fillStyle = "#16a34a";
+  ctx.font = "bold 11px system-ui, -apple-system, sans-serif";
+  ctx.fillText("Successful", W / 2, badgeY + badgeH / 2 + 1);
+
+  function dashedLine(y: number) {
+    ctx!.strokeStyle = "#e5e7eb";
+    ctx!.lineWidth = 2;
+    ctx!.setLineDash([6, 6]);
+    ctx!.beginPath();
+    ctx!.moveTo(30, y);
+    ctx!.lineTo(W - 30, y);
+    ctx!.stroke();
+    ctx!.setLineDash([]);
+    ctx!.fillStyle = "#ffffff";
+    ctx!.beginPath();
+    ctx!.arc(0, y, 12, 0, Math.PI * 2);
+    ctx!.fill();
+    ctx!.beginPath();
+    ctx!.arc(W, y, 12, 0, Math.PI * 2);
+    ctx!.fill();
+  }
+  dashedLine(310);
+
+  const rows: Array<[string, string]> = [
+    ["Ref. No.", refNo],
+    ["Paid To", "RESEATO"],
+    ["Restaurant", restaurant],
+    ["Date & Time", `${dateLabel}, ${timeLabel}`],
+    ["Guests", String(guests)],
+    ["Payment Method", provider.label],
+    ["Transaction Date", txnDate],
+    ["Booking ID", bookingId.slice(0, 18) + (bookingId.length > 18 ? "..." : "")],
+  ];
+  let y = 345;
+  ctx.textBaseline = "middle";
+  ctx.font = "13px system-ui, -apple-system, sans-serif";
+  for (const [label, value] of rows) {
+    ctx.fillStyle = "#6b7280";
+    ctx.textAlign = "left";
+    ctx.fillText(label, 32, y);
+    ctx.fillStyle = "#1f2937";
+    ctx.textAlign = "right";
+    if (label === "Payment Method") {
+      ctx.fillStyle = provider.accent;
+      ctx.font = "bold 13px system-ui, -apple-system, sans-serif";
+    } else {
+      ctx.font = "600 13px system-ui, -apple-system, sans-serif";
+    }
+    ctx.fillText(value, W - 32, y);
+    ctx.font = "13px system-ui, -apple-system, sans-serif";
+    y += 28;
   }
 
-  return "border-[#f0d5a5] bg-[#fff5e5] text-[#9a6a19]";
+  dashedLine(y + 8);
+
+  ctx.fillStyle = "#6b7280";
+  ctx.font = "italic 13px system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Thank you for dining with RESEATO!", W / 2, y + 40);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${provider.label}-Receipt-${refNo}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, "image/png");
 }
+
+const METHOD_META: Record<Method, { label: string; sub: string; accent: string; logo: string }> = {
+  gcash: { label: "GCash", sub: "E-wallet", accent: "#007dfe", logo: "G" },
+  paymaya: { label: "Maya", sub: "E-wallet", accent: "#00b900", logo: "M" },
+  gotyme: { label: "GoTyme", sub: "Digital bank", accent: "#ff6b00", logo: "GT" },
+};
 
 export default function PaymentPage() {
   const navigate = useNavigate();
@@ -95,7 +265,7 @@ export default function PaymentPage() {
   }, [loadDetails]);
 
   const feeLabel = useMemo(() => {
-    if (!details) return formatAmount(100);
+    if (!details) return formatAmount(20);
     return formatAmount(details.paymentAmount);
   }, [details]);
 
@@ -121,41 +291,54 @@ export default function PaymentPage() {
     }
   }
 
+  const pageBg = `radial-gradient(ellipse at top, #1a0d12 0%, ${DARK_BG} 50%, #08040a 100%)`;
+
   if (!reservationId) {
     return (
-      <div className="relative min-h-[calc(100vh-72px)] w-full bg-[#f3f3f4] text-[#1f2937]">
-        <section className="mx-auto max-w-5xl px-6 py-10">
-          <div className="rounded-2xl border border-[#f0cdd4] bg-[#fff6f7] p-6 text-[#9f1239]">
+      <div className="relative min-h-screen w-full" style={{ background: pageBg, fontFamily: SANS }}>
+        <LuxuryNavbar />
+        <section className="mx-auto max-w-5xl px-6 py-16">
+          <div
+            className="rounded-2xl p-6"
+            style={{ background: CARD_BG, border: CARD_BORDER, color: "#f0a5ac" }}
+          >
             Invalid reservation.
           </div>
         </section>
+        <LuxuryFooter />
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="relative min-h-[calc(100vh-72px)] w-full overflow-hidden bg-[#f3f3f4] text-[#1f2937]">
-        <div className="pointer-events-none absolute -left-20 -top-16 h-64 w-64 rounded-full bg-[#f2dde2] blur-3xl" />
-        <div className="pointer-events-none absolute -right-16 top-28 h-72 w-72 rounded-full bg-[#f8ecee] blur-3xl" />
+      <div className="relative min-h-screen w-full overflow-hidden" style={{ background: pageBg, fontFamily: SANS }}>
+        <LuxuryNavbar />
+        <div className="pointer-events-none absolute -left-20 top-40 h-64 w-64 rounded-full blur-3xl" style={{ background: "rgba(146,63,74,0.25)" }} />
+        <div className="pointer-events-none absolute -right-16 top-80 h-72 w-72 rounded-full blur-3xl" style={{ background: "rgba(201,160,122,0.15)" }} />
 
-        <section className="mx-auto flex min-h-[calc(100vh-72px)] max-w-5xl flex-col justify-center px-6 py-10">
+        <section className="relative mx-auto max-w-5xl px-6 py-16">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
-            className="mb-6 flex items-center gap-3"
+            className="mb-8 flex items-center gap-3"
           >
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ repeat: Infinity, duration: 2.2, ease: "linear" }}
-              className="grid h-11 w-11 place-items-center rounded-xl bg-[#8b3d4a] text-white shadow-[0_10px_22px_rgba(139,61,74,0.26)]"
+              className="grid h-11 w-11 place-items-center rounded-xl text-white"
+              style={{ background: "linear-gradient(135deg, #b46d73, #923f4a)", boxShadow: "0 10px 22px rgba(146,63,74,0.4)" }}
             >
               <UtensilsCrossed className="h-5 w-5" />
             </motion.div>
             <div>
-              <div className="text-sm font-semibold uppercase tracking-[0.14em] text-[#8b3d4a]">RESEATO</div>
-              <div className="text-lg font-medium text-[#374151]">Preparing payment portal...</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: GOLD }}>
+                RESEATO
+              </div>
+              <div className="text-xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>
+                Preparing payment portal...
+              </div>
             </div>
           </motion.div>
 
@@ -165,141 +348,204 @@ export default function PaymentPage() {
                 key={idx}
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ repeat: Infinity, duration: 1.7, delay: idx * 0.2 }}
-                className="rounded-3xl border border-[#e8e2e3] bg-white p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
+                className="rounded-3xl p-6 backdrop-blur-md"
+                style={{ background: CARD_BG, border: CARD_BORDER }}
               >
-                <div className="h-8 w-56 rounded-xl bg-[#f3ecef]" />
-                <div className="mt-4 h-12 w-full rounded-2xl bg-[#f2e5e8]" />
-                <div className="mt-3 h-12 w-full rounded-2xl bg-[#f4eff1]" />
-                <div className="mt-3 h-12 w-full rounded-2xl bg-[#f4eff1]" />
-                <div className="mt-6 h-11 w-full rounded-2xl bg-[#f2e5e8]" />
+                <div className="h-8 w-56 rounded-xl" style={{ background: "rgba(212,181,138,0.1)" }} />
+                <div className="mt-4 h-12 w-full rounded-2xl" style={{ background: "rgba(146,63,74,0.15)" }} />
+                <div className="mt-3 h-12 w-full rounded-2xl" style={{ background: "rgba(212,181,138,0.08)" }} />
+                <div className="mt-3 h-12 w-full rounded-2xl" style={{ background: "rgba(212,181,138,0.08)" }} />
+                <div className="mt-6 h-11 w-full rounded-2xl" style={{ background: "rgba(146,63,74,0.15)" }} />
               </motion.div>
             ))}
           </div>
 
-          <div className="mt-6 inline-flex items-center gap-2 text-sm text-[#7b8498]">
+          <div className="mt-6 inline-flex items-center gap-2 text-sm" style={{ color: TEXT_DIM }}>
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading payment details...
           </div>
         </section>
+        <LuxuryFooter />
       </div>
     );
   }
 
   if (!details) {
     return (
-      <div className="relative min-h-[calc(100vh-72px)] w-full bg-[#f3f3f4] text-[#1f2937]">
-        <section className="mx-auto max-w-5xl px-6 py-10">
-          <div className="rounded-2xl border border-[#f0cdd4] bg-[#fff6f7] p-6 text-[#9f1239]">
+      <div className="relative min-h-screen w-full" style={{ background: pageBg, fontFamily: SANS }}>
+        <LuxuryNavbar />
+        <section className="mx-auto max-w-5xl px-6 py-16">
+          <div
+            className="rounded-2xl p-6"
+            style={{ background: CARD_BG, border: CARD_BORDER, color: "#f0a5ac" }}
+          >
             <p>{message ?? "Reservation payment details are not available."}</p>
             <Link
               to="/my-reservations"
-              className="mt-4 inline-flex rounded-xl border border-[#d8c0c6] bg-[#f8ecee] px-4 py-2 text-sm font-medium text-[#7b2f3b] transition hover:bg-[#f2dde2]"
+              className="mt-4 inline-flex rounded-xl px-4 py-2 text-sm font-medium transition hover:brightness-110"
+              style={{
+                background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                color: "#fff",
+                border: GOLD_BORDER,
+              }}
             >
               Go to My Reservations
             </Link>
           </div>
         </section>
+        <LuxuryFooter />
       </div>
     );
   }
 
   const paymentDone = details.paymentStatus === "paid";
   const paymentLocked = paymentDone || submitting;
+  const statusTone = paymentStatusTone(details.paymentStatus);
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] w-full bg-[#f3f3f4] text-[#1f2937]">
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 pb-12 pt-8">
+    <div className="relative min-h-screen w-full" style={{ background: pageBg, fontFamily: SANS }}>
+      <LuxuryNavbar />
+
+      {/* Ambient glows */}
+      <div className="pointer-events-none absolute left-0 top-32 h-80 w-80 rounded-full blur-3xl" style={{ background: "rgba(146,63,74,0.18)" }} />
+      <div className="pointer-events-none absolute right-0 top-96 h-96 w-96 rounded-full blur-3xl" style={{ background: "rgba(201,160,122,0.1)" }} />
+
+      <section className="relative mx-auto max-w-5xl px-4 pb-16 pt-10 sm:px-6">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 rounded-full border border-[#ddd7d9] bg-white px-4 py-2 text-sm text-[#6b7280] shadow-[0_6px_16px_rgba(15,23,42,0.06)] transition hover:text-[#7b2f3b]"
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition hover:brightness-110"
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: GOLD_BORDER,
+            color: CREAM,
+          }}
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </button>
 
+        {/* Header */}
+        <div className="mt-10 text-center">
+          <div className="inline-flex items-center gap-2.5 text-xs tracking-[0.3em] uppercase" style={{ color: GOLD }}>
+            <span className="h-px w-8" style={{ background: GOLD }} />
+            Secure Checkout
+            <span className="h-px w-8" style={{ background: GOLD }} />
+          </div>
+          <h1
+            className="mt-4 text-4xl font-light sm:text-5xl lg:text-6xl"
+            style={{ color: CREAM, fontFamily: SERIF, letterSpacing: "-0.01em" }}
+          >
+            Secure Payment
+          </h1>
+          <p className="mt-3 text-sm" style={{ color: TEXT_DIM }}>
+            Complete your reservation fee payment to confirm your curated dining experience
+          </p>
+        </div>
+
         {message && (
-          <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm ${
-            message.toLowerCase().includes("successful") || message.toLowerCase().includes("confirmed")
-              ? "border-[#bfe6d0] bg-[#e6f7ef] text-[#227a4c]"
-              : "border-[#f0cdd4] bg-[#fff6f7] text-[#9f1239]"
-          }`}>
+          <div
+            className="mt-8 rounded-2xl px-4 py-3 text-sm"
+            style={
+              message.toLowerCase().includes("successful") || message.toLowerCase().includes("confirmed")
+                ? { background: "rgba(76,175,115,0.12)", border: "1px solid rgba(158,242,193,0.3)", color: "#9ef2c1" }
+                : { background: "rgba(215,85,95,0.12)", border: "1px solid rgba(240,165,172,0.3)", color: "#f0a5ac" }
+            }
+          >
             {message}
           </div>
         )}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-3xl border border-[#e8e2e3] bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.1)]">
-            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-semibold text-[#1f2937]">Secure Payment</h1>
-            <p className="mt-1 text-[#667085]">Complete your reservation fee payment</p>
-
-            <div className="mt-6 overflow-hidden rounded-2xl border border-[#e8e2e3] bg-[#fafafa]">
-              <div className="flex items-center justify-between border-b border-[#e8e2e3] bg-[#f8ecee] px-5 py-4">
-                <span className="text-base text-[#374151]">Reservation Fee</span>
-                <span className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#8b3d4a]">{feeLabel}</span>
+          {/* Payment Card */}
+          <section
+            className="rounded-3xl p-6 backdrop-blur-md sm:p-8"
+            style={{
+              background: CARD_BG,
+              border: CARD_BORDER,
+              boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
+            }}
+          >
+            <div
+              className="overflow-hidden rounded-2xl"
+              style={{ background: "rgba(16,8,10,0.5)", border: "1px solid rgba(212,181,138,0.15)" }}
+            >
+              <div
+                className="flex items-center justify-between px-5 py-4"
+                style={{
+                  background: "linear-gradient(135deg, rgba(180,109,115,0.25), rgba(146,63,74,0.2))",
+                  borderBottom: "1px solid rgba(212,181,138,0.18)",
+                }}
+              >
+                <span className="text-sm tracking-wider uppercase" style={{ color: TEXT_MUTED }}>
+                  Reservation Fee
+                </span>
+                <span
+                  className="text-3xl font-light sm:text-4xl"
+                  style={{ color: GOLD, fontFamily: SERIF, letterSpacing: "-0.01em" }}
+                >
+                  {feeLabel}
+                </span>
               </div>
 
-              <div className="space-y-5 p-5">
+              <div className="space-y-6 p-5">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-[#7b8498]">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: GOLD }}>
                     Select Payment Method
                   </div>
 
-                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedMethod("gcash")}
-                      disabled={paymentLocked}
-                      className={`rounded-2xl border p-4 text-left transition ${
-                        selectedMethod === "gcash"
-                          ? "border-[#c98d98] bg-[#f8ecee]"
-                          : "border-[#e8e2e3] bg-white hover:bg-[#faf7f8]"
-                      } disabled:opacity-60`}
-                    >
-                      <Wallet className="h-5 w-5 text-[#007dfe]" />
-                      <div className="mt-3 text-sm font-medium text-[#1f2937]">GCash</div>
-                      <div className="text-xs text-[#6b7280]">E-wallet</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedMethod("paymaya")}
-                      disabled={paymentLocked}
-                      className={`rounded-2xl border p-4 text-left transition ${
-                        selectedMethod === "paymaya"
-                          ? "border-[#c98d98] bg-[#f8ecee]"
-                          : "border-[#e8e2e3] bg-white hover:bg-[#faf7f8]"
-                      } disabled:opacity-60`}
-                    >
-                      <Wallet className="h-5 w-5 text-[#00b900]" />
-                      <div className="mt-3 text-sm font-medium text-[#1f2937]">PayMaya</div>
-                      <div className="text-xs text-[#6b7280]">E-wallet</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedMethod("gotyme")}
-                      disabled={paymentLocked}
-                      className={`rounded-2xl border p-4 text-left transition ${
-                        selectedMethod === "gotyme"
-                          ? "border-[#c98d98] bg-[#f8ecee]"
-                          : "border-[#e8e2e3] bg-white hover:bg-[#faf7f8]"
-                      } disabled:opacity-60`}
-                    >
-                      <Wallet className="h-5 w-5 text-[#ff6b00]" />
-                      <div className="mt-3 text-sm font-medium text-[#1f2937]">GoTyme</div>
-                      <div className="text-xs text-[#6b7280]">Digital bank</div>
-                    </button>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {(Object.keys(METHOD_META) as Method[]).map((key) => {
+                      const meta = METHOD_META[key];
+                      const isActive = selectedMethod === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setSelectedMethod(key)}
+                          disabled={paymentLocked}
+                          className="rounded-2xl p-4 text-left transition disabled:opacity-60"
+                          style={
+                            isActive
+                              ? {
+                                  background: "linear-gradient(135deg, rgba(180,109,115,0.35), rgba(146,63,74,0.25))",
+                                  border: "1px solid rgba(212,181,138,0.5)",
+                                  boxShadow: "0 10px 24px rgba(146,63,74,0.3)",
+                                }
+                              : {
+                                  background: "rgba(255,255,255,0.03)",
+                                  border: "1px solid rgba(212,181,138,0.15)",
+                                }
+                          }
+                        >
+                          <Wallet className="h-5 w-5" style={{ color: meta.accent }} />
+                          <div className="mt-3 text-sm font-medium" style={{ color: CREAM }}>
+                            {meta.label}
+                          </div>
+                          <div className="text-xs" style={{ color: TEXT_DIM }}>
+                            {meta.sub}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-[#ece8e9] bg-white p-4 text-sm text-[#667085]">
+                <div
+                  className="rounded-2xl p-4 text-sm"
+                  style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(212,181,138,0.12)",
+                    color: TEXT_MUTED,
+                  }}
+                >
                   Select your preferred payment method and click the button below to confirm payment.
                 </div>
 
-                <label className="inline-flex items-start gap-3 text-sm text-[#475467]">
+                <label className="inline-flex items-start gap-3 text-sm" style={{ color: TEXT_MUTED }}>
                   <input
                     type="checkbox"
-                    className="mt-0.5 h-4 w-4 rounded border-[#d5c9cc] text-[#8b3d4a] focus:ring-[#b46d73]"
+                    className="mt-0.5 h-4 w-4 rounded"
+                    style={{ accentColor: GOLD }}
                     checked={agreed}
                     onChange={(e) => setAgreed(e.target.checked)}
                     disabled={paymentLocked}
@@ -313,7 +559,12 @@ export default function PaymentPage() {
                   type="button"
                   onClick={onPayNow}
                   disabled={paymentLocked || !agreed}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d5bcc2] bg-[linear-gradient(135deg,#9b4b56,#7f3a41)] px-5 py-3 text-xl font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-lg font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                    border: "1px solid rgba(212,181,138,0.4)",
+                    boxShadow: "0 16px 32px rgba(146,63,74,0.35)",
+                  }}
                 >
                   {submitting ? (
                     <>
@@ -328,7 +579,7 @@ export default function PaymentPage() {
                   )}
                 </button>
 
-                <div className="inline-flex w-full items-center justify-center gap-2 text-sm text-[#227a4c]">
+                <div className="inline-flex w-full items-center justify-center gap-2 text-xs tracking-wider uppercase" style={{ color: "#9ef2c1" }}>
                   <BadgeCheck className="h-4 w-4" />
                   Secure encrypted transaction
                 </div>
@@ -336,47 +587,97 @@ export default function PaymentPage() {
             </div>
           </section>
 
-          <aside className="rounded-3xl border border-[#e8e2e3] bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.1)]">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-[#1f2937]">Reservation Details</h2>
-            <div className="mt-5 space-y-3 text-sm text-[#475467]">
-              <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-4">
-                <div className="text-xs uppercase tracking-wide text-[#7b8498]">Restaurant</div>
-                <div className="mt-1 text-base font-medium text-[#1f2937]">{details.restaurantName}</div>
+          {/* Reservation Details */}
+          <aside
+            className="rounded-3xl p-6 backdrop-blur-md sm:p-8"
+            style={{
+              background: CARD_BG,
+              border: CARD_BORDER,
+              boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
+            }}
+          >
+            <h2
+              className="text-2xl font-light sm:text-3xl"
+              style={{ color: CREAM, fontFamily: SERIF, letterSpacing: "-0.01em" }}
+            >
+              Reservation Details
+            </h2>
+            <div className="mt-5 space-y-3 text-sm">
+              <div
+                className="rounded-xl p-4"
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,181,138,0.12)" }}
+              >
+                <div className="text-[11px] uppercase tracking-[0.2em]" style={{ color: GOLD }}>
+                  Restaurant
+                </div>
+                <div className="mt-1 text-base font-medium" style={{ color: CREAM }}>
+                  {details.restaurantName}
+                </div>
               </div>
 
-              <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-4">
-                <div className="inline-flex items-center gap-2 text-xs uppercase tracking-wide text-[#7b8498]">
-                  <CalendarDays className="h-3.5 w-3.5 text-[#8b3d4a]" />
+              <div
+                className="rounded-xl p-4"
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,181,138,0.12)" }}
+              >
+                <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em]" style={{ color: GOLD }}>
+                  <CalendarDays className="h-3.5 w-3.5" />
                   Date and Time
                 </div>
-                <div className="mt-1 text-base font-medium text-[#1f2937]">
+                <div className="mt-1 text-base font-medium" style={{ color: CREAM }}>
                   {prettyDate(details.date)} at {to12Hour(details.time)}
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-4">
-                <div className="text-xs uppercase tracking-wide text-[#7b8498]">Guests</div>
-                <div className="mt-1 text-base font-medium text-[#1f2937]">{details.guests}</div>
+              <div
+                className="rounded-xl p-4"
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,181,138,0.12)" }}
+              >
+                <div className="text-[11px] uppercase tracking-[0.2em]" style={{ color: GOLD }}>
+                  Guests
+                </div>
+                <div className="mt-1 text-base font-medium" style={{ color: CREAM }}>
+                  {details.guests}
+                </div>
               </div>
 
-              <div className="rounded-xl border border-[#ece8e9] bg-[#fafafa] p-4">
-                <div className="text-xs uppercase tracking-wide text-[#7b8498]">Payment Status</div>
+              <div
+                className="rounded-xl p-4"
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,181,138,0.12)" }}
+              >
+                <div className="text-[11px] uppercase tracking-[0.2em]" style={{ color: GOLD }}>
+                  Payment Status
+                </div>
                 <div className="mt-2">
-                  <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${paymentStatusTone(details.paymentStatus)}`}>
+                  <span
+                    className="inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide"
+                    style={statusTone}
+                  >
                     {details.paymentStatus}
                   </span>
                 </div>
               </div>
 
               {paymentDone && (
-                <div className="rounded-xl border border-[#bfe6d0] bg-[#e6f7ef] p-4 text-[#227a4c]">
+                <div
+                  className="rounded-xl p-4 text-sm"
+                  style={{
+                    background: "rgba(76,175,115,0.12)",
+                    border: "1px solid rgba(158,242,193,0.3)",
+                    color: "#9ef2c1",
+                  }}
+                >
                   Payment received. Your reservation is now secured.
                 </div>
               )}
 
               <Link
                 to="/my-reservations"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-[#d8c0c6] bg-[#f8ecee] px-4 py-2.5 text-sm font-medium text-[#7b2f3b] transition hover:bg-[#f2dde2]"
+                className="inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition hover:brightness-110"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: GOLD_BORDER,
+                  color: CREAM,
+                }}
               >
                 View My Reservations
               </Link>
@@ -385,170 +686,159 @@ export default function PaymentPage() {
         </div>
       </section>
 
-      {/* ── Payment Receipt Modal ── */}
+      <LuxuryFooter />
+
+      {/* ── Payment Receipt Modal (Light GCash style) ── */}
       <AnimatePresence>
         {showReceipt && details && (() => {
-          const methodThemes: Record<Method, { bg: string; accent: string; text: string; border: string; logo: string; label: string }> = {
-            gcash: { bg: "bg-[#007dfe]", accent: "#007dfe", text: "text-white", border: "border-[#007dfe]", logo: "G", label: "GCash" },
-            paymaya: { bg: "bg-[#00b900]", accent: "#00b900", text: "text-white", border: "border-[#00b900]", logo: "M", label: "Maya" },
-            gotyme: { bg: "bg-[#ff6b00]", accent: "#ff6b00", text: "text-white", border: "border-[#ff6b00]", logo: "GT", label: "GoTyme" },
+          const methodThemes: Record<Method, { bg: string; accent: string; logo: string; label: string }> = {
+            gcash: { bg: "bg-[#007dfe]", accent: "#007dfe", logo: "G", label: "GCash" },
+            paymaya: { bg: "bg-[#00b900]", accent: "#00b900", logo: "M", label: "Maya" },
+            gotyme: { bg: "bg-[#ff6b00]", accent: "#ff6b00", logo: "GT", label: "GoTyme" },
           };
           const theme = methodThemes[selectedMethod];
           const refNo = `RS${reservationId?.slice(0, 8).toUpperCase() ?? "00000000"}`;
           const txnDate = new Date().toLocaleString("en-PH", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+          const amountStr = formatAmount(details.paymentAmount);
 
           return (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
-            onClick={() => setShowReceipt(false)}
-          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 12 }}
-              transition={{ duration: 0.22 }}
-              className="relative w-full max-w-[380px] overflow-hidden rounded-[20px] bg-white shadow-[0_28px_60px_rgba(15,23,42,0.22)]"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center px-4 backdrop-blur-sm"
+              style={{ background: "rgba(5,2,3,0.75)" }}
+              onClick={() => setShowReceipt(false)}
             >
-              {/* Provider Header */}
-              <div className={`${theme.bg} px-6 py-5 text-center ${theme.text}`}>
-                <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-full bg-white/20 text-lg font-extrabold">{theme.logo}</div>
-                <div className="text-lg font-bold tracking-wide">{theme.label}</div>
-                <div className="mt-1 text-sm opacity-80">Payment Receipt</div>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                transition={{ duration: 0.22 }}
+                className="relative w-full max-w-[380px] overflow-hidden rounded-[20px] bg-white"
+                style={{ boxShadow: "0 28px 60px rgba(0,0,0,0.4)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Provider Header */}
+                <div className={`${theme.bg} px-6 py-5 text-center text-white`}>
+                  <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-full bg-white/25 text-lg font-extrabold">
+                    {theme.logo}
+                  </div>
+                  <div className="text-lg font-bold tracking-wide">{theme.label}</div>
+                  <div className="mt-1 text-sm opacity-90">Payment Receipt</div>
+                </div>
 
-              {/* Success Badge */}
-              <div className="flex justify-center -mt-4">
-                <div className="grid h-8 w-8 place-items-center rounded-full bg-[#22c55e] text-white shadow-md">
-                  <CheckCircle className="h-5 w-5" />
+                {/* Success Badge */}
+                <div className="flex justify-center -mt-4">
+                  <div className="grid h-9 w-9 place-items-center rounded-full bg-[#22c55e] text-white shadow-md ring-4 ring-white">
+                    <CheckCircle className="h-5 w-5" />
+                  </div>
                 </div>
-              </div>
 
-              {/* Amount */}
-              <div className="mt-3 text-center">
-                <div className="text-xs uppercase tracking-wider text-[#6b7280]">Amount Paid</div>
-                <div className="mt-1 text-3xl font-bold text-[#1f2937]">{formatAmount(details.paymentAmount)}</div>
-                <div className="mt-1 inline-flex rounded-full bg-[#dcfce7] px-3 py-0.5 text-xs font-semibold text-[#16a34a]">Successful</div>
-              </div>
+                {/* Amount */}
+                <div className="mt-3 text-center">
+                  <div className="text-[11px] uppercase tracking-wider text-gray-500">Amount Paid</div>
+                  <div className="mt-1 text-3xl font-bold text-gray-900">{amountStr}</div>
+                  <div className="mt-2 inline-flex rounded-full bg-green-100 px-3 py-0.5 text-xs font-semibold text-green-700">
+                    Successful
+                  </div>
+                </div>
 
-              {/* Dashed Divider (receipt tear line) */}
-              <div className="relative my-4">
-                <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
-                <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
-                <div className="border-t-2 border-dashed border-[#e5e7eb] mx-5" />
-              </div>
+                {/* Tear Divider */}
+                <div className="relative my-4">
+                  <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#130a0d]" />
+                  <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#130a0d]" />
+                  <div className="mx-5 border-t-2 border-dashed border-gray-200" />
+                </div>
 
-              {/* Details */}
-              <div className="px-6 space-y-2.5 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">Ref. No.</span>
-                  <span className="font-mono text-xs font-semibold text-[#374151]">{refNo}</span>
+                {/* Details */}
+                <div className="space-y-2.5 px-6 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Ref. No.</span>
+                    <span className="font-mono text-xs font-semibold text-gray-900">{refNo}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Paid To</span>
+                    <span className="font-medium text-gray-900">RESEATO</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Restaurant</span>
+                    <span className="max-w-[180px] truncate text-right font-medium text-gray-900">
+                      {details.restaurantName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Date & Time</span>
+                    <span className="font-medium text-gray-900">
+                      {prettyDate(details.date)}, {to12Hour(details.time)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Guests</span>
+                    <span className="font-medium text-gray-900">{details.guests}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Payment Method</span>
+                    <span className="font-semibold" style={{ color: theme.accent }}>
+                      {theme.label}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Transaction Date</span>
+                    <span className="text-xs text-gray-900">{txnDate}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">Paid To</span>
-                  <span className="font-medium text-[#1f2937]">RESEATO</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">Restaurant</span>
-                  <span className="max-w-[180px] truncate text-right font-medium text-[#1f2937]">{details.restaurantName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">Date & Time</span>
-                  <span className="font-medium text-[#1f2937]">{prettyDate(details.date)}, {to12Hour(details.time)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">Guests</span>
-                  <span className="font-medium text-[#1f2937]">{details.guests}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">Payment Method</span>
-                  <span className="font-semibold" style={{ color: theme.accent }}>{theme.label}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">Transaction Date</span>
-                  <span className="text-xs text-[#374151]">{txnDate}</span>
-                </div>
-              </div>
 
-              {/* Dashed Divider */}
-              <div className="relative my-4">
-                <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
-                <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#f3f3f4]" />
-                <div className="border-t-2 border-dashed border-[#e5e7eb] mx-5" />
-              </div>
+                {/* Tear Divider */}
+                <div className="relative my-4">
+                  <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#130a0d]" />
+                  <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-[#130a0d]" />
+                  <div className="mx-5 border-t-2 border-dashed border-gray-200" />
+                </div>
 
-              {/* Footer Buttons */}
-              <div className="px-6 pb-5 space-y-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const divider = "════════════════════════════════════";
-                    const lines = [
-                      divider,
-                      `        ${theme.label.toUpperCase()} - PAYMENT RECEIPT`,
-                      divider,
-                      "",
-                      `  Status:          SUCCESSFUL`,
-                      `  Ref. No:         ${refNo}`,
-                      `  Transaction:     ${txnDate}`,
-                      "",
-                      `  ─── RESERVATION DETAILS ───`,
-                      "",
-                      `  Paid To:         RESEATO`,
-                      `  Restaurant:      ${details.restaurantName}`,
-                      `  Date:            ${prettyDate(details.date)}`,
-                      `  Time:            ${to12Hour(details.time)}`,
-                      `  Guests:          ${details.guests}`,
-                      "",
-                      `  ─── PAYMENT DETAILS ───`,
-                      "",
-                      `  Amount Paid:     ${formatAmount(details.paymentAmount)}`,
-                      `  Payment Method:  ${theme.label}`,
-                      `  Booking ID:      ${reservationId}`,
-                      "",
-                      divider,
-                      "  Thank you for dining with RESEATO!",
-                      divider,
-                    ];
-                    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `${theme.label}-Receipt-${refNo}.txt`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white shadow-md"
-                  style={{ background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent}dd)` }}
-                >
-                  <Download className="h-4 w-4" />
-                  Download Receipt
-                </button>
-                <Link
-                  to="/my-reservations"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-[#f9fafb] py-2.5 text-sm font-semibold text-[#374151] transition hover:bg-[#f1f1f3]"
-                >
-                  <Receipt className="h-4 w-4" />
-                  My Reservations
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setShowReceipt(false)}
-                  className="w-full text-center text-xs text-[#9ca3af] hover:text-[#6b7280]"
-                >
-                  Close
-                </button>
-              </div>
+                {/* Buttons */}
+                <div className="space-y-2.5 px-6 pb-5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      downloadReceiptAsImage({
+                        provider: { accent: theme.accent, logo: theme.logo, label: theme.label },
+                        amount: amountStr,
+                        refNo,
+                        restaurant: details.restaurantName,
+                        dateLabel: prettyDate(details.date),
+                        timeLabel: to12Hour(details.time),
+                        guests: details.guests,
+                        bookingId: reservationId,
+                        txnDate,
+                      })
+                    }
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition hover:brightness-110"
+                    style={{ background: theme.accent }}
+                  >
+                    <Download className="h-4 w-4" />
+                    Download Receipt
+                  </button>
+                  <Link
+                    to="/my-reservations"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                  >
+                    <Receipt className="h-4 w-4" />
+                    My Reservations
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setShowReceipt(false)}
+                    className="w-full text-center text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    Close
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
           );
         })()}
       </AnimatePresence>
     </div>
   );
 }
-
-

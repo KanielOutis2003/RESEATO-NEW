@@ -18,7 +18,8 @@ export default function AppShell() {
 
   const isAuthPage = pathname === "/log-in-sign-up" || pathname === "/forgot-password" || pathname === "/reset-password";
   const isHomePage = pathname === "/";
-  const hideNavbar = isAuthPage || isHomePage;
+  const isDarkLuxuryPage = pathname.startsWith("/restaurants") || pathname === "/my-reservations" || pathname.startsWith("/payment/");
+  const hideNavbar = isAuthPage || isHomePage || isDarkLuxuryPage;
 
   const isVendorRoute = pathname.startsWith("/vendor");
   const isAdminRoute = pathname.startsWith("/admin");

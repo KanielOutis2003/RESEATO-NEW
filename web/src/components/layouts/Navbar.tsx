@@ -650,7 +650,7 @@ export default function Navbar() {
                   </button>
 
                   {notifOpen && (
-                    <div className="absolute -right-2 mt-3 w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-[#eadde1] bg-white text-[#1f2937] shadow-[0_22px_48px_rgba(15,23,42,0.16)] sm:right-0 sm:w-96">
+                    <div className="fixed left-3 right-3 top-[4.25rem] z-50 overflow-hidden rounded-2xl border border-[#eadde1] bg-white text-[#1f2937] shadow-[0_22px_48px_rgba(15,23,42,0.16)] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-96">
                       <div className="flex items-center justify-between border-b border-[#f0e8ea] px-4 py-3 sm:px-5 sm:py-4">
                         <div className="text-base font-semibold sm:text-lg">Notifications</div>
                         {unreadCount > 0 && (

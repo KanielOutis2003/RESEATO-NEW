@@ -616,7 +616,7 @@ export default function AdminDashboardPage() {
     } else if (activeTab === "restaurants") {
       jobs.push({ label: "restaurants", run: loadRestaurants });
       jobs.push({ label: "assignable vendors", run: loadAssignableVendors });
-      jobs.push({ label: "reservations for commissions", run: loadReservations });
+      jobs.push({ label: "reservations for system profit", run: loadReservations });
     } else if (activeTab === "reservations") {
       jobs.push({ label: "reservations", run: loadReservations });
     } else if (activeTab === "audit") {
@@ -1116,7 +1116,7 @@ export default function AdminDashboardPage() {
               { label: "Total Users", value: overview?.users ?? 0, icon: Users, sub: `+${overview?.vendors ?? 0} vendors` },
               { label: "Restaurants", value: overview?.restaurants ?? 0, icon: Building2, sub: "Active listings" },
               { label: "Reservations", value: overview?.reservations ?? 0, icon: CalendarCheck2, sub: "Healthy weekly flow" },
-              { label: "Platform Revenue", value: toPeso(overview?.totalPaidAmountMinor ?? 0), icon: Wallet, sub: "Collected fees" },
+              { label: "System Profit", value: toPeso(overview?.totalPaidAmountMinor ?? 0), icon: Wallet, sub: "Reservation fees (₱20 each)" },
             ].map((card) => {
               return (
                 <article key={card.label} className="rounded-[22px] border border-[#e7e3e5] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcff_100%)] p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
@@ -1259,7 +1259,7 @@ export default function AdminDashboardPage() {
                 Cancellation Rate: <span className="font-semibold text-[#1f2937]">{(chartData?.summary.cancellationRate ?? 0).toFixed(2)}%</span>
               </div>
               <div className="rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-3 py-2 text-sm text-[#5b6374]">
-                Revenue in range: <span className="font-semibold text-[#1f2937]">{toPeso(chartData?.summary.totalRevenueMinor ?? 0)}</span>
+                System Profit in range: <span className="font-semibold text-[#1f2937]">{toPeso(chartData?.summary.totalRevenueMinor ?? 0)}</span>
               </div>
               <div className="rounded-xl border border-[#f0d5a5] bg-[#fff9ef] px-3 py-2 text-sm text-[#5b6374]">
                 <span className="inline-flex items-center gap-1">
@@ -1820,7 +1820,7 @@ export default function AdminDashboardPage() {
                       <th className="px-3 py-2.5">Restaurant</th>
                       <th className="px-3 py-2.5">Owner / Vendor</th>
                       <th className="px-3 py-2.5">Assign Vendor</th>
-                      <th className="px-3 py-2.5">Commissions</th>
+                      <th className="px-3 py-2.5">System Profit</th>
                       <th className="px-3 py-2.5">Status</th>
                       <th className="px-3 py-2.5">Featured</th>
                       <th className="px-3 py-2.5">Tables</th>
@@ -1840,7 +1840,7 @@ export default function AdminDashboardPage() {
                         const restoReservations = reservations.filter(
                           (r) => r.restaurant_id === item.id && (r.payment_status === "paid"),
                         );
-                        const totalCommission = restoReservations.reduce(
+                        const totalSystemProfit = restoReservations.reduce(
                           (sum, r) => sum + (Number(r.payment_amount) || 0), 0,
                         );
                         return (
@@ -1900,7 +1900,7 @@ export default function AdminDashboardPage() {
                             </div>
                           </td>
                           <td className="px-3 py-3">
-                            <div className="text-sm font-semibold text-[#7b2f3b]">{toPeso(totalCommission)}</div>
+                            <div className="text-sm font-semibold text-[#7b2f3b]">{toPeso(totalSystemProfit)}</div>
                             <div className="mt-0.5 text-[11px] text-[#8b97a8]">{restoReservations.length} paid</div>
                           </td>
                           <td className="px-3 py-3">
@@ -2178,7 +2178,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <p className="mt-3 text-xs italic text-[#8b97a8]">
-            Each completed reservation can be used for commission tracking later.
+            Each completed reservation contributes ₱20 to the system profit.
           </p>
         </section>
       )}

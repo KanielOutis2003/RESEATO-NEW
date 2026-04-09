@@ -20,6 +20,9 @@ function extractErrorMessage(error: any) {
   return payloadMessage || String(error?.message ?? "Unable to send reset email.");
 }
 
+const SERIF = "'Cormorant Garamond', serif";
+const SANS = "'Jost', sans-serif";
+
 export default function ForgotPasswordPage() {
   const location = useLocation();
   const prefillEmail =
@@ -57,12 +60,36 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f3f3f4] px-6 py-10 text-[#1f2937]">
-      <div className="mx-auto max-w-6xl">
+    <div
+      className="min-h-screen px-6 py-10"
+      style={{
+        background:
+          "radial-gradient(120% 90% at 50% 0%, #1a0e12 0%, #0a0507 55%, #05030a 100%)",
+        color: "#f5ede4",
+        fontFamily: SANS,
+      }}
+    >
+      {/* Decorative gold ornaments */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        style={{
+          background:
+            "radial-gradient(circle at 15% 20%, rgba(212,181,138,0.08), transparent 40%), radial-gradient(circle at 85% 80%, rgba(180,109,115,0.10), transparent 45%)",
+        }}
+      />
+
+      <div className="relative mx-auto max-w-6xl">
         <div className="mb-6">
           <Link
             to="/log-in-sign-up"
-            className="inline-flex items-center gap-2 rounded-2xl border border-[#ded7d9] bg-white px-4 py-2.5 text-sm font-medium text-[#6b7280] shadow-[0_6px_18px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#cdb8bd] hover:text-[#7b2f3b]"
+            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] transition-all hover:-translate-y-0.5"
+            style={{
+              border: "1px solid rgba(212,181,138,0.35)",
+              background: "rgba(36,22,26,0.6)",
+              color: "#d4b58a",
+              backdropFilter: "blur(8px)",
+            }}
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Sign In
@@ -70,23 +97,68 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="grid min-h-[calc(100vh-150px)] place-items-center">
-          <section className="w-full max-w-[540px] rounded-[28px] border border-[#e6e2e4] bg-white p-8 shadow-[0_18px_40px_rgba(15,23,42,0.08)] md:p-10">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#8b3d4a] text-white shadow-[0_10px_20px_rgba(139,61,74,0.3)]">
-              <UtensilsCrossed className="h-6 w-6" />
+          <section
+            className="w-full max-w-[540px] rounded-[28px] p-8 md:p-10"
+            style={{
+              border: "1px solid rgba(212,181,138,0.28)",
+              background: "rgba(26,14,18,0.85)",
+              backdropFilter: "blur(14px)",
+              boxShadow:
+                "0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,181,138,0.15)",
+            }}
+          >
+            <div
+              className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl"
+              style={{
+                background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                boxShadow:
+                  "0 18px 30px rgba(146,63,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+              }}
+            >
+              <UtensilsCrossed className="h-7 w-7 text-[#faf4ea]" />
             </div>
 
-            <h1 className="mt-6 text-center text-3xl font-semibold tracking-tight text-[#1f2937]">
+            {/* Gold ornament line */}
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <span className="h-px w-10" style={{ background: "rgba(212,181,138,0.4)" }} />
+              <span
+                className="text-[10px] uppercase tracking-[0.3em]"
+                style={{ color: "#d4b58a" }}
+              >
+                RESEATO
+              </span>
+              <span className="h-px w-10" style={{ background: "rgba(212,181,138,0.4)" }} />
+            </div>
+
+            <h1
+              className="mt-4 text-center text-4xl font-semibold tracking-tight"
+              style={{ fontFamily: SERIF, color: "#faf4ea" }}
+            >
               Forgot Password
             </h1>
-            <p className="mt-2 text-center text-sm text-[#6b7280]">
+            <p
+              className="mt-2 text-center text-sm"
+              style={{ color: "#c9b99d" }}
+            >
               Enter your account email. If registered, we&apos;ll send a reset link.
             </p>
 
             <form onSubmit={onSubmit} className="mt-7 space-y-4">
               <label className="block space-y-1.5">
-                <div className="text-sm font-medium text-[#4b5563]">Email Address</div>
-                <div className="flex items-center gap-2 rounded-xl border border-[#ddd8da] bg-white px-3 py-2.5">
-                  <span className="text-[#9ca3af]">
+                <div
+                  className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                  style={{ color: "#d4b58a" }}
+                >
+                  Email Address
+                </div>
+                <div
+                  className="flex items-center gap-2 rounded-xl px-3 py-3"
+                  style={{
+                    border: "1px solid rgba(212,181,138,0.3)",
+                    background: "rgba(10,5,7,0.55)",
+                  }}
+                >
+                  <span style={{ color: "#d4b58a" }}>
                     <Mail className="h-4 w-4" />
                   </span>
                   <input
@@ -94,19 +166,34 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="you@email.com"
-                    className="w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
+                    className="w-full bg-transparent text-sm outline-none"
+                    style={{ color: "#f5ede4" }}
                   />
                 </div>
               </label>
 
               {errorMsg && (
-                <div className="rounded-xl border border-[#ead9dd] bg-[#fff7f8] px-4 py-3 text-sm text-[#7b2f3b]">
+                <div
+                  className="rounded-xl px-4 py-3 text-sm"
+                  style={{
+                    border: "1px solid rgba(225,93,93,0.35)",
+                    background: "rgba(70,20,25,0.5)",
+                    color: "#f5c6ca",
+                  }}
+                >
                   {errorMsg}
                 </div>
               )}
 
               {successMsg && (
-                <div className="rounded-xl border border-[#cfe8d8] bg-[#ecfdf3] px-4 py-3 text-sm text-[#166534]">
+                <div
+                  className="rounded-xl px-4 py-3 text-sm"
+                  style={{
+                    border: "1px solid rgba(134,191,150,0.35)",
+                    background: "rgba(18,52,32,0.5)",
+                    color: "#c8eecf",
+                  }}
+                >
                   {successMsg}
                 </div>
               )}
@@ -114,7 +201,13 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.15em] transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                  color: "#faf4ea",
+                  boxShadow:
+                    "0 16px 30px rgba(146,63,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+                }}
               >
                 {loading ? "Sending..." : "Send Reset Link"}
                 <Send className="h-4 w-4" />

@@ -76,19 +76,31 @@ function getStrengthSegmentClass(score: number, step: number) {
   return "bg-[#16a34a]";
 }
 
+const SERIF = "'Cormorant Garamond', serif";
+const SANS = "'Jost', sans-serif";
+
 function RequirementItem(props: { ok: boolean; text: string }) {
   return (
     <li
-      className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] transition-colors ${
+      className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] transition-colors"
+      style={
         props.ok
-          ? "border-[#cfe8d8] bg-[#ecfdf3] text-[#166534]"
-          : "border-[#e6e5e6] bg-[#fafafa] text-[#4b5563]"
-      }`}
+          ? {
+              border: "1px solid rgba(134,191,150,0.35)",
+              background: "rgba(18,52,32,0.35)",
+              color: "#c8eecf",
+            }
+          : {
+              border: "1px solid rgba(212,181,138,0.18)",
+              background: "rgba(10,5,7,0.4)",
+              color: "#c9b99d",
+            }
+      }
     >
       {props.ok ? (
         <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
       ) : (
-        <Circle className="h-3.5 w-3.5 shrink-0 text-[#9ca3af]" />
+        <Circle className="h-3.5 w-3.5 shrink-0" style={{ color: "#8a7666" }} />
       )}
       <span>{props.text}</span>
     </li>
@@ -104,7 +116,8 @@ function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+          style={{ background: "rgba(10,5,7,0.72)", backdropFilter: "blur(8px)" }}
           onClick={onClose}
         >
           <motion.div
@@ -112,30 +125,54 @@ function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 12 }}
             transition={{ duration: 0.22 }}
-            className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-[24px] border border-[#e8e2e3] bg-white p-6 shadow-[0_28px_60px_rgba(15,23,42,0.18)] md:p-8"
+            className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-[24px] p-6 md:p-8"
+            style={{
+              border: "1px solid rgba(212,181,138,0.28)",
+              background: "rgba(26,14,18,0.92)",
+              backdropFilter: "blur(14px)",
+              boxShadow: "0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,181,138,0.15)",
+              color: "#f5ede4",
+              fontFamily: SANS,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-[#e5e7eb] bg-[#f8fafc] text-[#6b7280] transition hover:bg-[#f1f1f3]"
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full transition"
+              style={{
+                border: "1px solid rgba(212,181,138,0.35)",
+                background: "rgba(10,5,7,0.5)",
+                color: "#d4b58a",
+              }}
             >
               <X className="h-4 w-4" />
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#f8ecee] text-[#8b3d4a]">
+              <div
+                className="grid h-11 w-11 place-items-center rounded-xl"
+                style={{
+                  background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                  color: "#faf4ea",
+                }}
+              >
                 <Info className="h-5 w-5" />
               </div>
-              <h2 className="text-2xl font-semibold text-[#1f2937]">About RESEATO</h2>
+              <h2
+                className="text-3xl font-semibold"
+                style={{ fontFamily: SERIF, color: "#faf4ea" }}
+              >
+                About RESEATO
+              </h2>
             </div>
 
-            <p className="mt-4 leading-relaxed text-[#475467]">
+            <p className="mt-4 leading-relaxed" style={{ color: "#c9b99d" }}>
               RESEATO helps you book the best tables at top rated restaurants in SM
               City and SM Seaside Cebu. Skip the line, enjoy the dine—and suggest
               what&apos;s best.
             </p>
-            <p className="mt-3 leading-relaxed text-[#475467]">
+            <p className="mt-3 leading-relaxed" style={{ color: "#c9b99d" }}>
               Our platform connects diners with their favorite restaurants, providing
               seamless online reservations with secure payment processing. Whether
               you&apos;re planning a casual lunch or a special celebration, RESEATO
@@ -145,7 +182,12 @@ function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
             <button
               type="button"
               onClick={onClose}
-              className="mt-6 w-full rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105"
+              className="mt-6 w-full rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.15em] transition-transform hover:scale-[1.01]"
+              style={{
+                background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                color: "#faf4ea",
+                boxShadow: "0 16px 30px rgba(146,63,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+              }}
             >
               Close
             </button>
@@ -165,7 +207,8 @@ function TermsModal({ open, onClose, onAccept }: { open: boolean; onClose: () =>
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+          style={{ background: "rgba(10,5,7,0.72)", backdropFilter: "blur(8px)" }}
           onClick={onClose}
         >
           <motion.div
@@ -173,59 +216,96 @@ function TermsModal({ open, onClose, onAccept }: { open: boolean; onClose: () =>
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 12 }}
             transition={{ duration: 0.22 }}
-            className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-[24px] border border-[#e8e2e3] bg-white p-6 shadow-[0_28px_60px_rgba(15,23,42,0.18)] md:p-8"
+            className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-[24px] p-6 md:p-8"
+            style={{
+              border: "1px solid rgba(212,181,138,0.28)",
+              background: "rgba(26,14,18,0.92)",
+              backdropFilter: "blur(14px)",
+              boxShadow: "0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,181,138,0.15)",
+              color: "#f5ede4",
+              fontFamily: SANS,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-[#e5e7eb] bg-[#f8fafc] text-[#6b7280] transition hover:bg-[#f1f1f3]"
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full transition"
+              style={{
+                border: "1px solid rgba(212,181,138,0.35)",
+                background: "rgba(10,5,7,0.5)",
+                color: "#d4b58a",
+              }}
             >
               <X className="h-4 w-4" />
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#f8ecee] text-[#8b3d4a]">
+              <div
+                className="grid h-11 w-11 place-items-center rounded-xl"
+                style={{
+                  background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                  color: "#faf4ea",
+                }}
+              >
                 <FileText className="h-5 w-5" />
               </div>
-              <h2 className="text-2xl font-semibold text-[#1f2937]">Terms and Conditions</h2>
+              <h2
+                className="text-3xl font-semibold"
+                style={{ fontFamily: SERIF, color: "#faf4ea" }}
+              >
+                Terms and Conditions
+              </h2>
             </div>
 
-            <p className="mt-4 text-sm text-[#667085]">
+            <p className="mt-4 text-sm" style={{ color: "#c9b99d" }}>
               By ticking the agreement box and proceeding with payment, you
               acknowledge that you have read, understood, and agreed to the following
               Terms and Conditions.
             </p>
 
-            <ol className="mt-5 list-decimal list-outside space-y-4 pl-5 text-sm leading-relaxed text-[#475467]">
-              <li><strong className="text-[#1f2937]">Acceptance of Terms.</strong> By using RESEATO and completing a reservation, you agree to comply with all policies stated herein. If you do not agree with these terms, you must not proceed with the reservation or payment.</li>
-              <li><strong className="text-[#1f2937]">Payment Policy.</strong> All reservation payments made through RESEATO are considered final and non-refundable once successfully processed.</li>
-              <li><strong className="text-[#1f2937]">No Cancellation Policy.</strong> Once payment has been successfully processed, the reservation is confirmed and cannot be canceled, transferred, or rescheduled.</li>
-              <li><strong className="text-[#1f2937]">Limitation of Liability.</strong> RESEATO utilizes third-party payment gateway providers. RESEATO shall not be held liable for any data breach, unauthorized access, or compromise of payment details.</li>
-              <li><strong className="text-[#1f2937]">Accuracy of Information.</strong> Customers are responsible for providing accurate and complete personal and payment information.</li>
-              <li><strong className="text-[#1f2937]">Restaurant Responsibility.</strong> RESEATO acts as a reservation platform only. The partnered restaurant is solely responsible for food quality, service delivery, and dining experience.</li>
-              <li><strong className="text-[#1f2937]">Force Majeure.</strong> RESEATO shall not be held liable for failure to fulfill reservations due to events beyond reasonable control.</li>
-              <li><strong className="text-[#1f2937]">System Availability.</strong> We do not guarantee uninterrupted access due to possible maintenance, updates, or technical issues.</li>
-              <li><strong className="text-[#1f2937]">Amendments.</strong> RESEATO reserves the right to modify these Terms and Conditions at any time.</li>
-              <li><strong className="text-[#1f2937]">No-Show Policy.</strong> Payment will be forfeited if the customer fails to appear at the reserved time.</li>
-              <li><strong className="text-[#1f2937]">Chargeback Protection.</strong> Customers agree not to initiate fraudulent chargebacks.</li>
-              <li><strong className="text-[#1f2937]">Privacy Policy.</strong> Personal data is collected, stored, and protected in accordance with our privacy practices.</li>
-              <li><strong className="text-[#1f2937]">User Conduct.</strong> No fraudulent bookings or misuse of the platform is permitted.</li>
-              <li><strong className="text-[#1f2937]">Time Allowance Policy.</strong> Reservation automatically expires if the customer arrives late (15-30 minutes grace period).</li>
+            <ol
+              className="mt-5 list-decimal list-outside space-y-4 pl-5 text-sm leading-relaxed"
+              style={{ color: "#c9b99d" }}
+            >
+              <li><strong style={{ color: "#d4b58a" }}>Acceptance of Terms.</strong> By using RESEATO and completing a reservation, you agree to comply with all policies stated herein. If you do not agree with these terms, you must not proceed with the reservation or payment.</li>
+              <li><strong style={{ color: "#d4b58a" }}>Payment Policy.</strong> All reservation payments made through RESEATO are considered final and non-refundable once successfully processed.</li>
+              <li><strong style={{ color: "#d4b58a" }}>No Cancellation Policy.</strong> Once payment has been successfully processed, the reservation is confirmed and cannot be canceled, transferred, or rescheduled.</li>
+              <li><strong style={{ color: "#d4b58a" }}>Limitation of Liability.</strong> RESEATO utilizes third-party payment gateway providers. RESEATO shall not be held liable for any data breach, unauthorized access, or compromise of payment details.</li>
+              <li><strong style={{ color: "#d4b58a" }}>Accuracy of Information.</strong> Customers are responsible for providing accurate and complete personal and payment information.</li>
+              <li><strong style={{ color: "#d4b58a" }}>Restaurant Responsibility.</strong> RESEATO acts as a reservation platform only. The partnered restaurant is solely responsible for food quality, service delivery, and dining experience.</li>
+              <li><strong style={{ color: "#d4b58a" }}>Force Majeure.</strong> RESEATO shall not be held liable for failure to fulfill reservations due to events beyond reasonable control.</li>
+              <li><strong style={{ color: "#d4b58a" }}>System Availability.</strong> We do not guarantee uninterrupted access due to possible maintenance, updates, or technical issues.</li>
+              <li><strong style={{ color: "#d4b58a" }}>Amendments.</strong> RESEATO reserves the right to modify these Terms and Conditions at any time.</li>
+              <li><strong style={{ color: "#d4b58a" }}>No-Show Policy.</strong> Payment will be forfeited if the customer fails to appear at the reserved time.</li>
+              <li><strong style={{ color: "#d4b58a" }}>Chargeback Protection.</strong> Customers agree not to initiate fraudulent chargebacks.</li>
+              <li><strong style={{ color: "#d4b58a" }}>Privacy Policy.</strong> Personal data is collected, stored, and protected in accordance with our privacy practices.</li>
+              <li><strong style={{ color: "#d4b58a" }}>User Conduct.</strong> No fraudulent bookings or misuse of the platform is permitted.</li>
+              <li><strong style={{ color: "#d4b58a" }}>Time Allowance Policy.</strong> Reservation automatically expires if the customer arrives late (15-30 minutes grace period).</li>
             </ol>
 
             <div className="mt-6 flex gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-xl border border-[#d8dbe2] bg-white px-4 py-2.5 text-sm font-semibold text-[#475467] transition hover:bg-[#f8fafc]"
+                className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.15em] transition"
+                style={{
+                  border: "1px solid rgba(212,181,138,0.35)",
+                  background: "rgba(10,5,7,0.5)",
+                  color: "#d4b58a",
+                }}
               >
                 Close
               </button>
               <button
                 type="button"
                 onClick={onAccept}
-                className="flex-1 rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105"
+                className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.15em] transition-transform hover:scale-[1.01]"
+                style={{
+                  background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                  color: "#faf4ea",
+                  boxShadow: "0 16px 30px rgba(146,63,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+                }}
               >
                 I Accept
               </button>
@@ -661,11 +741,25 @@ export default function AuthPage() {
 
   if (signupConfirmationEmail) {
     return (
-      <div className="fixed inset-0 z-[120] overflow-y-auto bg-[#f2f2f5] px-6 py-10">
+      <div
+        className="fixed inset-0 z-[120] overflow-y-auto px-6 py-10"
+        style={{
+          background:
+            "radial-gradient(120% 90% at 50% 0%, #1a0e12 0%, #0a0507 55%, #05030a 100%)",
+          color: "#f5ede4",
+          fontFamily: SANS,
+        }}
+      >
         <div className="mx-auto mb-6 flex max-w-6xl justify-start">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 rounded-2xl border border-[#ded7d9] bg-white px-4 py-2.5 text-sm font-medium text-[#6b7280] shadow-[0_6px_18px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#cdb8bd] hover:text-[#7b2f3b]"
+            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] transition-all hover:-translate-y-0.5"
+            style={{
+              border: "1px solid rgba(212,181,138,0.35)",
+              background: "rgba(36,22,26,0.6)",
+              color: "#d4b58a",
+              backdropFilter: "blur(8px)",
+            }}
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Home
@@ -677,27 +771,72 @@ export default function AuthPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.28 }}
-            className="w-full max-w-[520px] rounded-[28px] border border-black/5 bg-white px-8 py-9 text-center shadow-[0_28px_60px_rgba(15,23,42,0.14)]"
+            className="w-full max-w-[520px] rounded-[28px] px-8 py-9 text-center"
+            style={{
+              border: "1px solid rgba(212,181,138,0.28)",
+              background: "rgba(26,14,18,0.85)",
+              backdropFilter: "blur(14px)",
+              boxShadow:
+                "0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,181,138,0.15)",
+            }}
           >
-            <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#d8f3df] text-[#169c46]">
+            <div
+              className="mx-auto grid h-20 w-20 place-items-center rounded-full"
+              style={{
+                background: "linear-gradient(135deg, rgba(212,181,138,0.25), rgba(180,109,115,0.25))",
+                border: "1px solid rgba(212,181,138,0.4)",
+                color: "#d4b58a",
+              }}
+            >
               <Mail className="h-11 w-11" />
             </div>
-            <h1 className="mt-7 text-[34px] font-semibold tracking-tight text-[#1c2233] sm:text-[40px]">
+
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <span className="h-px w-10" style={{ background: "rgba(212,181,138,0.4)" }} />
+              <span
+                className="text-[10px] uppercase tracking-[0.3em]"
+                style={{ color: "#d4b58a" }}
+              >
+                Almost There
+              </span>
+              <span className="h-px w-10" style={{ background: "rgba(212,181,138,0.4)" }} />
+            </div>
+
+            <h1
+              className="mt-4 text-[34px] font-semibold tracking-tight sm:text-[40px]"
+              style={{ fontFamily: SERIF, color: "#faf4ea" }}
+            >
               Confirm your registration
             </h1>
 
-            <p className="mx-auto mt-4 max-w-[410px] text-[21px] leading-tight text-[#4f5870]">
+            <p
+              className="mx-auto mt-4 max-w-[410px] text-[19px] leading-tight"
+              style={{ color: "#c9b99d" }}
+            >
               We&apos;ve sent a confirmation link to
             </p>
-            <p className="mx-auto mt-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-1 text-[clamp(17px,2.4vw,27px)] font-semibold leading-tight text-[#111827]">
+            <p
+              className="mx-auto mt-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-1 text-[clamp(17px,2.4vw,25px)] font-semibold leading-tight"
+              style={{ color: "#d4b58a" }}
+            >
               {signupConfirmationEmail}
             </p>
-            <p className="mx-auto mt-2 max-w-[430px] text-[21px] leading-tight text-[#4f5870]">
+            <p
+              className="mx-auto mt-2 max-w-[430px] text-[19px] leading-tight"
+              style={{ color: "#c9b99d" }}
+            >
               Please check your email and click the link to activate your account.
             </p>
 
             {confirmationCardMsg && (
-              <div className="mx-auto mt-4 max-w-[430px] rounded-xl border border-black/10 bg-[#f8fafc] px-4 py-3 text-sm text-[#334155]">
+              <div
+                className="mx-auto mt-4 max-w-[430px] rounded-xl px-4 py-3 text-sm"
+                style={{
+                  border: "1px solid rgba(212,181,138,0.25)",
+                  background: "rgba(10,5,7,0.4)",
+                  color: "#c9b99d",
+                }}
+              >
                 {confirmationCardMsg}
               </div>
             )}
@@ -708,7 +847,12 @@ export default function AuthPage() {
                 void resendConfirmationEmail(signupConfirmationEmail, "card");
               }}
               disabled={resendingConfirmation}
-              className="mt-5 w-full rounded-2xl border border-[#d6dbe6] bg-white px-4 py-3 text-[18px] font-semibold text-[#334155] transition-colors hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-5 w-full rounded-2xl px-4 py-3 text-[16px] font-semibold uppercase tracking-[0.15em] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              style={{
+                border: "1px solid rgba(212,181,138,0.35)",
+                background: "rgba(10,5,7,0.5)",
+                color: "#d4b58a",
+              }}
             >
               {resendingConfirmation ? "Sending..." : "Resend Email"}
             </button>
@@ -724,12 +868,21 @@ export default function AuthPage() {
                 setConfirmationCardMsg(null);
                 setShowResendConfirmation(false);
               }}
-              className="mt-8 w-full rounded-2xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-3.5 text-[22px] font-semibold text-white shadow-[0_12px_24px_rgba(146,63,74,0.35)] transition-transform hover:scale-[1.01] hover:brightness-105"
+              className="mt-6 w-full rounded-2xl px-4 py-3.5 text-[18px] font-semibold uppercase tracking-[0.15em] transition-transform hover:scale-[1.01]"
+              style={{
+                background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                color: "#faf4ea",
+                boxShadow:
+                  "0 18px 32px rgba(146,63,74,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
+              }}
             >
               Back to Sign In
             </button>
 
-            <p className="mx-auto mt-5 max-w-[430px] text-[16px] leading-snug text-[#7c8599]">
+            <p
+              className="mx-auto mt-5 max-w-[430px] text-[14px] leading-snug"
+              style={{ color: "#8a7666" }}
+            >
               Didn&apos;t receive the email? Check your spam folder or try registering again.
             </p>
           </motion.section>
@@ -750,7 +903,15 @@ export default function AuthPage() {
         setShowTermsModal(false);
       }}
     />
-    <div className="fixed inset-0 overflow-hidden bg-[#f3f3f4] px-6 text-[#1f2937]">
+    <div
+      className="fixed inset-0 overflow-auto px-6"
+      style={{
+        background:
+          "radial-gradient(120% 90% at 50% 0%, #1a0e12 0%, #0a0507 55%, #05030a 100%)",
+        color: "#f5ede4",
+        fontFamily: SANS,
+      }}
+    >
       {/* Toast popup for errors/success */}
       <AnimatePresence>
         {msg && (
@@ -761,20 +922,46 @@ export default function AuthPage() {
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className="fixed inset-x-0 top-5 z-[200] mx-auto w-fit max-w-md px-4"
           >
-            <div className={`flex items-center gap-3 rounded-2xl border px-5 py-3.5 text-sm font-medium shadow-[0_12px_32px_rgba(0,0,0,0.12)] backdrop-blur-sm ${
-              msgType === "success"
-                ? "border-[#b7e4c7] bg-[#ecfdf3]/95 text-[#166534]"
-                : msgType === "info"
-                  ? "border-[#bdd8f2] bg-[#eaf4ff]/95 text-[#1d5f93]"
-                  : "border-[#ead9dd] bg-[#fff7f8]/95 text-[#7b2f3b]"
-            }`}>
-              <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
-                msgType === "success" ? "bg-[#d1fae5]" : msgType === "info" ? "bg-[#dbeafe]" : "bg-[#ffe4e6]"
-              }`}>
+            <div
+              className="flex items-center gap-3 rounded-2xl px-5 py-3.5 text-sm font-medium"
+              style={
+                msgType === "success"
+                  ? {
+                      border: "1px solid rgba(134,191,150,0.4)",
+                      background: "rgba(18,52,32,0.85)",
+                      color: "#c8eecf",
+                      backdropFilter: "blur(10px)",
+                      boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
+                    }
+                  : msgType === "info"
+                    ? {
+                        border: "1px solid rgba(212,181,138,0.4)",
+                        background: "rgba(26,14,18,0.85)",
+                        color: "#d4b58a",
+                        backdropFilter: "blur(10px)",
+                        boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
+                      }
+                    : {
+                        border: "1px solid rgba(225,93,93,0.4)",
+                        background: "rgba(70,20,25,0.85)",
+                        color: "#f5c6ca",
+                        backdropFilter: "blur(10px)",
+                        boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
+                      }
+              }
+            >
+              <div
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                style={{ background: "rgba(10,5,7,0.5)" }}
+              >
                 {msgType === "success" ? <CheckCircle2 className="h-4 w-4" /> : msgType === "info" ? <Info className="h-4 w-4" /> : <X className="h-4 w-4" />}
               </div>
               <span className="flex-1">{msg}</span>
-              <button type="button" onClick={() => setMsg(null)} className="ml-2 rounded-full p-1 transition hover:bg-black/5">
+              <button
+                type="button"
+                onClick={() => setMsg(null)}
+                className="ml-2 rounded-full p-1 transition hover:bg-white/5"
+              >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -782,11 +969,17 @@ export default function AuthPage() {
         )}
       </AnimatePresence>
 
-      <div className="mx-auto flex h-full max-w-6xl flex-col py-6">
+      <div className="relative mx-auto flex min-h-full max-w-6xl flex-col py-6">
         <div className="z-10">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 rounded-2xl border border-[#ded7d9] bg-white px-4 py-2.5 text-sm font-medium text-[#6b7280] shadow-[0_6px_18px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#cdb8bd] hover:text-[#7b2f3b]"
+            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] transition-all hover:-translate-y-0.5"
+            style={{
+              border: "1px solid rgba(212,181,138,0.35)",
+              background: "rgba(36,22,26,0.6)",
+              color: "#d4b58a",
+              backdropFilter: "blur(8px)",
+            }}
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Home
@@ -804,27 +997,96 @@ export default function AuthPage() {
           <div className="space-y-6">
             <div className="shrink-0">
               <Link to="/" className="group flex items-center space-x-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#8b3d4a] shadow-sm shadow-[#e8ccd1] transition-all duration-300 group-hover:bg-[#7b2f3b]">
-                  <UtensilsCrossed className="h-6 w-6 text-white" />
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300"
+                  style={{
+                    background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                    boxShadow:
+                      "0 16px 28px rgba(146,63,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+                  }}
+                >
+                  <UtensilsCrossed className="h-6 w-6 text-[#faf4ea]" />
                 </div>
-                <span className="text-3xl font-bold tracking-tight text-neutral-900">RESEATO</span>
+                <span
+                  className="text-4xl font-semibold tracking-tight"
+                  style={{ fontFamily: SERIF, color: "#faf4ea" }}
+                >
+                  RESEATO
+                </span>
               </Link>
             </div>
 
-            <div className="rounded-[24px] border border-[#e8e2e3] bg-white/85 p-8 shadow-[0_12px_32px_rgba(15,23,42,0.06)] backdrop-blur">
-              <div className="text-xl font-semibold">
+            <div
+              className="rounded-[24px] p-8"
+              style={{
+                border: "1px solid rgba(212,181,138,0.25)",
+                background: "rgba(26,14,18,0.75)",
+                backdropFilter: "blur(14px)",
+                boxShadow:
+                  "0 28px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,181,138,0.12)",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="h-px w-8" style={{ background: "rgba(212,181,138,0.4)" }} />
+                <span
+                  className="text-[10px] uppercase tracking-[0.3em]"
+                  style={{ color: "#d4b58a" }}
+                >
+                  {mode === "login" ? "Welcome Back" : "Join Us"}
+                </span>
+              </div>
+              <div
+                className="mt-3 text-[32px] leading-tight font-semibold"
+                style={{ fontFamily: SERIF, color: "#faf4ea" }}
+              >
                 {mode === "login" ? "Welcome back" : "Create your account"}
               </div>
-              <p className="mt-3 text-[18px] text-[#5b6374]">
+              <p className="mt-3 text-[17px]" style={{ color: "#c9b99d" }}>
                 {mode === "login"
                   ? "Sign in to manage reservations and book faster."
                   : "Sign up to reserve tables, track bookings, and access exclusive features."}
               </p>
 
-              <ul className="mt-7 space-y-3 text-[#1f2937]">
-                <li className="flex items-center gap-3"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f8ecee] text-[#7b2f3b]"><Check className="h-4 w-4" /></span><span className="text-lg">Reserve tables in seconds</span></li>
-                <li className="flex items-center gap-3"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f8ecee] text-[#7b2f3b]"><Check className="h-4 w-4" /></span><span className="text-lg">Skip the waiting lines</span></li>
-                <li className="flex items-center gap-3"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f8ecee] text-[#7b2f3b]"><Check className="h-4 w-4" /></span><span className="text-lg">Manage all your bookings</span></li>
+              <ul className="mt-7 space-y-3" style={{ color: "#f5ede4" }}>
+                <li className="flex items-center gap-3">
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-lg"
+                    style={{
+                      border: "1px solid rgba(212,181,138,0.35)",
+                      background: "rgba(10,5,7,0.5)",
+                      color: "#d4b58a",
+                    }}
+                  >
+                    <Check className="h-4 w-4" />
+                  </span>
+                  <span className="text-lg">Reserve tables in seconds</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-lg"
+                    style={{
+                      border: "1px solid rgba(212,181,138,0.35)",
+                      background: "rgba(10,5,7,0.5)",
+                      color: "#d4b58a",
+                    }}
+                  >
+                    <Check className="h-4 w-4" />
+                  </span>
+                  <span className="text-lg">Skip the waiting lines</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-lg"
+                    style={{
+                      border: "1px solid rgba(212,181,138,0.35)",
+                      background: "rgba(10,5,7,0.5)",
+                      color: "#d4b58a",
+                    }}
+                  >
+                    <Check className="h-4 w-4" />
+                  </span>
+                  <span className="text-lg">Manage all your bookings</span>
+                </li>
               </ul>
             </div>
           </div>
@@ -836,11 +1098,24 @@ export default function AuthPage() {
           transition={{ duration: 0.4 }}
         >
           <div
-            className={`rounded-[24px] border border-[#e6e2e4] bg-white p-6 md:p-10 shadow-[0_18px_40px_rgba(15,23,42,0.08)] ${
-              mode === "signup" ? "max-h-[78vh] overflow-y-auto" : ""
+            className={`rounded-[24px] p-6 md:p-10 ${
+              mode === "signup" ? "max-h-[85vh] overflow-y-auto" : ""
             }`}
+            style={{
+              border: "1px solid rgba(212,181,138,0.28)",
+              background: "rgba(26,14,18,0.85)",
+              backdropFilter: "blur(14px)",
+              boxShadow:
+                "0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,181,138,0.15)",
+            }}
           >
-            <div className="flex rounded-2xl border border-[#dccfd2] bg-[#f6edef] p-1.5">
+            <div
+              className="flex rounded-2xl p-1.5"
+              style={{
+                border: "1px solid rgba(212,181,138,0.25)",
+                background: "rgba(10,5,7,0.5)",
+              }}
+            >
               <button
                 type="button"
                 onClick={() => {
@@ -848,11 +1123,17 @@ export default function AuthPage() {
                   setMsg(null);
                   setShowResendConfirmation(false);
                 }}
-                className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                className="flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] transition-colors"
+                style={
                   mode === "login"
-                    ? "bg-[#8b3d4a] text-white shadow-[0_8px_16px_rgba(139,61,74,0.28)]"
-                    : "text-[#7b2f3b] hover:bg-[#f3e6e9]"
-                }`}
+                    ? {
+                        background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                        color: "#faf4ea",
+                        boxShadow:
+                          "0 10px 20px rgba(146,63,74,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
+                      }
+                    : { color: "#d4b58a", background: "transparent" }
+                }
               >
                 Login
               </button>
@@ -863,19 +1144,39 @@ export default function AuthPage() {
                   setMsg(null);
                   setShowResendConfirmation(false);
                 }}
-                className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                className="flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] transition-colors"
+                style={
                   mode === "signup"
-                    ? "bg-[#8b3d4a] text-white shadow-[0_8px_16px_rgba(139,61,74,0.28)]"
-                    : "text-[#7b2f3b] hover:bg-[#f3e6e9]"
-                }`}
+                    ? {
+                        background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                        color: "#faf4ea",
+                        boxShadow:
+                          "0 10px 20px rgba(146,63,74,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
+                      }
+                    : { color: "#d4b58a", background: "transparent" }
+                }
               >
                 Sign up
               </button>
             </div>
 
             <div className="mt-6">
-              <h1 className="text-2xl font-semibold">{mode === "login" ? "Sign in" : "Create account"}</h1>
-              <p className="mt-1 text-sm text-[#6b7280]">
+              <div className="flex items-center gap-3">
+                <span className="h-px w-8" style={{ background: "rgba(212,181,138,0.4)" }} />
+                <span
+                  className="text-[10px] uppercase tracking-[0.3em]"
+                  style={{ color: "#d4b58a" }}
+                >
+                  RESEATO
+                </span>
+              </div>
+              <h1
+                className="mt-2 text-[34px] leading-tight font-semibold"
+                style={{ fontFamily: SERIF, color: "#faf4ea" }}
+              >
+                {mode === "login" ? "Sign in" : "Create account"}
+              </h1>
+              <p className="mt-1 text-sm" style={{ color: "#c9b99d" }}>
                 {mode === "login"
                   ? "Enter your credentials to continue."
                   : "Fill up the form to register."}
@@ -889,27 +1190,59 @@ export default function AuthPage() {
                     <button
                       type="button"
                       onClick={() => setRole("customer")}
-                      className={`rounded-xl border px-4 py-3 text-left ${
+                      className="rounded-xl px-4 py-3 text-left transition-colors"
+                      style={
                         role === "customer"
-                          ? "border-[#c98d98] bg-[#f8ecee]"
-                          : "border-[#e3dde0] bg-white hover:bg-[#faf6f7]"
-                      }`}
+                          ? {
+                              border: "1px solid rgba(212,181,138,0.55)",
+                              background:
+                                "linear-gradient(135deg, rgba(212,181,138,0.18), rgba(180,109,115,0.18))",
+                              boxShadow: "inset 0 1px 0 rgba(212,181,138,0.2)",
+                            }
+                          : {
+                              border: "1px solid rgba(212,181,138,0.22)",
+                              background: "rgba(10,5,7,0.45)",
+                            }
+                      }
                     >
-                      <div className="text-sm font-medium">Customer</div>
-                      <div className="text-xs text-[#6b7280]">Reserve tables</div>
+                      <div
+                        className="text-sm font-semibold"
+                        style={{ color: role === "customer" ? "#faf4ea" : "#d4b58a" }}
+                      >
+                        Customer
+                      </div>
+                      <div className="text-xs" style={{ color: "#c9b99d" }}>
+                        Reserve tables
+                      </div>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setRole("vendor")}
-                      className={`rounded-xl border px-4 py-3 text-left ${
+                      className="rounded-xl px-4 py-3 text-left transition-colors"
+                      style={
                         role === "vendor"
-                          ? "border-[#c98d98] bg-[#f8ecee]"
-                          : "border-[#e3dde0] bg-white hover:bg-[#faf6f7]"
-                      }`}
+                          ? {
+                              border: "1px solid rgba(212,181,138,0.55)",
+                              background:
+                                "linear-gradient(135deg, rgba(212,181,138,0.18), rgba(180,109,115,0.18))",
+                              boxShadow: "inset 0 1px 0 rgba(212,181,138,0.2)",
+                            }
+                          : {
+                              border: "1px solid rgba(212,181,138,0.22)",
+                              background: "rgba(10,5,7,0.45)",
+                            }
+                      }
                     >
-                      <div className="text-sm font-medium">Restaurant Owner</div>
-                      <div className="text-xs text-[#6b7280]">Manage bookings</div>
+                      <div
+                        className="text-sm font-semibold"
+                        style={{ color: role === "vendor" ? "#faf4ea" : "#d4b58a" }}
+                      >
+                        Restaurant Owner
+                      </div>
+                      <div className="text-xs" style={{ color: "#c9b99d" }}>
+                        Manage bookings
+                      </div>
                     </button>
                   </div>
 
@@ -969,14 +1302,18 @@ export default function AuthPage() {
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="h-4 w-4 shrink-0 rounded border-[#d6c8cc] bg-white text-[#8b3d4a]"
+                      className="h-4 w-4 shrink-0 rounded"
+                      style={{ accentColor: "#d4b58a" }}
                     />
-                    <span className="text-xs text-[#4b5563] leading-none">Remember me</span>
+                    <span className="text-xs leading-none" style={{ color: "#c9b99d" }}>
+                      Remember me
+                    </span>
                   </label>
                   <Link
                     to="/forgot-password"
                     state={{ email: email.trim() }}
-                    className="text-xs font-semibold text-[#7b2f3b] hover:text-[#923f4a]"
+                    className="text-xs font-semibold underline-offset-4 hover:underline"
+                    style={{ color: "#d4b58a" }}
                   >
                     Forgot password?
                   </Link>
@@ -995,11 +1332,24 @@ export default function AuthPage() {
                     error={fieldErrors.confirmPassword}
                   />
 
-                  <div className="rounded-2xl border border-[#e8d8dc] bg-[#fff9fa] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                  <div
+                    className="rounded-2xl px-4 py-3"
+                    style={{
+                      border: "1px solid rgba(212,181,138,0.25)",
+                      background: "rgba(10,5,7,0.4)",
+                    }}
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.15em] text-[#8b3d4a]">Password Health</p>
-                        <p className={`text-sm font-semibold ${getStrengthTextClass(passwordStrengthScore)}`}>
+                        <p
+                          className="text-[11px] uppercase tracking-[0.2em]"
+                          style={{ color: "#d4b58a" }}
+                        >
+                          Password Health
+                        </p>
+                        <p
+                          className={`text-sm font-semibold ${getStrengthTextClass(passwordStrengthScore)}`}
+                        >
                           {passwordStrengthLabel}
                         </p>
                       </div>
@@ -1020,14 +1370,17 @@ export default function AuthPage() {
                       ))}
                     </div>
 
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#ede7e8]">
+                    <div
+                      className="mt-2 h-1.5 w-full overflow-hidden rounded-full"
+                      style={{ background: "rgba(212,181,138,0.12)" }}
+                    >
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${passwordStrengthBarClass}`}
                         style={{ width: `${passwordStrengthPercent}%` }}
                       />
                     </div>
 
-                    <div className="mt-2 text-[11px] text-[#6b7280]">
+                    <div className="mt-2 text-[11px]" style={{ color: "#c9b99d" }}>
                       Requires uppercase, number, and special character to enable signup.
                     </div>
 
@@ -1039,7 +1392,7 @@ export default function AuthPage() {
                       <RequirementItem ok={passwordChecks.matches} text="Passwords match" />
                     </ul>
 
-                    <div className="mt-2 text-[11px] text-[#8b97a8]">
+                    <div className="mt-2 text-[11px]" style={{ color: "#8a7666" }}>
                       {passwordStrengthPercent.toFixed(0)}% strength
                     </div>
                   </div>
@@ -1047,11 +1400,19 @@ export default function AuthPage() {
               )}
 
               <div>
-                <label className={`inline-flex items-center gap-2 cursor-pointer transition ${
-                  termsError && !agreed
-                    ? "rounded-lg border border-[#f0a0a8] bg-[#fff5f6] px-2 py-1.5"
-                    : ""
-                }`}>
+                <label
+                  className="inline-flex items-center gap-2 cursor-pointer transition"
+                  style={
+                    termsError && !agreed
+                      ? {
+                          padding: "6px 10px",
+                          borderRadius: "8px",
+                          border: "1px solid rgba(225,93,93,0.45)",
+                          background: "rgba(70,20,25,0.35)",
+                        }
+                      : undefined
+                  }
+                >
                   <input
                     type="checkbox"
                     checked={agreed}
@@ -1059,21 +1420,23 @@ export default function AuthPage() {
                       setAgreed(e.target.checked);
                       if (e.target.checked) { setTermsError(false); setFieldErrors((p) => { const n = { ...p }; delete n.terms; return n; }); }
                     }}
-                    className="h-4 w-4 shrink-0 rounded border-[#d6c8cc] bg-white text-[#8b3d4a]"
+                    className="h-4 w-4 shrink-0 rounded"
+                    style={{ accentColor: "#d4b58a" }}
                   />
-                  <span className="text-xs text-[#4b5563] leading-none">
+                  <span className="text-xs leading-none" style={{ color: "#c9b99d" }}>
                     I have read and agree to the{" "}
                     <button
                       type="button"
                       onClick={() => setShowTermsModal(true)}
-                      className="font-semibold text-[#7b2f3b] underline underline-offset-2 hover:text-[#923f4a]"
+                      className="font-semibold underline underline-offset-2"
+                      style={{ color: "#d4b58a" }}
                     >
                       Terms and Conditions
                     </button>
                   </span>
                 </label>
                 {termsError && !agreed && (
-                  <p className="mt-1 pl-6 text-xs font-medium text-[#be123c]">
+                  <p className="mt-1 pl-6 text-xs font-medium" style={{ color: "#f5c6ca" }}>
                     You must accept the Terms and Conditions to proceed.
                   </p>
                 )}
@@ -1082,10 +1445,16 @@ export default function AuthPage() {
               {/* error/success popup is rendered as a fixed toast at top */}
 
               {showResendConfirmation && (
-                <div className="rounded-xl border border-[#ead9dd] bg-[#fff7f8] px-4 py-3">
-                  <div className="text-xs text-[#6b7280]">
+                <div
+                  className="rounded-xl px-4 py-3"
+                  style={{
+                    border: "1px solid rgba(212,181,138,0.3)",
+                    background: "rgba(10,5,7,0.5)",
+                  }}
+                >
+                  <div className="text-xs" style={{ color: "#c9b99d" }}>
                     Need another confirmation email for
-                    <span className="ml-1 font-medium text-[#111827]">
+                    <span className="ml-1 font-semibold" style={{ color: "#d4b58a" }}>
                       {(email.trim() || lastAuthEmail || "your account")}
                     </span>
                     ?
@@ -1094,7 +1463,12 @@ export default function AuthPage() {
                     type="button"
                     onClick={() => resendConfirmationEmail(email.trim() || lastAuthEmail)}
                     disabled={loading || resendingConfirmation}
-                    className="mt-2 rounded-lg border border-[#d6c8cc] bg-white px-3 py-1.5 text-xs font-medium text-[#7b2f3b] hover:bg-[#fdf3f5] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-2 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      border: "1px solid rgba(212,181,138,0.35)",
+                      background: "rgba(10,5,7,0.5)",
+                      color: "#d4b58a",
+                    }}
                   >
                     {resendingConfirmation ? "Sending..." : "Resend confirmation email"}
                   </button>
@@ -1104,19 +1478,26 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={!canSubmit || loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#b46d73] to-[#923f4a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(146,63,74,0.24)] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.15em] transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(135deg, #b46d73, #923f4a)",
+                  color: "#faf4ea",
+                  boxShadow:
+                    "0 18px 32px rgba(146,63,74,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
+                }}
               >
                 {loading ? "Please wait..." : mode === "login" ? (<>Sign In <span aria-hidden="true">&rarr;</span></>) : "Create account"}
               </button>
 
-              <p className="mt-1 text-center text-sm text-[#6b7280]">
+              <p className="mt-1 text-center text-sm" style={{ color: "#c9b99d" }}>
                 {mode === "login" ? (
                   <>
                     Don&apos;t have an account?{" "}
                     <button
                       type="button"
                       onClick={() => { setMode("signup"); setMsg(null); setShowResendConfirmation(false); }}
-                      className="font-semibold text-[#7b2f3b] hover:text-[#923f4a]"
+                      className="font-semibold underline-offset-4 hover:underline"
+                      style={{ color: "#d4b58a" }}
                     >
                       Sign up for free
                     </button>
@@ -1127,7 +1508,8 @@ export default function AuthPage() {
                     <button
                       type="button"
                       onClick={() => { setMode("login"); setMsg(null); setShowResendConfirmation(false); }}
-                      className="font-semibold text-[#7b2f3b] hover:text-[#923f4a]"
+                      className="font-semibold underline-offset-4 hover:underline"
+                      style={{ color: "#d4b58a" }}
                     >
                       Sign in
                     </button>
@@ -1155,21 +1537,38 @@ function Field(props: {
   error?: string;
 }) {
   return (
-    <label className="block space-y-1">
-      <div className="text-sm text-[#4b5563]">{props.label}</div>
-      <div className={`auth-field flex items-center gap-2 rounded-xl border bg-white px-3 py-2.5 ${
-        props.error ? "border-[#e11d48] ring-1 ring-[#e11d48]/20" : "border-[#ddd8da]"
-      }`}>
-        <span className="text-[#9ca3af]">{props.icon}</span>
+    <label className="block space-y-1.5">
+      <div
+        className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+        style={{ color: "#d4b58a" }}
+      >
+        {props.label}
+      </div>
+      <div
+        className="auth-field flex items-center gap-2 rounded-xl px-3 py-3"
+        style={{
+          border: props.error
+            ? "1px solid rgba(225,93,93,0.55)"
+            : "1px solid rgba(212,181,138,0.3)",
+          background: "rgba(10,5,7,0.55)",
+          boxShadow: props.error ? "0 0 0 3px rgba(225,93,93,0.12)" : undefined,
+        }}
+      >
+        <span style={{ color: "#d4b58a" }}>{props.icon}</span>
         <input
           type={props.type ?? "text"}
           value={props.value}
           onChange={(e) => props.onChange(e.target.value)}
           placeholder={props.placeholder}
-          className="auth-input w-full bg-transparent text-sm text-[#111827] placeholder:text-[#9ca3af]"
+          className="auth-input w-full bg-transparent text-sm outline-none"
+          style={{ color: "#f5ede4" }}
         />
       </div>
-      {props.error && <p className="text-xs text-[#be123c]">{props.error}</p>}
+      {props.error && (
+        <p className="text-xs" style={{ color: "#f5c6ca" }}>
+          {props.error}
+        </p>
+      )}
     </label>
   );
 }
@@ -1184,28 +1583,45 @@ function PasswordField(props: {
   error?: string;
 }) {
   return (
-    <label className="block space-y-1">
-      <div className="text-sm text-[#4b5563]">{props.label}</div>
-      <div className={`auth-field flex items-center gap-2 rounded-xl border bg-white px-3 py-2.5 ${
-        props.error ? "border-[#e11d48] ring-1 ring-[#e11d48]/20" : "border-[#ddd8da]"
-      }`}>
-        <span className="text-[#9ca3af]">{props.icon}</span>
+    <label className="block space-y-1.5">
+      <div
+        className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+        style={{ color: "#d4b58a" }}
+      >
+        {props.label}
+      </div>
+      <div
+        className="auth-field flex items-center gap-2 rounded-xl px-3 py-3"
+        style={{
+          border: props.error
+            ? "1px solid rgba(225,93,93,0.55)"
+            : "1px solid rgba(212,181,138,0.3)",
+          background: "rgba(10,5,7,0.55)",
+          boxShadow: props.error ? "0 0 0 3px rgba(225,93,93,0.12)" : undefined,
+        }}
+      >
+        <span style={{ color: "#d4b58a" }}>{props.icon}</span>
         <input
           type={props.show ? "text" : "password"}
           value={props.value}
           onChange={(e) => props.onChange(e.target.value)}
-          className="auth-input w-full bg-transparent text-sm text-[#111827] placeholder:text-[#9ca3af]"
+          className="auth-input w-full bg-transparent text-sm outline-none"
+          style={{ color: "#f5ede4" }}
           placeholder="********"
         />
         <button
           type="button"
           onClick={props.toggleShow}
-          className="text-[#9ca3af] hover:text-[#6b7280]"
+          style={{ color: "#d4b58a" }}
         >
           {props.show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
-      {props.error && <p className="text-xs text-[#be123c]">{props.error}</p>}
+      {props.error && (
+        <p className="text-xs" style={{ color: "#f5c6ca" }}>
+          {props.error}
+        </p>
+      )}
     </label>
   );
 }

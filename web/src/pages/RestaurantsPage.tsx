@@ -435,14 +435,18 @@ export default function RestaurantsPage() {
               Browse Restaurants
             </p>
             <h1
-              className="font-light text-center mx-auto"
+              className="font-light"
               style={{
                 fontFamily: "'Cormorant Garamond', serif",
-                fontSize: "clamp(2rem, 5vw, 3.6rem)",
+                fontSize: "clamp(1.4rem, 2.6vw, 2.2rem)",
+                fontStyle: "italic",
                 color: "#c9a07a",
-                letterSpacing: "-0.01em",
-                lineHeight: 1.15,
-                maxWidth: "20ch",
+                letterSpacing: "0.005em",
+                lineHeight: 1.4,
+                maxWidth: "46ch",
+                marginLeft: "auto",
+                marginRight: "auto",
+                textAlign: "center",
               }}
             >
               “Welcome. Indulge in Cebu’s finest dining experiences, carefully selected for your pleasure.”

@@ -30,8 +30,6 @@ const DARK_BG = "#130a0d";
 const CARD_BG = "rgba(36,22,26,0.85)";
 const CARD_BORDER = "1px solid rgba(212,181,138,0.22)";
 const GOLD_BORDER = "1px solid rgba(212,181,138,0.35)";
-const TEXT_MUTED = "rgba(250,244,234,0.72)";
-const TEXT_DIM = "rgba(250,244,234,0.55)";
 const SERIF = "'Cormorant Garamond', serif";
 const SANS = "'Jost', sans-serif";
 

@@ -3197,6 +3197,70 @@ app.patch("/admin/users/:targetUserId/role", requireUser, async (req: any, res) 
   }
 });
 
+app.patch("/admin/users/:targetUserId/details", requireUser, async (req: any, res) => {
+  const actorId = req.user.id;
+  const targetUserId = String(req.params.targetUserId ?? "").trim();
+
+  try {
+    await ensureAdminRole(actorId);
+
+    if (!targetUserId) {
+      return res.status(400).json({ message: "targetUserId is required" });
+    }
+
+    const fullName = req.body?.fullName != null ? String(req.body.fullName).trim() : undefined;
+    const email = req.body?.email != null ? String(req.body.email).trim() : undefined;
+
+    if (fullName === undefined && email === undefined) {
+      return res.status(400).json({ message: "At least one field (fullName or email) is required." });
+    }
+
+    // Update profile table
+    if (fullName !== undefined) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ full_name: fullName })
+        .eq("id", targetUserId);
+
+      if (profileError) {
+        return res.status(500).json({ message: profileError.message });
+      }
+    }
+
+    // Update auth user metadata & email
+    const currentAuth = await supabase.auth.admin.getUserById(targetUserId);
+    if (!currentAuth.error && currentAuth.data?.user) {
+      const existingMetadata = (currentAuth.data.user.user_metadata ?? {}) as Record<string, unknown>;
+      const updatePayload: Record<string, unknown> = {};
+
+      if (fullName !== undefined) {
+        updatePayload.user_metadata = { ...existingMetadata, full_name: fullName };
+      }
+      if (email !== undefined) {
+        updatePayload.email = email;
+      }
+
+      const authUpdate = await supabase.auth.admin.updateUserById(targetUserId, updatePayload);
+      if (authUpdate.error) {
+        return res.status(500).json({ message: authUpdate.error.message });
+      }
+    }
+
+    await writeAdminAuditLog({
+      actorId,
+      action: "user_details_update",
+      targetType: "user",
+      targetId: targetUserId,
+      payload: { fullName, email },
+    });
+
+    return res.json({ ok: true, targetUserId });
+  } catch (error: any) {
+    const status = Number(error?.status ?? 500);
+    return res.status(status).json({ message: error?.message ?? "Failed to update user details" });
+  }
+});
+
 app.delete("/admin/users/:targetUserId", requireUser, async (req: any, res) => {
   const actorId = req.user.id;
   const targetUserId = String(req.params.targetUserId ?? "").trim();

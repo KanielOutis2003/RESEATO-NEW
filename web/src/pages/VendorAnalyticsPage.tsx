@@ -5,6 +5,8 @@ import {
   CheckCircle2,
   CircleDollarSign,
   Clock3,
+  Download,
+  FileSpreadsheet,
   Loader2,
   TrendingDown,
   TrendingUp,
@@ -220,6 +222,95 @@ export default function VendorAnalyticsPage() {
     return total / days.length;
   }, [days]);
 
+  function csvCell(v: string | number) {
+    const t = String(v ?? "");
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  }
+
+  function handleExportCsv() {
+    if (!days.length || !charts) return;
+    const restoNames = restaurants.map((r) => r.name).join(", ") || "All Restaurants";
+    const generatedAt = new Date().toLocaleString();
+    const headers = ["date", "total", "pending", "confirmed", "completed", "cancelled", "paid", "revenue_minor", "revenue_php", "completion_rate_pct", "cancellation_rate_pct"];
+    const rows = days.map((d) => {
+      const t = d.total || 0;
+      return [d.date, t, d.pending, d.confirmed, d.completed, d.cancelled, d.paid, d.revenueMinor, (d.revenueMinor / 100).toFixed(2), t > 0 ? ((d.completed / t) * 100).toFixed(2) : "0", t > 0 ? ((d.cancelled / t) * 100).toFixed(2) : "0"];
+    });
+    const meta = [
+      "RESEATO - Vendor Analytics Report",
+      `Restaurant: ${restoNames}`,
+      `Report Period: ${charts.from} to ${charts.to}`,
+      `Generated: ${generatedAt}`,
+      `Total Reservations: ${summary?.totalReservations ?? 0} | Revenue: PHP ${((summary?.totalRevenueMinor ?? 0) / 100).toFixed(2)}`,
+      "",
+    ];
+    const csv = [...meta.map(csvCell), headers.map(csvCell).join(","), ...rows.map((r) => r.map((c) => csvCell(c as string | number)).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RESEATO-Vendor-Analytics-${charts.from}-to-${charts.to}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function handleExportExcel() {
+    if (!days.length || !charts) return;
+    const restoNames = restaurants.map((r) => r.name).join(", ") || "All Restaurants";
+    const generatedAt = new Date().toLocaleString();
+    const headers = ["Date", "Total", "Pending", "Confirmed", "Completed", "Cancelled", "Paid", "Revenue (centavos)", "Revenue (PHP)", "Completion %", "Cancellation %"];
+    const colWidths = [90, 60, 70, 80, 80, 75, 55, 110, 100, 95, 105];
+    const rows = days.map((d) => {
+      const t = d.total || 0;
+      return [d.date, t, d.pending, d.confirmed, d.completed, d.cancelled, d.paid, d.revenueMinor, Number((d.revenueMinor / 100).toFixed(2)), t > 0 ? Number(((d.completed / t) * 100).toFixed(2)) : 0, t > 0 ? Number(((d.cancelled / t) * 100).toFixed(2)) : 0];
+    });
+    const esc = (v: string | number) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    let xml = '<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n';
+    xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n';
+    xml += '<Styles>';
+    xml += '<Style ss:ID="title"><Font ss:Bold="1" ss:Size="16" ss:Color="#8b3d4a"/></Style>';
+    xml += '<Style ss:ID="meta"><Font ss:Size="11" ss:Color="#667085"/></Style>';
+    xml += '<Style ss:ID="metaBold"><Font ss:Bold="1" ss:Size="11" ss:Color="#374151"/></Style>';
+    xml += '<Style ss:ID="hdr"><Font ss:Bold="1" ss:Size="10" ss:Color="#FFFFFF"/><Interior ss:Color="#8b3d4a" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>';
+    xml += '<Style ss:ID="sum"><Font ss:Bold="1" ss:Size="10"/><Interior ss:Color="#FFF1F2" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>';
+    xml += '<Style ss:ID="cell"><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders></Style>';
+    xml += '<Style ss:ID="num"><NumberFormat ss:Format="#,##0.00"/><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders></Style>';
+    xml += '<Style ss:ID="dateCell"><Alignment ss:Horizontal="Left"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders></Style>';
+    xml += '</Styles>\n';
+    xml += '<Worksheet ss:Name="Analytics Report">\n<Table>\n';
+    for (const w of colWidths) xml += `<Column ss:AutoFitWidth="0" ss:Width="${w}"/>`;
+    xml += '\n';
+    xml += `<Row ss:Height="28"><Cell ss:StyleID="title" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">RESEATO - Vendor Analytics Report</Data></Cell></Row>\n`;
+    xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Restaurant: ${esc(restoNames)}</Data></Cell></Row>\n`;
+    xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Report Period: ${esc(charts.from)} to ${esc(charts.to)}</Data></Cell></Row>\n`;
+    xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Generated: ${esc(generatedAt)}</Data></Cell></Row>\n`;
+    xml += `<Row><Cell ss:StyleID="metaBold" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Total Reservations: ${summary?.totalReservations ?? 0}  |  Revenue: PHP ${((summary?.totalRevenueMinor ?? 0) / 100).toFixed(2)}  |  Completion: ${pct(summary?.completionRate ?? 0)}  |  Cancellation: ${pct(summary?.cancellationRate ?? 0)}</Data></Cell></Row>\n`;
+    xml += "<Row></Row>\n";
+    xml += "<Row>";
+    for (const h of headers) xml += `<Cell ss:StyleID="hdr"><Data ss:Type="String">${esc(h)}</Data></Cell>`;
+    xml += "</Row>\n";
+    for (const row of rows) {
+      const cells = row.map((c, i) => {
+        if (i === 0) return `<Cell ss:StyleID="dateCell"><Data ss:Type="String">${esc(c)}</Data></Cell>`;
+        if (i >= 7) return `<Cell ss:StyleID="num"><Data ss:Type="Number">${esc(c)}</Data></Cell>`;
+        return `<Cell ss:StyleID="cell"><Data ss:Type="Number">${esc(c)}</Data></Cell>`;
+      }).join("");
+      xml += `<Row>${cells}</Row>\n`;
+    }
+    xml += "</Table>\n</Worksheet>\n</Workbook>";
+    const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RESEATO-Vendor-Analytics-${charts.from}-to-${charts.to}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   if (loading) {
     return (
       <VendorPageReveal className="flex-1 p-6 flex items-center justify-center">
@@ -239,7 +330,7 @@ export default function VendorAnalyticsPage() {
   }
 
   return (
-    <VendorPageReveal className="flex-1 space-y-6 p-4 sm:p-6 lg:p-8 max-w-6xl">
+    <VendorPageReveal className="flex-1 space-y-6 p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -252,21 +343,31 @@ export default function VendorAnalyticsPage() {
           </p>
         </div>
 
-        {/* Range picker */}
-        <div className="flex rounded-xl border border-[#e5e7eb] bg-white p-1 shadow-sm">
-          {PRESETS.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => setPreset(p.key)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                preset === p.key
-                  ? "bg-[#8b3d4a] text-white shadow-sm"
-                  : "text-[#6b7280] hover:text-[#1f2937]"
-              }`}
-            >
-              {p.label}
+        {/* Range picker + Export */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex rounded-xl border border-[#e5e7eb] bg-white p-1 shadow-sm">
+            {PRESETS.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setPreset(p.key)}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                  preset === p.key
+                    ? "bg-[#8b3d4a] text-white shadow-sm"
+                    : "text-[#6b7280] hover:text-[#1f2937]"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={handleExportCsv} className="inline-flex items-center gap-1.5 rounded-xl border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2 text-sm font-bold text-[#8f3d56] transition hover:bg-[#f4dfe3]">
+              <Download className="h-3.5 w-3.5" />CSV
             </button>
-          ))}
+            <button type="button" onClick={handleExportExcel} className="inline-flex items-center gap-1.5 rounded-xl border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2 text-sm font-bold text-[#8f3d56] transition hover:bg-[#f4dfe3]">
+              <FileSpreadsheet className="h-3.5 w-3.5" />Excel
+            </button>
+          </div>
         </div>
       </div>
 

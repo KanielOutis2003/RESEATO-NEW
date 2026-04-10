@@ -10,6 +10,7 @@ import {
   RefreshCcw,
   Search,
   Star,
+  Pencil,
   Trash2,
   Users,
   Wallet,
@@ -31,6 +32,7 @@ import {
   deleteAdminRestaurant,
   deleteAdminUser,
   getAdminCharts,
+  updateAdminUserDetails,
   getAdminOverview,
   listAdminAuditLogs,
   listAdminReservations,
@@ -342,6 +344,11 @@ export default function AdminDashboardPage() {
   const [showAddRestaurantModal, setShowAddRestaurantModal] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [globalLoading, setGlobalLoading] = useState<string | null>(null);
+
+  // Edit user details modal
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [editUserForm, setEditUserForm] = useState({ fullName: "", email: "" });
+  const [editUserSaving, setEditUserSaving] = useState(false);
 
   // Confirmation modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -728,7 +735,18 @@ export default function AdminDashboardPage() {
       ];
     });
 
+    const generatedAt = new Date().toLocaleString();
+    const metaRows = [
+      "RESEATO - Admin Performance Report",
+      `Report Period: ${chartData.from} to ${chartData.to}`,
+      `Generated: ${generatedAt}`,
+      `Total Reservations: ${chartData.summary.totalReservations}`,
+      `Total Revenue: PHP ${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}`,
+      "",
+    ];
+
     const csv = [
+      ...metaRows.map((line) => csvCell(line)),
       headers.map(csvCell).join(","),
       ...rows.map((row) => row.map((cell) => csvCell(cell as string | number)).join(",")),
     ].join("\n");
@@ -737,7 +755,7 @@ export default function AdminDashboardPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `admin-charts-${chartData.from}-to-${chartData.to}.csv`;
+    a.download = `RESEATO-Admin-Report-${chartData.from}-to-${chartData.to}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -766,41 +784,63 @@ export default function AdminDashboardPage() {
       ];
     });
 
+    const generatedAt = new Date().toLocaleString();
+
     // Build XML Spreadsheet (opens natively in Excel, no library needed)
     const escXml = (v: string | number) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const colWidths = [90, 60, 80, 80, 70, 80, 55, 110, 100, 95, 110];
     let xml = '<?xml version="1.0"?>\n';
     xml += '<?mso-application progid="Excel.Sheet"?>\n';
     xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n';
-    xml += '<Styles><Style ss:ID="hdr"><Font ss:Bold="1"/><Interior ss:Color="#F8ECEE" ss:Pattern="Solid"/></Style>';
-    xml += '<Style ss:ID="num"><NumberFormat ss:Format="#,##0.00"/></Style></Styles>\n';
-    xml += '<Worksheet ss:Name="Performance Charts">\n<Table>\n';
+    xml += '<Styles>';
+    xml += '<Style ss:ID="title"><Font ss:Bold="1" ss:Size="16" ss:Color="#8b3d4a"/></Style>';
+    xml += '<Style ss:ID="meta"><Font ss:Size="11" ss:Color="#667085"/></Style>';
+    xml += '<Style ss:ID="metaBold"><Font ss:Bold="1" ss:Size="11" ss:Color="#374151"/></Style>';
+    xml += '<Style ss:ID="hdr"><Font ss:Bold="1" ss:Size="10" ss:Color="#FFFFFF"/><Interior ss:Color="#8b3d4a" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>';
+    xml += '<Style ss:ID="sum"><Font ss:Bold="1" ss:Size="10"/><Interior ss:Color="#FFF1F2" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>';
+    xml += '<Style ss:ID="cell"><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders></Style>';
+    xml += '<Style ss:ID="num"><NumberFormat ss:Format="#,##0.00"/><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders></Style>';
+    xml += '<Style ss:ID="dateCell"><Alignment ss:Horizontal="Left"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders></Style>';
+    xml += '</Styles>\n';
+    xml += '<Worksheet ss:Name="Performance Report">\n<Table>\n';
 
-    // Header row
+    // Column widths
+    for (const w of colWidths) xml += `<Column ss:AutoFitWidth="0" ss:Width="${w}"/>`;
+    xml += '\n';
+
+    // Report header rows
+    xml += `<Row ss:Height="28"><Cell ss:StyleID="title" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">RESEATO - Admin Performance Report</Data></Cell></Row>\n`;
+    xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Report Period: ${escXml(chartData.from)} to ${escXml(chartData.to)}</Data></Cell></Row>\n`;
+    xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Generated: ${escXml(generatedAt)}</Data></Cell></Row>\n`;
+    xml += `<Row><Cell ss:StyleID="metaBold" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Total Reservations: ${chartData.summary.totalReservations}  |  Revenue: PHP ${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}  |  Completion: ${(chartData.summary.completionRate * 100).toFixed(1)}%  |  Cancellation: ${(chartData.summary.cancellationRate * 100).toFixed(1)}%</Data></Cell></Row>\n`;
+    xml += "<Row></Row>\n";
+
+    // Column header row
     xml += "<Row>";
     for (const h of headers) xml += `<Cell ss:StyleID="hdr"><Data ss:Type="String">${escXml(h)}</Data></Cell>`;
     xml += "</Row>\n";
 
     // Summary row
     xml += "<Row>";
-    xml += `<Cell><Data ss:Type="String">SUMMARY</Data></Cell>`;
-    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalReservations}</Data></Cell>`;
-    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalCompleted}</Data></Cell>`;
-    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalCancelled}</Data></Cell>`;
-    xml += `<Cell><Data ss:Type="String">-</Data></Cell>`;
-    xml += `<Cell><Data ss:Type="String">-</Data></Cell>`;
-    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalPaid}</Data></Cell>`;
-    xml += `<Cell><Data ss:Type="Number">${chartData.summary.totalRevenueMinor}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="sum"><Data ss:Type="String">SUMMARY</Data></Cell>`;
+    xml += `<Cell ss:StyleID="sum"><Data ss:Type="Number">${chartData.summary.totalReservations}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="sum"><Data ss:Type="Number">${chartData.summary.totalCompleted}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="sum"><Data ss:Type="Number">${chartData.summary.totalCancelled}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="sum"><Data ss:Type="String">-</Data></Cell>`;
+    xml += `<Cell ss:StyleID="sum"><Data ss:Type="String">-</Data></Cell>`;
+    xml += `<Cell ss:StyleID="sum"><Data ss:Type="Number">${chartData.summary.totalPaid}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="sum"><Data ss:Type="Number">${chartData.summary.totalRevenueMinor}</Data></Cell>`;
     xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}</Data></Cell>`;
-    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${chartData.summary.completionRate.toFixed(2)}</Data></Cell>`;
-    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${chartData.summary.cancellationRate.toFixed(2)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.completionRate * 100).toFixed(2)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.cancellationRate * 100).toFixed(2)}</Data></Cell>`;
     xml += "</Row>\n";
 
     // Data rows
     for (const row of rows) {
       const cells = row.map((cell, i) => {
-        const type = i === 0 ? "String" : "Number";
-        const style = i >= 8 ? ' ss:StyleID="num"' : "";
-        return `<Cell${style}><Data ss:Type="${type}">${escXml(cell)}</Data></Cell>`;
+        if (i === 0) return `<Cell ss:StyleID="dateCell"><Data ss:Type="String">${escXml(cell)}</Data></Cell>`;
+        if (i >= 8) return `<Cell ss:StyleID="num"><Data ss:Type="Number">${escXml(cell)}</Data></Cell>`;
+        return `<Cell ss:StyleID="cell"><Data ss:Type="Number">${escXml(cell)}</Data></Cell>`;
       }).join("");
       xml += `<Row>${cells}</Row>\n`;
     }
@@ -811,7 +851,7 @@ export default function AdminDashboardPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `admin-charts-${chartData.from}-to-${chartData.to}.xls`;
+    a.download = `RESEATO-Admin-Report-${chartData.from}-to-${chartData.to}.xls`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -839,6 +879,30 @@ export default function AdminDashboardPage() {
     }
   }
 
+
+  function openEditUser(item: AdminUser) {
+    setEditingUser(item);
+    setEditUserForm({ fullName: item.fullName || "", email: item.email || "" });
+  }
+
+  async function handleSaveUserDetails() {
+    if (!editingUser) return;
+    try {
+      setEditUserSaving(true);
+      setMessage(null);
+      await updateAdminUserDetails(editingUser.id, {
+        fullName: editUserForm.fullName,
+        email: editUserForm.email,
+      });
+      await Promise.all([loadUsers(), loadAuditLogs()]);
+      setMessage("User details updated.");
+      setEditingUser(null);
+    } catch (error: any) {
+      setMessage(error?.payload?.message ?? error?.message ?? "Failed to update user details.");
+    } finally {
+      setEditUserSaving(false);
+    }
+  }
 
   async function handleCreateRestaurant() {
     const name = restaurantForm.name.trim();
@@ -1391,7 +1455,15 @@ export default function AdminDashboardPage() {
                     </select>
                   </label>
 
-                  <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEditUser(item)}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#c8d3e8] bg-[#eef2fb] px-3 py-2 text-xs font-semibold text-[#2f4a7b] transition hover:bg-[#e2e8f5]"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleUpdateUserRole(item.id)}
@@ -1407,7 +1479,7 @@ export default function AdminDashboardPage() {
                       className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#f3c3cc] bg-[#fff1f2] px-3 py-2 text-xs font-semibold text-[#be123c] transition hover:bg-[#ffe4e6] disabled:opacity-60"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      {deletingUserId === item.id ? "Deleting..." : "Delete"}
+                      {deletingUserId === item.id ? "..." : "Delete"}
                     </button>
                   </div>
                 </article>
@@ -1465,11 +1537,19 @@ export default function AdminDashboardPage() {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
+                              onClick={() => openEditUser(item)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-[#c8d3e8] bg-[#eef2fb] px-2.5 py-1 text-xs font-semibold text-[#2f4a7b] transition hover:bg-[#e2e8f5]"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Edit
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => handleUpdateUserRole(item.id)}
                               disabled={updatingUserId === item.id}
                               className="rounded-lg border border-[#d9c3c8] bg-[#f8ecee] px-2.5 py-1 text-xs font-semibold text-[#7b2f3b] disabled:opacity-60"
                             >
-                              {updatingUserId === item.id ? "Saving..." : "Update"}
+                              {updatingUserId === item.id ? "Saving..." : "Role"}
                             </button>
                             <button
                               type="button"
@@ -1490,6 +1570,74 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* ─── Edit User Details Modal ─── */}
+      {editingUser && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !editUserSaving && setEditingUser(null)} />
+          <div
+            className="relative mx-4 w-full max-w-md rounded-[24px] border border-[#e8e2e3] bg-white p-6 shadow-[0_28px_60px_rgba(15,23,42,0.18)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div>
+                <h3 className="text-lg font-semibold text-[#1f2937]">Edit User Details</h3>
+                <p className="text-sm text-[#667085]">ID: {shortId(editingUser.id)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => !editUserSaving && setEditingUser(null)}
+                className="rounded-xl border border-[#e5e7eb] p-1.5 text-[#667085] transition hover:bg-[#f3f4f6]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Full Name</span>
+                <input
+                  value={editUserForm.fullName}
+                  onChange={(e) => setEditUserForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                  className="w-full rounded-xl border border-[#d8dbe2] bg-[#fcfcfd] px-3.5 py-2.5 text-sm text-[#1f2937] outline-none transition focus:border-[#8b3d4a] focus:ring-1 focus:ring-[#8b3d4a]"
+                  placeholder="Enter full name"
+                />
+              </label>
+
+              <label className="block space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7d8798]">Email</span>
+                <input
+                  type="email"
+                  value={editUserForm.email}
+                  onChange={(e) => setEditUserForm((prev) => ({ ...prev, email: e.target.value }))}
+                  className="w-full rounded-xl border border-[#d8dbe2] bg-[#fcfcfd] px-3.5 py-2.5 text-sm text-[#1f2937] outline-none transition focus:border-[#8b3d4a] focus:ring-1 focus:ring-[#8b3d4a]"
+                  placeholder="Enter email address"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                disabled={editUserSaving}
+                className="rounded-xl border border-[#d8dbe2] bg-white px-4 py-2.5 text-sm font-semibold text-[#475467] transition hover:bg-[#f8fafc] disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveUserDetails}
+                disabled={editUserSaving}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#8b3d4a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6f2f3b] disabled:opacity-60"
+              >
+                {editUserSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showAddRestaurantModal && (

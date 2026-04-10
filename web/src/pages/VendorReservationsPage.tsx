@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
+  CheckCheck,
   Clock3,
   CreditCard,
   Eye,
@@ -164,7 +165,7 @@ export default function VendorReservationsPage() {
 
   async function handleDecision(
     reservationId: string,
-    action: "approve" | "decline",
+    action: "approve" | "decline" | "complete",
   ) {
     try {
       setActingId(reservationId);
@@ -386,6 +387,18 @@ export default function VendorReservationsPage() {
                         </button>
                       </>
                     )}
+
+                    {status === "confirmed" && (
+                      <button
+                        type="button"
+                        onClick={() => handleDecision(reservation.id, "complete")}
+                        disabled={isActing}
+                        className="inline-flex items-center gap-1 rounded-lg border border-[#c4def3] bg-[#eef7ff] px-3 py-1.5 text-xs font-semibold text-[#1d4f7a] hover:bg-[#dceeff] disabled:opacity-50"
+                      >
+                        {isActing ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCheck className="h-3 w-3" />}
+                        Done
+                      </button>
+                    )}
                   </div>
                 </article>
               );
@@ -489,6 +502,20 @@ export default function VendorReservationsPage() {
                     >
                       {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
                       Decline
+                    </button>
+                  </div>
+                )}
+
+                {status === "confirmed" && (
+                  <div className="flex items-center gap-3 border-t border-[#ece8e9] px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={() => handleDecision(reservation.id, "complete")}
+                      disabled={isActing}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#c4def3] bg-[#eef7ff] px-4 py-2.5 text-sm font-semibold text-[#1d4f7a] hover:bg-[#dceeff] disabled:opacity-50"
+                    >
+                      {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCheck className="h-4 w-4" />}
+                      Mark as Done
                     </button>
                   </div>
                 )}

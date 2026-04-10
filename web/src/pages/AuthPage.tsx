@@ -1614,7 +1614,7 @@ function PasswordField(props: {
           onClick={props.toggleShow}
           style={{ color: "#d4b58a" }}
         >
-          {props.show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {props.show ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
       </div>
       {props.error && (

@@ -170,7 +170,7 @@ function GalleryLightbox({ images, startIndex, onClose }: { images: string[]; st
 export default function RestaurantDetailsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthed, loading: authLoading } = useAuth();
+  const { isAuthed, user, loading: authLoading } = useAuth();
   const { id } = useParams();
 
   const [data, setData] = useState<RestaurantDetails | null>(null);
@@ -179,6 +179,7 @@ export default function RestaurantDetailsPage() {
   const [time, setTime] = useState<string>("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [namePrefilled, setNamePrefilled] = useState(false);
   const [guests, setGuests] = useState(2);
   const [note, setNote] = useState("");
   const [loadingRestaurant, setLoadingRestaurant] = useState(false);
@@ -192,6 +193,23 @@ export default function RestaurantDetailsPage() {
     data?.imageUrl ??
     "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2400&q=80&sat=-10";
   const gallery = data?.galleryImages ?? [];
+
+  // Pre-fill name from user profile
+  useEffect(() => {
+    if (!user || namePrefilled) return;
+    const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const fullName =
+      (typeof meta.full_name === "string" ? meta.full_name.trim() : "") ||
+      [typeof meta.first_name === "string" ? meta.first_name.trim() : "", typeof meta.last_name === "string" ? meta.last_name.trim() : ""].filter(Boolean).join(" ");
+    if (fullName) {
+      setName(fullName);
+      setNamePrefilled(true);
+    }
+    const userPhone = typeof meta.phone === "string" ? meta.phone.trim() : "";
+    if (userPhone && !phone) {
+      setPhone(userPhone);
+    }
+  }, [user, namePrefilled, phone]);
 
   useEffect(() => {
     if (!id) return;

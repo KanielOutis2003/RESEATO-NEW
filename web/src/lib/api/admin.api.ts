@@ -147,6 +147,16 @@ export function updateAdminUserRole(targetUserId: string, role: "customer" | "ve
   );
 }
 
+export function updateAdminUserDetails(targetUserId: string, details: { fullName?: string; email?: string }) {
+  return adminApi<{ ok: boolean; targetUserId: string }>(
+    `/admin/users/${targetUserId}/details`,
+    {
+      method: "PATCH",
+      body: details,
+    },
+  );
+}
+
 export function deleteAdminUser(targetUserId: string) {
   return adminApi<{ ok: boolean; targetUserId: string }>(
     `/admin/users/${targetUserId}`,

@@ -248,7 +248,7 @@ export function listVendorReservations(params?: {
 
 export function decideVendorReservation(
   reservationId: string,
-  action: "approve" | "decline",
+  action: "approve" | "decline" | "complete",
   reason?: string,
 ) {
   return api<{ reservation: VendorReservation; message: string }>(

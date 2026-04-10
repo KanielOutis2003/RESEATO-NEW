@@ -608,7 +608,7 @@ export default function HomePage() {
               >
                 <motion.button
                   type="button"
-                  onClick={scrollToFeatured}
+                  onClick={featured.length > 0 ? scrollToFeatured : onGetStarted}
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
                   className="px-9 py-4 text-sm font-medium tracking-widest uppercase"
@@ -637,22 +637,12 @@ export default function HomePage() {
                 className="inline-flex flex-col items-center gap-2"
                 style={{ color: "rgba(180,109,115,0.5)" }}
               >
-                <span className="text-[10px] tracking-[0.3em] uppercase">Explore</span>
+                <span className="text-[10px] tracking-[0.3em] uppercase" style={{ color: "#c9a07a" }}>Explore</span>
                 <ChevronDown className="h-4 w-4" />
               </motion.div>
             </div>
           )}
 
-          {/* Bottom mobile nav links (visible only on mobile) */}
-          <div className="relative z-10 pb-5 sm:hidden">
-            <div className="flex items-center justify-center gap-5">
-              <button type="button" className="nav-link text-[0.7rem]" onClick={() => setShowAboutModal(true)}>About</button>
-              <span style={{ color: "rgba(180,109,115,0.3)" }}>·</span>
-              <button type="button" className="nav-link text-[0.7rem]" onClick={() => setShowTermsModal(true)}>Terms</button>
-              <span style={{ color: "rgba(180,109,115,0.3)" }}>·</span>
-              <button type="button" className="nav-link text-[0.7rem]" onClick={() => setShowDevModal(true)}>Developers</button>
-            </div>
-          </div>
         </div>
 
         {/* ══════════════════════════════

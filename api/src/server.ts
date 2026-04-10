@@ -72,7 +72,7 @@ app.use(express.json());
 type PaymentMethod = "card" | "wallet";
 type PaymentStatus = "unpaid" | "processing" | "paid" | "failed" | "cancelled";
 
-type ReservationDecisionAction = "approve" | "decline";
+type ReservationDecisionAction = "approve" | "decline" | "complete";
 
 const DEFAULT_BASE_SLOTS = [
   "11:00",
@@ -675,7 +675,7 @@ async function getActiveReservationCountsByGuestRange(
 
   for (const row of data ?? []) {
     const status = normalizeReservationStatus(row.status);
-    if (status === "cancelled" || status === "declined") continue;
+    if (status !== "confirmed" && status !== "completed") continue;
 
     const time = normalizeTime(row.time);
     if (!time) continue;
@@ -762,7 +762,7 @@ async function getActiveReservationCounts(restaurantId: string, date: string, ma
 
   for (const row of data ?? []) {
     const status = normalizeReservationStatus(row.status);
-    if (status === "cancelled" || status === "declined") continue;
+    if (status !== "confirmed" && status !== "completed") continue;
 
     const time = normalizeTime(row.time);
     if (!time) continue;
@@ -1210,6 +1210,7 @@ app.post("/reservations", requireUser, async (req: any, res) => {
         time: timeValue,
         guests: guestCount,
         status: "pending",
+        payment_amount: defaultReservationFeeMinor(),
       })
       .select("*")
       .single();
@@ -1682,12 +1683,11 @@ app.get("/vendor/overview", requireUser, async (req: any, res) => {
       if (status === "completed") completedCount += 1;
       if (paymentStatus === "paid") {
         paidCount += 1;
-        const amount = Number(row.payment_amount ?? 0);
-        if (Number.isFinite(amount) && amount > 0) {
-          totalPaidAmountMinor += amount;
-        }
       }
     }
+
+    // Profit = paidCount × flat ₱20 fee (all goes to RESEATO)
+    totalPaidAmountMinor = paidCount * defaultReservationFeeMinor();
 
     return res.json({
       restaurantCount: restaurantIds.length,
@@ -2264,12 +2264,12 @@ app.post(
 
       const actionRaw = String(req.body?.action ?? "").toLowerCase();
       const action: ReservationDecisionAction | null =
-        actionRaw === "approve" || actionRaw === "decline"
+        actionRaw === "approve" || actionRaw === "decline" || actionRaw === "complete"
           ? (actionRaw as ReservationDecisionAction)
           : null;
 
       if (!action) {
-        return res.status(400).json({ message: "action must be approve or decline" });
+        return res.status(400).json({ message: "action must be approve, decline, or complete" });
       }
 
       const { data: reservation, error: reservationError } = await supabase
@@ -2302,14 +2302,22 @@ app.post(
         });
       }
 
+      if (action === "complete" && status !== "confirmed") {
+        return res.status(409).json({
+          message: "Only confirmed reservations can be marked as completed.",
+        });
+      }
+
       const nowIso = new Date().toISOString();
       const declineReason =
         action === "decline"
           ? String(req.body?.reason ?? "").trim() || "Declined by restaurant"
           : null;
 
+      const nextStatus = action === "approve" ? "confirmed" : action === "complete" ? "completed" : "declined";
+
       const payload = {
-        status: action === "approve" ? "confirmed" : "declined",
+        status: nextStatus,
         reviewed_by: userId,
         reviewed_at: nowIso,
         decline_reason: declineReason,
@@ -2903,12 +2911,11 @@ app.get("/admin/overview", requireUser, async (req: any, res) => {
 
       if (paymentStatus === "paid") {
         paidReservations += 1;
-        const amount = Number((reservation as any).payment_amount ?? 0);
-        if (Number.isFinite(amount) && amount > 0) {
-          totalPaidAmountMinor += amount;
-        }
       }
     }
+
+    // Profit = paidReservations × flat ₱20 fee (all goes to RESEATO)
+    totalPaidAmountMinor = paidReservations * defaultReservationFeeMinor();
 
     return res.json({
       users: profiles.length,

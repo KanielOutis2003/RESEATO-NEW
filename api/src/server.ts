@@ -2455,12 +2455,18 @@ app.post(
       };
 
       const notificationTitle =
-        action === "approve" ? "Reservation Confirmed" : "Reservation Declined";
+        action === "approve"
+          ? "Reservation Confirmed"
+          : action === "complete"
+            ? "Reservation Completed"
+            : "Reservation Declined";
 
       const notificationBody =
         action === "approve"
           ? `Your reservation at ${restaurant.name} has been confirmed. See you on ${String((reservation as any).date ?? "")}!`
-          : `Your reservation at ${restaurant.name} was declined.${declineReason ? ` Reason: ${declineReason}` : ""}`;
+          : action === "complete"
+            ? `Your reservation at ${restaurant.name} has been marked as completed. Thank you for dining with us!`
+            : `Your reservation at ${restaurant.name} was declined.${declineReason ? ` Reason: ${declineReason}` : ""}`;
 
       const notificationLink = "/my-reservations";
 
@@ -2468,7 +2474,7 @@ app.post(
         userId: String((reservation as any).user_id),
         title: notificationTitle,
         body: notificationBody,
-        type: action === "approve" ? "reservation_approved" : "reservation_declined",
+        type: action === "approve" ? "reservation_approved" : action === "complete" ? "reservation_completed" : "reservation_declined",
         link: notificationLink,
         data: {
           reservationId,

@@ -213,10 +213,33 @@ export default function LuxuryNavbar() {
       }
     }
     loadNotifications();
-    const interval = setInterval(loadNotifications, 15_000);
+    // Realtime subscription for instant notifications
+    const channel = session?.user?.id
+      ? supabase
+          .channel("customer-notifications")
+          .on(
+            "postgres_changes",
+            { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${session.user.id}` },
+            (payload) => {
+              if (!alive) return;
+              const row = payload.new as AppNotification;
+              setNotifications((prev) => [row, ...prev]);
+            },
+          )
+          .on(
+            "postgres_changes",
+            { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${session.user.id}` },
+            (payload) => {
+              if (!alive) return;
+              const row = payload.new as AppNotification;
+              setNotifications((prev) => prev.map((n) => (n.id === row.id ? row : n)));
+            },
+          )
+          .subscribe()
+      : null;
     return () => {
       alive = false;
-      clearInterval(interval);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [notifOpen, session]);
 

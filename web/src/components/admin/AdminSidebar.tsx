@@ -187,9 +187,29 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
 
   useEffect(() => {
     fetchNotifications();
-    const iv = setInterval(fetchNotifications, 15_000);
-    return () => clearInterval(iv);
-  }, [fetchNotifications]);
+    // Realtime subscription for instant notifications
+    if (!user) return;
+    const channel = supabase
+      .channel("admin-notifications")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const row = payload.new as AppNotification;
+          setNotifications((prev) => [row, ...prev]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const row = payload.new as AppNotification;
+          setNotifications((prev) => prev.map((n) => (n.id === row.id ? row : n)));
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchNotifications, user]);
 
   // Close panel on outside click
   useEffect(() => {

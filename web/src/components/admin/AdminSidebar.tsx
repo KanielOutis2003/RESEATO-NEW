@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -8,6 +8,7 @@ import {
   Building2,
   CalendarDays,
   Camera,
+  Check,
   ClipboardList,
   Crown,
   Eye,
@@ -27,6 +28,12 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth/useAuth";
+import {
+  listMyNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  type AppNotification,
+} from "../../lib/api/notifications.api";
 
 /* ── types ── */
 type ProfileRow = {
@@ -163,6 +170,52 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
   const [notifReservation, setNotifReservation] = useState(true);
   const [notifPayment, setNotifPayment] = useState(true);
   const [notifSystem, setNotifSystem] = useState(false);
+
+  /* ── notification bell state ── */
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notifPanelOpen, setNotifPanelOpen] = useState(false);
+  const notifPanelRef = useRef<HTMLDivElement | null>(null);
+
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.is_read).length, [notifications]);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const data = await listMyNotifications();
+      setNotifications(data);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const iv = setInterval(fetchNotifications, 15_000);
+    return () => clearInterval(iv);
+  }, [fetchNotifications]);
+
+  // Close panel on outside click
+  useEffect(() => {
+    if (!notifPanelOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (notifPanelRef.current && !notifPanelRef.current.contains(e.target as Node)) {
+        setNotifPanelOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [notifPanelOpen]);
+
+  async function handleMarkRead(id: string) {
+    try {
+      await markNotificationRead(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+    } catch { /* ignore */ }
+  }
+
+  async function handleMarkAllRead() {
+    try {
+      await markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch { /* ignore */ }
+  }
 
   /* load profile when modal opens */
   useEffect(() => {
@@ -302,7 +355,16 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
       {mobileOpen && (
         <div className="fixed inset-0 z-[90] bg-black/50 lg:hidden" onClick={closeMobile} />
       )}
-      <aside className={`fixed top-0 left-0 z-[95] flex h-screen w-[270px] shrink-0 flex-col bg-[linear-gradient(180deg,#151923_0%,#1c2230_100%)] px-[18px] py-[26px] text-[#d0daf0] transition-transform duration-300 lg:sticky lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed top-0 left-0 z-[95] flex h-screen w-[270px] shrink-0 flex-col overflow-y-auto bg-[linear-gradient(180deg,#151923_0%,#1c2230_100%)] px-[18px] py-[26px] text-[#d0daf0] transition-transform duration-300 lg:sticky lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        {/* Mobile close button */}
+        <button
+          type="button"
+          onClick={closeMobile}
+          className="absolute top-4 right-4 grid h-8 w-8 place-items-center rounded-full bg-[rgba(255,255,255,0.08)] text-[#d0daf0] lg:hidden"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
         {/* Brand */}
         <div className="flex items-center gap-3 rounded-[18px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] px-3 py-2.5 mb-7">
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[linear-gradient(135deg,#6f89c8,#3b5ca8)] shadow-[0_12px_24px_rgba(0,0,0,0.2)]">
@@ -312,6 +374,70 @@ export default function AdminSidebar({ mobileOpen = false, onMobileClose }: { mo
             <div className="truncate text-base font-extrabold tracking-wide text-white">RESEATO</div>
             <div className="truncate text-xs font-bold tracking-wide text-[#bfcdf4]">{adminName.toUpperCase()}</div>
           </div>
+        </div>
+
+        {/* Notification Bell */}
+        <div className="relative mb-4" ref={notifPanelRef}>
+          <button
+            type="button"
+            onClick={() => setNotifPanelOpen((p) => !p)}
+            className="relative flex items-center gap-3 rounded-[14px] px-3.5 py-3 text-sm text-[#d0daf0] transition-colors duration-200 hover:bg-[rgba(94,122,182,0.14)] w-full"
+          >
+            <Bell className="h-4 w-4" />
+            Notifications
+            {unreadCount > 0 && (
+              <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {notifPanelOpen && (
+            <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[#1a2340] shadow-xl">
+              {/* Header */}
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[#1a2340] px-4 py-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#8a9bc4]">Notifications</span>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="flex items-center gap-1 text-[10px] font-semibold text-[#6f89c8] hover:text-white transition"
+                  >
+                    <Check className="h-3 w-3" /> Mark all read
+                  </button>
+                )}
+              </div>
+
+              {notifications.length === 0 ? (
+                <div className="px-4 py-6 text-center text-xs text-[#8a9bc4]">No notifications yet</div>
+              ) : (
+                notifications.slice(0, 30).map((n) => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={() => {
+                      if (!n.is_read) handleMarkRead(n.id);
+                      if (n.link) { navigate(n.link); setNotifPanelOpen(false); closeMobile(); }
+                    }}
+                    className={`w-full text-left px-4 py-3 border-b border-[rgba(255,255,255,0.04)] transition hover:bg-[rgba(94,122,182,0.12)] ${
+                      n.is_read ? "opacity-60" : ""
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#6f89c8]" />}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold text-white truncate">{n.title}</div>
+                        <div className="text-[11px] text-[#b0bfe0] line-clamp-2 mt-0.5">{n.body}</div>
+                        <div className="text-[10px] text-[#6b7a9e] mt-1">
+                          {new Date(n.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         {/* Menu: Administration */}

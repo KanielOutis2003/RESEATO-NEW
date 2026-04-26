@@ -278,6 +278,32 @@ async function sendEmailNotification(to: string, subject: string, html: string) 
   }
 }
 
+async function getAdminUserIds(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("role", "admin");
+  if (error || !data) return [];
+  return data.map((row: any) => String(row.id));
+}
+
+async function notifyAdmins(input: {
+  title: string;
+  body: string;
+  type: string;
+  link: string | null;
+  data?: Record<string, unknown>;
+}) {
+  try {
+    const adminIds = await getAdminUserIds();
+    for (const adminId of adminIds) {
+      await createUserNotification({ ...input, userId: adminId });
+    }
+  } catch {
+    // admin notifications are non-critical
+  }
+}
+
 async function createUserNotification(input: {
   userId: string;
   title: string;
@@ -1224,14 +1250,15 @@ app.post("/reservations", requireUser, async (req: any, res) => {
       return res.status(500).json({ message: error.message });
     }
 
-    // Send notification to the customer that the reservation is placed
+    // Send notifications (non-critical)
     try {
       const { data: restRow } = await supabase
         .from("restaurants")
-        .select("name")
+        .select("name,owner_id")
         .eq("id", restaurantId)
         .maybeSingle();
       const restaurantName = (restRow as any)?.name ?? "the restaurant";
+      const vendorOwnerId = (restRow as any)?.owner_id ?? null;
 
       await createUserNotification({
         userId,
@@ -1239,13 +1266,31 @@ app.post("/reservations", requireUser, async (req: any, res) => {
         body: `Your reservation at ${restaurantName} for ${String(date)} at ${timeValue} has been placed. Waiting for vendor to confirm.`,
         type: "reservation_placed",
         link: "/my-reservations",
-        data: {
-          reservationId: data.id,
-          restaurantId: String(restaurantId),
-        },
+        data: { reservationId: data.id, restaurantId: String(restaurantId) },
+      });
+
+      // Notify vendor
+      if (vendorOwnerId) {
+        await createUserNotification({
+          userId: vendorOwnerId,
+          title: "New Reservation",
+          body: `${name} booked a table for ${guestCount} guest${guestCount === 1 ? "" : "s"} on ${String(date)} at ${timeValue}.`,
+          type: "vendor_reservation_placed",
+          link: "/vendor/reservations",
+          data: { reservationId: data.id, restaurantId: String(restaurantId) },
+        });
+      }
+
+      // Notify admins
+      await notifyAdmins({
+        title: "New Reservation",
+        body: `${name} booked at ${restaurantName} on ${String(date)} at ${timeValue} for ${guestCount} guest${guestCount === 1 ? "" : "s"}.`,
+        type: "admin_reservation_placed",
+        link: "/admin/reservations",
+        data: { reservationId: data.id, restaurantId: String(restaurantId), customerName: name },
       });
     } catch {
-      // notification is non-critical, don't fail the reservation
+      // notifications are non-critical
     }
 
     return res.status(201).json({
@@ -1435,6 +1480,37 @@ app.post(
       if (updateError) {
         return res.status(500).json({ message: updateError.message });
       }
+
+      // Notify admins about payment
+      const { data: payRestRow } = await supabase
+        .from("restaurants")
+        .select("name,owner_id")
+        .eq("id", reservation.restaurant_id)
+        .maybeSingle();
+      const payRestName = (payRestRow as any)?.name ?? "a restaurant";
+      const payVendorId = (payRestRow as any)?.owner_id ?? null;
+
+      // Notify vendor about payment
+      if (payVendorId) {
+        try {
+          await createUserNotification({
+            userId: payVendorId,
+            title: "Payment Received",
+            body: `${(reservation as any).name ?? "A customer"} paid for their reservation via ${providerLabel.toUpperCase()}.`,
+            type: "vendor_payment_received",
+            link: "/vendor/reservations",
+            data: { reservationId: reservation.id, restaurantId: reservation.restaurant_id },
+          });
+        } catch { /* non-critical */ }
+      }
+
+      await notifyAdmins({
+        title: "Payment Received",
+        body: `${(reservation as any).name ?? "A customer"} paid for reservation at ${payRestName} via ${providerLabel.toUpperCase()}.`,
+        type: "admin_payment_received",
+        link: "/admin/reservations",
+        data: { reservationId: reservation.id, restaurantId: reservation.restaurant_id },
+      });
 
       return res.json({
         reservationId: reservation.id,
@@ -1626,6 +1702,36 @@ app.post(
       if (updateError) {
         return res.status(500).json({ message: updateError.message });
       }
+
+      // Notify vendor and admins about payment cancellation
+      const { data: cancelRestRow } = await supabase
+        .from("restaurants")
+        .select("name,owner_id")
+        .eq("id", reservation.restaurant_id)
+        .maybeSingle();
+      const cancelRestName = (cancelRestRow as any)?.name ?? "a restaurant";
+      const cancelVendorId = (cancelRestRow as any)?.owner_id ?? null;
+
+      if (cancelVendorId) {
+        try {
+          await createUserNotification({
+            userId: cancelVendorId,
+            title: "Payment Cancelled",
+            body: `${(reservation as any).name ?? "A customer"} cancelled their payment.`,
+            type: "vendor_payment_cancelled",
+            link: "/vendor/reservations",
+            data: { reservationId: reservation.id, restaurantId: reservation.restaurant_id },
+          });
+        } catch { /* non-critical */ }
+      }
+
+      await notifyAdmins({
+        title: "Payment Cancelled",
+        body: `${(reservation as any).name ?? "A customer"} cancelled payment for reservation at ${cancelRestName}.`,
+        type: "admin_payment_cancelled",
+        link: "/admin/reservations",
+        data: { reservationId: reservation.id, restaurantId: reservation.restaurant_id },
+      });
 
       return res.json({
         reservationId: reservation.id,
@@ -2385,6 +2491,16 @@ app.post(
       `;
 
       await sendEmailNotification(recipientEmail, notificationTitle, emailHtml);
+
+      // Notify admins about vendor decision
+      const adminDecisionLabel = action === "approve" ? "approved" : action === "complete" ? "completed" : "declined";
+      await notifyAdmins({
+        title: `Reservation ${adminDecisionLabel.charAt(0).toUpperCase() + adminDecisionLabel.slice(1)}`,
+        body: `Vendor ${adminDecisionLabel} a reservation at ${restaurant.name} for ${String((reservation as any).date ?? "")}.`,
+        type: `admin_reservation_${adminDecisionLabel}`,
+        link: "/admin/reservations",
+        data: { reservationId, restaurantId: reservation.restaurant_id },
+      });
 
       return res.json({
         reservation: updatedReservation,

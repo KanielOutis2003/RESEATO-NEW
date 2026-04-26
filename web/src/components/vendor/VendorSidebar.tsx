@@ -350,9 +350,28 @@ export default function VendorSidebar({ mobileOpen = false, onMobileClose }: { m
 
   useEffect(() => {
     fetchNotifications();
-    const iv = setInterval(fetchNotifications, 15_000);
-    return () => clearInterval(iv);
-  }, [fetchNotifications]);
+    if (!user) return;
+    const channel = supabase
+      .channel("vendor-notifications")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const row = payload.new as AppNotification;
+          setNotifications((prev) => [row, ...prev]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const row = payload.new as AppNotification;
+          setNotifications((prev) => prev.map((n) => (n.id === row.id ? row : n)));
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchNotifications, user]);
 
   useEffect(() => {
     if (!notifPanelOpen) return;

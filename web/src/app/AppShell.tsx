@@ -4,6 +4,7 @@ import Navbar from "../components/layouts/Navbar";
 import Footer from "../components/layouts/Footer";
 import VendorSidebar from "../components/vendor/VendorSidebar";
 import AdminSidebar from "../components/admin/AdminSidebar";
+import NotificationPanel from "../components/NotificationPanel";
 import { Outlet, useLocation } from "react-router-dom";
 
 export default function AppShell() {
@@ -36,13 +37,13 @@ export default function AppShell() {
   // Sidebar layout for vendor/admin
   if (isSidebarRoute) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex h-screen overflow-hidden">
         {isVendorRoute ? (
           <VendorSidebar mobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
         ) : (
           <AdminSidebar mobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
         )}
-        <main className={`flex-1 overflow-auto ${isAdminRoute ? "bg-[#f3f3f4]" : "bg-[#f5f3f4]"}`}>
+        <main className={`flex-1 overflow-y-auto ${isAdminRoute ? "bg-[#f3f3f4]" : "bg-[#f5f3f4]"}`}>
           {/* Mobile hamburger */}
           <button
             type="button"
@@ -53,6 +54,7 @@ export default function AppShell() {
           </button>
           <Outlet />
         </main>
+        <NotificationPanel variant={isAdminRoute ? "admin" : "vendor"} />
       </div>
     );
   }

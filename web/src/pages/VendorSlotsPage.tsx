@@ -257,7 +257,6 @@ export default function VendorSlotsPage() {
   const [defaultMaxTables, setDefaultMaxTables] = useState<number>(10);
   const [slots, setSlots] = useState<VendorSlotConfig[]>([]);
   const [newSlotTime, setNewSlotTime] = useState("21:00");
-  const [newSlotTables, setNewSlotTables] = useState("10");
 
   // Guest capacity config state
   const [guestConfigs, setGuestConfigs] = useState<GuestCapacityConfigInput[]>([]);
@@ -404,7 +403,7 @@ export default function VendorSlotsPage() {
       return;
     }
 
-    const maxTables = Math.max(1, Number(newSlotTables) || defaultMaxTables || 1);
+    const maxTables = Math.max(1, defaultMaxTables || 1);
 
     setSlots((prev) => {
       const withoutTime = prev.filter((slot) => slot.time !== time);
@@ -553,7 +552,7 @@ export default function VendorSlotsPage() {
                 {slots.map((slot, index) => (
                   <div
                     key={`${slot.time}-${index}`}
-                    className="grid gap-2 rounded-xl border border-[#e5e7eb] bg-white p-3 sm:grid-cols-[220px_150px_120px_auto] sm:items-center"
+                    className="grid gap-2 rounded-xl border border-[#e5e7eb] bg-white p-3 sm:grid-cols-[220px_120px_auto] sm:items-center"
                   >
                     <label className="text-xs text-[#6b7280]">
                       Time
@@ -561,22 +560,6 @@ export default function VendorSlotsPage() {
                         value={slot.time}
                         onChange={(nextTime) => updateSlot(index, { time: nextTime })}
                         idPrefix={`slot-${index}`}
-                      />
-                    </label>
-
-                    <label className="text-xs text-[#6b7280]">
-                      Max Tables
-                      <input
-                        type="number"
-                        min={1}
-                        max={999}
-                        value={slot.maxTables}
-                        onChange={(event) =>
-                          updateSlot(index, {
-                            maxTables: Math.max(1, Number(event.target.value) || 1),
-                          })
-                        }
-                        className="mt-1 w-full rounded-lg border border-[#d9dce3] bg-white px-2 py-1.5 text-sm text-[#1f2937]"
                       />
                     </label>
 
@@ -604,25 +587,13 @@ export default function VendorSlotsPage() {
                 ))}
               </div>
 
-              <div className="mt-4 grid gap-2 rounded-xl border border-dashed border-[#d2d8e3] bg-[#f8fafc] p-3 sm:grid-cols-[220px_150px_auto] sm:items-end">
+              <div className="mt-4 grid gap-2 rounded-xl border border-dashed border-[#d2d8e3] bg-[#f8fafc] p-3 sm:grid-cols-[220px_auto] sm:items-end">
                 <label className="text-xs text-[#6b7280]">
                   New Time
                   <TimeInput12h
                     value={newSlotTime}
                     onChange={setNewSlotTime}
                     idPrefix="new-slot"
-                  />
-                </label>
-
-                <label className="text-xs text-[#6b7280]">
-                  Max Tables
-                  <input
-                    type="number"
-                    min={1}
-                    max={999}
-                    value={newSlotTables}
-                    onChange={(event) => setNewSlotTables(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-[#d9dce3] bg-white px-2 py-1.5 text-sm text-[#1f2937]"
                   />
                 </label>
 

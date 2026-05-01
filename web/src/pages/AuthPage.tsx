@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { EmailOtpType, Session } from "@supabase/supabase-js";
 import { Eye, EyeOff, Mail, Lock, User, Phone, CheckCircle2, Circle, UtensilsCrossed, Check, ArrowLeft, X, Info, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,10 +42,10 @@ function evaluatePassword(password: string, confirmPassword: string): PasswordCh
 }
 
 function getStrengthLabel(score: number) {
-  if (score <= 1) return "Weak";
-  if (score === 2) return "Fair";
-  if (score === 3) return "Good";
-  return "Strong";
+  if (score <= 1) return "weak";
+  if (score === 2) return "fair";
+  if (score === 3) return "good";
+  return "strong";
 }
 
 function getStrengthBarClass(score: number) {
@@ -318,6 +319,7 @@ function TermsModal({ open, onClose, onAccept }: { open: boolean; onClose: () =>
 }
 
 export default function AuthPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -1032,19 +1034,19 @@ export default function AuthPage() {
                   className="text-[10px] uppercase tracking-[0.3em]"
                   style={{ color: "#d4b58a" }}
                 >
-                  {mode === "login" ? "Welcome Back" : "Join Us"}
+                  {mode === "login" ? t("auth.welcomeBack") : t("auth.joinUs")}
                 </span>
               </div>
               <div
                 className="mt-3 text-[32px] leading-tight font-semibold"
                 style={{ fontFamily: SERIF, color: "#faf4ea" }}
               >
-                {mode === "login" ? "Welcome back" : "Create your account"}
+                {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
               </div>
               <p className="mt-3 text-[17px]" style={{ color: "#c9b99d" }}>
                 {mode === "login"
-                  ? "Sign in to manage reservations and book faster."
-                  : "Sign up to reserve tables, track bookings, and access exclusive features."}
+                  ? t("auth.signInSubtitle")
+                  : t("auth.signUpSubtitle")}
               </p>
 
               <ul className="mt-7 space-y-3" style={{ color: "#f5ede4" }}>
@@ -1135,7 +1137,7 @@ export default function AuthPage() {
                     : { color: "#d4b58a", background: "transparent" }
                 }
               >
-                Login
+                {t("auth.loginTab")}
               </button>
               <button
                 type="button"
@@ -1156,7 +1158,7 @@ export default function AuthPage() {
                     : { color: "#d4b58a", background: "transparent" }
                 }
               >
-                Sign up
+                {t("auth.signUpTab")}
               </button>
             </div>
 
@@ -1174,12 +1176,12 @@ export default function AuthPage() {
                 className="mt-2 text-[34px] leading-tight font-semibold"
                 style={{ fontFamily: SERIF, color: "#faf4ea" }}
               >
-                {mode === "login" ? "Sign in" : "Create account"}
+                {mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
               </h1>
               <p className="mt-1 text-sm" style={{ color: "#c9b99d" }}>
                 {mode === "login"
-                  ? "Enter your credentials to continue."
-                  : "Fill up the form to register."}
+                  ? t("auth.enterCredentials")
+                  : t("auth.fillUpForm")}
               </p>
             </div>
 
@@ -1209,10 +1211,10 @@ export default function AuthPage() {
                         className="text-sm font-semibold"
                         style={{ color: role === "customer" ? "#faf4ea" : "#d4b58a" }}
                       >
-                        Customer
+                        {t("auth.roleCustomer")}
                       </div>
                       <div className="text-xs" style={{ color: "#c9b99d" }}>
-                        Reserve tables
+                        {t("auth.roleCustomerDesc")}
                       </div>
                     </button>
 
@@ -1238,29 +1240,29 @@ export default function AuthPage() {
                         className="text-sm font-semibold"
                         style={{ color: role === "vendor" ? "#faf4ea" : "#d4b58a" }}
                       >
-                        Restaurant Owner
+                        {t("auth.roleVendor")}
                       </div>
                       <div className="text-xs" style={{ color: "#c9b99d" }}>
-                        Manage bookings
+                        {t("auth.roleVendorDesc")}
                       </div>
                     </button>
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
-                      label="First Name"
+                      label={t("auth.firstName")}
                       icon={<User className="h-4 w-4" />}
                       value={firstName}
                       onChange={(v) => { setFirstName(v); setFieldErrors((p) => { const n = { ...p }; delete n.firstName; return n; }); }}
-                      placeholder="Christian"
+                      placeholder={t("auth.firstNamePlaceholder")}
                       error={fieldErrors.firstName}
                     />
                     <Field
-                      label="Last Name"
+                      label={t("auth.lastName")}
                       icon={<User className="h-4 w-4" />}
                       value={lastName}
                       onChange={(v) => { setLastName(v); setFieldErrors((p) => { const n = { ...p }; delete n.lastName; return n; }); }}
-                      placeholder="Boyles"
+                      placeholder={t("auth.lastNamePlaceholder")}
                       error={fieldErrors.lastName}
                     />
                   </div>

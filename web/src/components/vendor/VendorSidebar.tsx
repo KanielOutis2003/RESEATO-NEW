@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -6,7 +6,6 @@ import {
   CalendarCheck2,
   CalendarDays,
   Camera,
-  Check,
   Eye,
   EyeOff,
   BarChart3,
@@ -32,12 +31,6 @@ import {
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth/useAuth";
 import { listVendorRestaurants, updateVendorRestaurant, uploadVendorRestaurantImage } from "../../lib/api/vendor.api";
-import {
-  listMyNotifications,
-  markNotificationRead,
-  markAllNotificationsRead,
-  type AppNotification,
-} from "../../lib/api/notifications.api";
 import type { VendorRestaurant } from "../../lib/api/vendor.api";
 
 /* ── types ── */
@@ -334,71 +327,6 @@ export default function VendorSidebar({ mobileOpen = false, onMobileClose }: { m
   const [notifPayment, setNotifPayment] = useState(true);
   const [notifReminder, setNotifReminder] = useState(false);
 
-  /* ── notification bell state ── */
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [notifPanelOpen, setNotifPanelOpen] = useState(false);
-  const notifPanelRef = useRef<HTMLDivElement | null>(null);
-
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.is_read).length, [notifications]);
-
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const data = await listMyNotifications();
-      setNotifications(data);
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-    if (!user) return;
-    const channel = supabase
-      .channel("vendor-notifications")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          const row = payload.new as AppNotification;
-          setNotifications((prev) => [row, ...prev]);
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          const row = payload.new as AppNotification;
-          setNotifications((prev) => prev.map((n) => (n.id === row.id ? row : n)));
-        },
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchNotifications, user]);
-
-  useEffect(() => {
-    if (!notifPanelOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (notifPanelRef.current && !notifPanelRef.current.contains(e.target as Node)) {
-        setNotifPanelOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [notifPanelOpen]);
-
-  async function handleMarkRead(id: string) {
-    try {
-      await markNotificationRead(id);
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
-    } catch { /* ignore */ }
-  }
-
-  async function handleMarkAllRead() {
-    try {
-      await markAllNotificationsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    } catch { /* ignore */ }
-  }
-
-
   /* load profile when settings modal opens */
   useEffect(() => {
     if (!settingsOpen) return;
@@ -559,69 +487,6 @@ export default function VendorSidebar({ mobileOpen = false, onMobileClose }: { m
               {sidebarRestName ? `${sidebarRestName.toUpperCase()} RESTAURANT` : vendorName.toUpperCase()}
             </div>
           </div>
-        </div>
-
-        {/* Notification Bell */}
-        <div className="relative mb-4" ref={notifPanelRef}>
-          <button
-            type="button"
-            onClick={() => setNotifPanelOpen((p) => !p)}
-            className="relative flex items-center gap-3 rounded-[14px] px-3.5 py-3 text-sm text-[#f7e7e9] transition-colors duration-200 hover:bg-[rgba(183,106,115,0.12)] w-full"
-          >
-            <Bell className="h-4 w-4" />
-            Notifications
-            {unreadCount > 0 && (
-              <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </button>
-
-          {notifPanelOpen && (
-            <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[#2a1520] shadow-xl">
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[#2a1520] px-4 py-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#d2b4bb]">Notifications</span>
-                {unreadCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleMarkAllRead}
-                    className="flex items-center gap-1 text-[10px] font-semibold text-[#b76a73] hover:text-white transition"
-                  >
-                    <Check className="h-3 w-3" /> Mark all read
-                  </button>
-                )}
-              </div>
-
-              {notifications.length === 0 ? (
-                <div className="px-4 py-6 text-center text-xs text-[#d2b4bb]">No notifications yet</div>
-              ) : (
-                notifications.slice(0, 30).map((n) => (
-                  <button
-                    key={n.id}
-                    type="button"
-                    onClick={() => {
-                      if (!n.is_read) handleMarkRead(n.id);
-                      if (n.link) { navigate(n.link); setNotifPanelOpen(false); closeMobile(); }
-                    }}
-                    className={`w-full text-left px-4 py-3 border-b border-[rgba(255,255,255,0.04)] transition hover:bg-[rgba(183,106,115,0.12)] ${
-                      n.is_read ? "opacity-60" : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#b76a73]" />}
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold text-white truncate">{n.title}</div>
-                        <div className="text-[11px] text-[#e0c5ca] line-clamp-2 mt-0.5">{n.body}</div>
-                        <div className="text-[10px] text-[#9e7a82] mt-1">
-                          {new Date(n.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
         </div>
 
         {/* Menu */}

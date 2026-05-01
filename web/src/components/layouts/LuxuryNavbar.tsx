@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Bell,
   CalendarDays,
@@ -63,6 +64,8 @@ export default function LuxuryNavbar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { session } = useSession();
+  // @ts-ignore - deep type instantiation
+  const { t, i18n } = useTranslation();
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -620,7 +623,7 @@ export default function LuxuryNavbar() {
                 fontFamily: "'Jost', sans-serif",
               }}
             >
-              Restaurants
+              {t("nav.restaurants")}
             </Link>
             <Link
               to="/my-reservations"
@@ -630,7 +633,7 @@ export default function LuxuryNavbar() {
                 fontFamily: "'Jost', sans-serif",
               }}
             >
-              My Reservations
+              {t("nav.myReservations")}
             </Link>
           </nav>
 
@@ -704,7 +707,7 @@ export default function LuxuryNavbar() {
                             fontSize: "1.15rem",
                           }}
                         >
-                          Notifications
+                          {t("nav.notifications")}
                         </div>
                         {unreadCount > 0 && (
                           <button
@@ -718,7 +721,7 @@ export default function LuxuryNavbar() {
                             }}
                           >
                             <CheckCheck className="h-3 w-3" />
-                            Mark all
+                            {t("nav.markAll")}
                           </button>
                         )}
                       </div>
@@ -728,7 +731,7 @@ export default function LuxuryNavbar() {
                           className="px-6 py-6 text-sm"
                           style={{ color: "rgba(245,237,228,0.55)" }}
                         >
-                          Loading notifications...
+                          {t("common.loading")}
                         </div>
                       ) : notifications.length === 0 ? (
                         <div className="grid place-items-center gap-3 px-6 py-12 text-center">
@@ -743,7 +746,7 @@ export default function LuxuryNavbar() {
                             <Bell className="h-5 w-5" />
                           </div>
                           <p className="text-sm" style={{ color: "rgba(245,237,228,0.55)" }}>
-                            No notifications yet
+                            {t("nav.noNotifications")}
                           </p>
                         </div>
                       ) : (
@@ -809,8 +812,8 @@ export default function LuxuryNavbar() {
                     setHelpAttachment(null);
                     setHelpAttachmentPreview(null);
                   }}
-                  aria-label="Customer Support"
-                  title="Customer Service"
+                  aria-label={t("help.title") as string}
+                  title={t("help.title") as string}
                   className="grid h-9 w-9 place-items-center rounded-full transition hover:brightness-110"
                   style={{
                     background: "rgba(28,13,16,0.6)",
@@ -819,6 +822,20 @@ export default function LuxuryNavbar() {
                   }}
                 >
                   <Headphones className="h-4 w-4" />
+                </button>
+
+                {/* Language Toggle */}
+                <button
+                  type="button"
+                  onClick={() => i18n.changeLanguage(i18n.language === "fil" ? "en" : "fil")}
+                  className="grid h-9 w-9 place-items-center rounded-full text-[10px] font-bold uppercase tracking-wider transition hover:brightness-110"
+                  style={{
+                    background: "rgba(28,13,16,0.6)",
+                    border: "1px solid rgba(201,160,122,0.35)",
+                    color: "#c9a07a",
+                  }}
+                >
+                  {i18n.language === "fil" ? "FIL" : "EN"}
                 </button>
 
                 {/* Avatar + dropdown */}
@@ -897,7 +914,7 @@ export default function LuxuryNavbar() {
                         }
                       >
                         <UserIcon className="h-4 w-4" style={{ color: GOLD }} />
-                        My Profile
+                        {t("profile.viewProfile")}
                       </button>
 
                       <div style={{ height: "1px", background: "rgba(201,160,122,0.18)" }} />
@@ -918,7 +935,7 @@ export default function LuxuryNavbar() {
                         }
                       >
                         <LogOut className="h-4 w-4" />
-                        Sign Out
+                        {t("nav.signOut")}
                       </button>
                     </div>
                   )}
@@ -953,7 +970,7 @@ export default function LuxuryNavbar() {
               fontFamily: "'Jost', sans-serif",
             }}
           >
-            Restaurants
+            {t("nav.restaurants")}
           </Link>
           <Link
             to="/my-reservations"
@@ -963,7 +980,7 @@ export default function LuxuryNavbar() {
               fontFamily: "'Jost', sans-serif",
             }}
           >
-            My Reservations
+            {t("nav.myReservations")}
           </Link>
         </div>
 
@@ -1025,10 +1042,10 @@ export default function LuxuryNavbar() {
                   className="text-xl font-light"
                   style={{ color: CREAM, fontFamily: "'Cormorant Garamond', serif" }}
                 >
-                  Customer Service
+                  {t("help.title")}
                 </h3>
                 <p className="text-xs tracking-[0.18em] uppercase" style={{ color: GOLD }}>
-                  We're here to help
+                  {t("help.subtitle")}
                 </p>
               </div>
             </div>
@@ -1073,7 +1090,7 @@ export default function LuxuryNavbar() {
                     className="text-[10px] font-semibold uppercase tracking-[0.22em]"
                     style={{ color: GOLD }}
                   >
-                    Topic
+                    {t("help.subject")}
                     <select
                       value={helpSubject}
                       onChange={(e) => setHelpSubject(e.target.value)}
@@ -1085,12 +1102,12 @@ export default function LuxuryNavbar() {
                         fontFamily: "'Jost', sans-serif",
                       }}
                     >
-                      <option>Reservation Issue</option>
-                      <option>Payment Problem</option>
+                      <option>{t("help.subjects.reservationIssue")}</option>
+                      <option>{t("help.subjects.paymentIssue")}</option>
                       <option>Restaurant Complaint</option>
-                      <option>Account Issue</option>
+                      <option>{t("help.subjects.accountIssue")}</option>
                       <option>Bug Report</option>
-                      <option>Other</option>
+                      <option>{t("help.subjects.other")}</option>
                     </select>
                   </label>
                 </div>
@@ -1099,11 +1116,11 @@ export default function LuxuryNavbar() {
                     className="text-[10px] font-semibold uppercase tracking-[0.22em]"
                     style={{ color: GOLD }}
                   >
-                    Message
+                    {t("help.message")}
                     <textarea
                       value={helpMessage}
                       onChange={(e) => setHelpMessage(e.target.value)}
-                      placeholder="Describe your issue in detail..."
+                      placeholder={t("help.messagePlaceholder") as string}
                       className="mt-2 min-h-[100px] w-full resize-none rounded-xl px-4 py-3 text-sm outline-none"
                       style={{
                         background: DARK_INPUT_BG,
@@ -1121,7 +1138,7 @@ export default function LuxuryNavbar() {
                     className="text-[10px] font-semibold uppercase tracking-[0.22em]"
                     style={{ color: GOLD }}
                   >
-                    Attachment (optional)
+                    {t("help.attachFile")}
                   </label>
                   <input
                     ref={helpFileRef}
@@ -1193,11 +1210,11 @@ export default function LuxuryNavbar() {
                 >
                   {helpSending ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Sending...
+                      <Loader2 className="h-4 w-4 animate-spin" /> {t("help.sending")}
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4" /> Submit Ticket
+                      <Send className="h-4 w-4" /> {t("help.send")}
                     </>
                   )}
                 </button>
@@ -1236,10 +1253,10 @@ export default function LuxuryNavbar() {
                   className="text-3xl font-light"
                   style={{ color: CREAM, fontFamily: "'Cormorant Garamond', serif" }}
                 >
-                  My Profile
+                  {t("profile.viewProfile")}
                 </h2>
                 <p className="mt-1 text-sm" style={{ color: "rgba(245,237,228,0.55)" }}>
-                  View and manage your account details
+                  {t("profile.editProfile")}
                 </p>
               </div>
               <button
@@ -1277,7 +1294,7 @@ export default function LuxuryNavbar() {
 
             {!profileDetails ? (
               <div className="py-10 text-center" style={{ color: "rgba(245,237,228,0.55)" }}>
-                Loading profile...
+                {t("common.loading")}
               </div>
             ) : !profileEditOpen ? (
               <div className="space-y-5">
@@ -1360,10 +1377,10 @@ export default function LuxuryNavbar() {
                 {/* Info rows */}
                 <div className="space-y-3">
                   {[
-                    { Icon: Mail, label: "Email Address", value: profileDetails.email },
-                    { Icon: Phone, label: "Phone Number", value: profileDetails.phone || "Not provided" },
-                    { Icon: Shield, label: "Account Role", value: profileDetails.role },
-                    { Icon: CalendarDays, label: "Member Since", value: profileDetails.memberSince },
+                    { Icon: Mail, label: t("profile.email"), value: profileDetails.email },
+                    { Icon: Phone, label: t("profile.phone"), value: profileDetails.phone || "Not provided" },
+                    { Icon: Shield, label: t("profile.role"), value: profileDetails.role },
+                    { Icon: CalendarDays, label: t("profile.memberSince"), value: profileDetails.memberSince },
                   ].map(({ Icon, label, value }) => (
                     <div
                       key={label}
@@ -1410,7 +1427,7 @@ export default function LuxuryNavbar() {
                       boxShadow: "0 8px 24px rgba(146,63,74,0.45)",
                     }}
                   >
-                    <PencilLine className="h-4 w-4" /> Edit Details
+                    <PencilLine className="h-4 w-4" /> {t("profile.editProfile")}
                   </button>
                 </div>
               </div>
@@ -1422,7 +1439,7 @@ export default function LuxuryNavbar() {
                     className="text-[10px] font-semibold uppercase tracking-[0.22em]"
                     style={{ color: GOLD }}
                   >
-                    Full Name
+                    {t("profile.fullName")}
                   </div>
                   <input
                     value={profileForm.fullName}
@@ -1445,7 +1462,7 @@ export default function LuxuryNavbar() {
                     className="text-[10px] font-semibold uppercase tracking-[0.22em]"
                     style={{ color: GOLD }}
                   >
-                    Phone Number
+                    {t("profile.phone")}
                   </div>
                   <input
                     value={profileForm.phone}
@@ -1467,7 +1484,7 @@ export default function LuxuryNavbar() {
                     className="text-[10px] font-semibold uppercase tracking-[0.22em]"
                     style={{ color: GOLD }}
                   >
-                    Account Role
+                    {t("profile.role")}
                   </div>
                   <input
                     value={profileDetails.role}
@@ -1498,7 +1515,7 @@ export default function LuxuryNavbar() {
                       color: "rgba(245,237,228,0.7)",
                     }}
                   >
-                    Cancel
+                    {t("profile.logoutCancel")}
                   </button>
                   <button
                     type="submit"
@@ -1509,7 +1526,7 @@ export default function LuxuryNavbar() {
                       boxShadow: "0 8px 24px rgba(146,63,74,0.45)",
                     }}
                   >
-                    {profileSaving ? "Saving..." : "Save Changes"}
+                    {profileSaving ? t("profile.saving") : t("profile.saveChanges")}
                   </button>
                 </div>
               </form>
@@ -1552,10 +1569,10 @@ export default function LuxuryNavbar() {
                   className="text-xl font-light"
                   style={{ color: CREAM, fontFamily: "'Cormorant Garamond', serif" }}
                 >
-                  Sign Out
+                  {t("nav.signOut")}
                 </h3>
                 <p className="text-sm" style={{ color: "rgba(245,237,228,0.6)" }}>
-                  Are you sure you want to sign out?
+                  {t("profile.logoutConfirm")}
                 </p>
               </div>
             </div>
@@ -1570,7 +1587,7 @@ export default function LuxuryNavbar() {
                   color: "rgba(245,237,228,0.75)",
                 }}
               >
-                Cancel
+                {t("profile.logoutCancel")}
               </button>
               <button
                 type="button"
@@ -1584,7 +1601,7 @@ export default function LuxuryNavbar() {
                   boxShadow: "0 8px 24px rgba(146,63,74,0.45)",
                 }}
               >
-                Sign Out
+                {t("profile.logoutConfirmBtn")}
               </button>
             </div>
           </div>

@@ -812,7 +812,7 @@ export default function AdminDashboardPage() {
     xml += `<Row ss:Height="28"><Cell ss:StyleID="title" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">RESEATO - Admin Performance Report</Data></Cell></Row>\n`;
     xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Report Period: ${escXml(chartData.from)} to ${escXml(chartData.to)}</Data></Cell></Row>\n`;
     xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Generated: ${escXml(generatedAt)}</Data></Cell></Row>\n`;
-    xml += `<Row><Cell ss:StyleID="metaBold" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Total Reservations: ${chartData.summary.totalReservations}  |  Revenue: PHP ${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}  |  Completion: ${(chartData.summary.completionRate * 100).toFixed(1)}%  |  Cancellation: ${(chartData.summary.cancellationRate * 100).toFixed(1)}%</Data></Cell></Row>\n`;
+    xml += `<Row><Cell ss:StyleID="metaBold" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Total Reservations: ${chartData.summary.totalReservations}  |  Revenue: PHP ${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}  |  Completion: ${(chartData.summary.completionRate).toFixed(1)}%  |  Cancellation: ${(chartData.summary.cancellationRate).toFixed(1)}%</Data></Cell></Row>\n`;
     xml += "<Row></Row>\n";
 
     // Column header row
@@ -831,8 +831,8 @@ export default function AdminDashboardPage() {
     xml += `<Cell ss:StyleID="sum"><Data ss:Type="Number">${chartData.summary.totalPaid}</Data></Cell>`;
     xml += `<Cell ss:StyleID="sum"><Data ss:Type="Number">${chartData.summary.totalRevenueMinor}</Data></Cell>`;
     xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}</Data></Cell>`;
-    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.completionRate * 100).toFixed(2)}</Data></Cell>`;
-    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.cancellationRate * 100).toFixed(2)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.completionRate).toFixed(2)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.cancellationRate).toFixed(2)}</Data></Cell>`;
     xml += "</Row>\n";
 
     // Data rows

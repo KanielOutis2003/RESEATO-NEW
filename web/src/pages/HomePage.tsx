@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   UtensilsCrossed, X,
@@ -159,20 +160,22 @@ function LightModalShell({
    ABOUT MODAL
 ───────────────────────────────────────── */
 function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  // @ts-ignore - deep type instantiation
+  const { t } = useTranslation();
   return (
     <LightModalShell
       open={open}
       onClose={onClose}
       icon={<BookOpen className="h-7 w-7" />}
-      title="Our Story"
-      subtitle="About RESEATO"
-      footer="Crafted with passion · Cebu, Philippines"
+      title={t("home.aboutTitle")}
+      subtitle={t("home.aboutSubtitle")}
+      footer={t("home.aboutFooter")}
     >
       <p className="leading-relaxed text-sm" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
-        RESEATO helps you book the best tables at top‑rated restaurants in SM City and SM Seaside Cebu. Skip the line, enjoy the dine — and suggest what's best.
+        {t("home.aboutBody1")}
       </p>
       <p className="mt-3 leading-relaxed text-sm" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
-        Our platform connects diners with their favourite restaurants, providing seamless online reservations with secure payment processing. Whether you're planning a casual lunch or a special celebration, RESEATO makes it effortless.
+        {t("home.aboutBody2")}
       </p>
     </LightModalShell>
   );
@@ -190,17 +193,18 @@ function RestaurantsModal({
   onClose: () => void;
   onGetStarted: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <LightModalShell
       open={open}
       onClose={onClose}
       icon={<UtensilsCrossed className="h-7 w-7" />}
-      title="Discover Restaurants"
-      subtitle="Cebu's finest dining"
-      footer="Updated daily · Reservations open"
+      title={t("home.discoverTitle")}
+      subtitle={t("home.discoverSubtitle")}
+      footer={t("home.discoverFooter")}
     >
       <p className="leading-relaxed text-sm" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
-        Explore our hand‑picked selection of restaurants across SM City Cebu and SM Seaside. From Filipino classics to Korean BBQ and fine dining experiences — discover the perfect spot for any occasion.
+        {t("home.discoverBody")}
       </p>
       <button
         type="button"
@@ -215,7 +219,7 @@ function RestaurantsModal({
           fontFamily: "'Jost', sans-serif",
         }}
       >
-        Browse Restaurants
+        {t("home.browseRestaurants")}
       </button>
     </LightModalShell>
   );
@@ -225,40 +229,41 @@ function RestaurantsModal({
    TERMS MODAL
 ───────────────────────────────────────── */
 function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const items: [string, string][] = [
-    ["Acceptance of Terms", "By using RESEATO and completing a reservation, you agree to comply with all policies stated herein."],
-    ["Payment Policy", "All reservation payments made through RESEATO are considered final and non-refundable once successfully processed."],
-    ["No Cancellation Policy", "Once payment has been successfully processed, the reservation is confirmed and cannot be canceled, transferred, or rescheduled."],
-    ["Limitation of Liability", "RESEATO utilizes third-party payment gateway providers. RESEATO shall not be held liable for any data breach, unauthorized access, or compromise of payment details."],
-    ["Accuracy of Information", "Customers are responsible for providing accurate and complete personal and payment information."],
-    ["Restaurant Responsibility", "RESEATO acts as a reservation platform only. The partnered restaurant is solely responsible for food quality, service delivery, and dining experience."],
-    ["Force Majeure", "RESEATO shall not be held liable for failure to fulfil reservations due to events beyond reasonable control."],
-    ["System Availability", "We do not guarantee uninterrupted access due to possible maintenance, updates, or technical issues."],
-    ["Amendments", "RESEATO reserves the right to modify these Terms and Conditions at any time."],
-    ["No-Show Policy", "Payment will be forfeited if the customer fails to appear at the reserved time."],
-    ["Chargeback Protection", "Customers agree not to initiate fraudulent chargebacks."],
-    ["Privacy Policy", "Personal data is collected, stored, and protected in accordance with our privacy practices."],
-    ["User Conduct", "No fraudulent bookings or misuse of the platform is permitted."],
-    ["Time Allowance Policy", "Reservation automatically expires if the customer arrives late (15–30 minutes grace period)."],
-  ];
+  const { t } = useTranslation();
+  const termKeys = [
+    "acceptance",
+    "payment",
+    "noCancellation",
+    "liability",
+    "accuracy",
+    "restaurant",
+    "forceMajeure",
+    "systemAvailability",
+    "amendments",
+    "noShow",
+    "chargeback",
+    "privacy",
+    "userConduct",
+    "timeAllowance",
+  ] as const;
   return (
     <LightModalShell
       open={open}
       onClose={onClose}
       icon={<FileText className="h-7 w-7" />}
-      title="Terms & Conditions"
-      subtitle="Please read carefully"
-      footer="Last updated · 2026"
+      title={t("home.termsTitle")}
+      subtitle={t("home.termsSubtitle")}
+      footer={t("home.termsFooter")}
       maxWidth="max-w-2xl"
     >
       <p className="text-xs leading-relaxed mb-4" style={{ color: "#7a6a72", fontFamily: "'Jost', sans-serif" }}>
-        By ticking the agreement box and proceeding with payment, you acknowledge that you have read, understood, and agreed to the following Terms and Conditions.
+        {t("home.termsIntro")}
       </p>
       <ol className="space-y-3 list-decimal list-outside pl-5">
-        {items.map(([title, body]) => (
-          <li key={title} className="text-sm leading-relaxed" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
-            <span className="font-semibold" style={{ color: "#923f4a" }}>{title}. </span>
-            {body}
+        {termKeys.map((key) => (
+          <li key={key} className="text-sm leading-relaxed" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
+            <span className="font-semibold" style={{ color: "#923f4a" }}>{t(`home.terms.${key}.0`)}. </span>
+            {t(`home.terms.${key}.1`)}
           </li>
         ))}
       </ol>
@@ -270,34 +275,35 @@ function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
    PRIVACY POLICY MODAL
 ───────────────────────────────────────── */
 function PrivacyPolicyModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const sections: [string, string][] = [
-    ["Information We Collect", "We collect personal information you provide when creating an account or making a reservation, including your name, email address, phone number, and payment details."],
-    ["How We Use Your Data", "Your data is used to process reservations, manage your account, send booking confirmations, and improve our services."],
-    ["Data Protection", "We employ industry-standard security measures to protect your personal information against unauthorized access, alteration, or disclosure."],
-    ["Third-Party Services", "We work with trusted third-party payment providers. These partners are bound by their own privacy policies and security standards."],
-    ["Cookies", "We use cookies to enhance your browsing experience, remember your preferences, and analyze platform usage."],
-    ["Your Rights", "You may request access, correction, or deletion of your personal data at any time by contacting our support team."],
-    ["Data Retention", "We retain your information only for as long as necessary to fulfill our services and comply with legal obligations."],
-    ["Contact Us", "For any privacy concerns or data requests, please reach out via the contact details listed on our platform."],
-  ];
+  const { t } = useTranslation();
+  const privacyKeys = [
+    "collect",
+    "useData",
+    "protection",
+    "thirdParty",
+    "cookies",
+    "rights",
+    "retention",
+    "contact",
+  ] as const;
   return (
     <LightModalShell
       open={open}
       onClose={onClose}
       icon={<Shield className="h-7 w-7" />}
-      title="Privacy Policy"
-      subtitle="Your data, your rights"
-      footer="Effective · 2026"
+      title={t("home.privacyTitle")}
+      subtitle={t("home.privacySubtitle")}
+      footer={t("home.privacyFooter")}
       maxWidth="max-w-2xl"
     >
       <p className="text-xs leading-relaxed mb-4" style={{ color: "#7a6a72", fontFamily: "'Jost', sans-serif" }}>
-        At RESEATO, we are committed to protecting your privacy. This policy outlines how we collect, use, and safeguard your personal information.
+        {t("home.privacyIntro")}
       </p>
       <ol className="space-y-3 list-decimal list-outside pl-5">
-        {sections.map(([title, body]) => (
-          <li key={title} className="text-sm leading-relaxed" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
-            <span className="font-semibold" style={{ color: "#923f4a" }}>{title}. </span>
-            {body}
+        {privacyKeys.map((key) => (
+          <li key={key} className="text-sm leading-relaxed" style={{ color: "#5b4751", fontFamily: "'Jost', sans-serif" }}>
+            <span className="font-semibold" style={{ color: "#923f4a" }}>{t(`home.privacy.${key}.0`)}. </span>
+            {t(`home.privacy.${key}.1`)}
           </li>
         ))}
       </ol>
@@ -309,6 +315,7 @@ function PrivacyPolicyModal({ open, onClose }: { open: boolean; onClose: () => v
    DEVELOPERS MODAL
 ───────────────────────────────────────── */
 function DevelopersModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   const devs = [
     { name: "John Jecu Noval Cutanda", role: "Full-Stack Developer", initials: "JC", gradient: "linear-gradient(135deg, #b46d73, #923f4a)" },
     { name: "Christian Earl James Boyles", role: "Full-Stack Developer", initials: "CB", gradient: "linear-gradient(135deg, #5a7bb8, #3d5d9e)" },
@@ -318,9 +325,9 @@ function DevelopersModal({ open, onClose }: { open: boolean; onClose: () => void
       open={open}
       onClose={onClose}
       icon={<Code2 className="h-7 w-7" />}
-      title="Meet the Developers"
-      subtitle="The team behind RESEATO"
-      footer="Built with passion for Cebu's dining community"
+      title={t("home.devsTitle")}
+      subtitle={t("home.devsSubtitle")}
+      footer={t("home.devsFooter")}
     >
       <div className="space-y-3">
         {devs.map((d) => (
@@ -360,6 +367,7 @@ function DevelopersModal({ open, onClose }: { open: boolean; onClose: () => void
 export default function HomePage() {
   const navigate = useNavigate();
   const { session, loading } = useSession();
+  const { t, i18n } = useTranslation();
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showDevModal, setShowDevModal] = useState(false);
@@ -517,25 +525,40 @@ export default function HomePage() {
               </div>
             </Link>
 
-            {/* Get Started Button */}
-            <motion.button
-              type="button"
-              onClick={onGetStarted}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="px-6 py-2.5 text-xs font-medium tracking-widest uppercase"
-              style={{
-                borderRadius: "8px",
-                background: "linear-gradient(135deg, #b46d73 0%, #923f4a 60%, #8b3d4a 100%)",
-                color: "#fff",
-                letterSpacing: "0.14em",
-                boxShadow: "0 8px 24px rgba(146,63,74,0.45)",
-                fontFamily: "'Jost', sans-serif",
-              }}
-            >
-              Get Started
-            </motion.button>
+            <div className="flex items-center gap-3">
+              {/* Language Toggle */}
+              <button
+                type="button"
+                onClick={() => i18n.changeLanguage(i18n.language === "fil" ? "en" : "fil")}
+                className="grid h-9 w-9 place-items-center rounded-full text-[10px] font-bold uppercase tracking-wider transition hover:brightness-110"
+                style={{
+                  background: "rgba(28,13,16,0.6)",
+                  border: "1px solid rgba(201,160,122,0.35)",
+                  color: "#c9a07a",
+                }}
+              >
+                {i18n.language === "fil" ? "FIL" : "EN"}
+              </button>
 
+              {/* Get Started Button */}
+              <motion.button
+                type="button"
+                onClick={onGetStarted}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="px-6 py-2.5 text-xs font-medium tracking-widest uppercase"
+                style={{
+                  borderRadius: "8px",
+                  background: "linear-gradient(135deg, #b46d73 0%, #923f4a 60%, #8b3d4a 100%)",
+                  color: "#fff",
+                  letterSpacing: "0.14em",
+                  boxShadow: "0 8px 24px rgba(146,63,74,0.45)",
+                  fontFamily: "'Jost', sans-serif",
+                }}
+              >
+                {t("common.getStarted")}
+              </motion.button>
+            </div>
           </div>
 
           {/* Thin maroon line under nav */}
@@ -558,7 +581,7 @@ export default function HomePage() {
                 className="text-xs font-light uppercase mb-5"
                 style={{ color: "#ffffff", fontFamily: "'Jost', sans-serif", letterSpacing: "0.28em" }}
               >
-                Fine Dining · Cebu City
+                {t("home.eyebrow")}
               </motion.p>
 
               {/* Headline */}
@@ -572,9 +595,9 @@ export default function HomePage() {
                   letterSpacing: "-0.01em",
                 }}
               >
-                Cebu's Finest<br />
-                <em style={{ color: "#c9a07a", fontStyle: "italic" }}>Dining Reserved</em><br />
-                for You
+                {t("home.headline1")}<br />
+                <em style={{ color: "#c9a07a", fontStyle: "italic" }}>{t("home.headline2")}</em><br />
+                {t("home.headline3")}
               </h1>
 
               {/* Ornament */}
@@ -595,8 +618,7 @@ export default function HomePage() {
                 className="text-base font-light leading-relaxed"
                 style={{ color: "rgba(245,237,228,0.72)", fontFamily: "'Jost', sans-serif", fontWeight: 300, letterSpacing: "0.02em" }}
               >
-                Book the best tables at top‑rated restaurants in SM City & SM Seaside.
-                Skip the line — enjoy the dine.
+                {t("home.subtitle")}
               </motion.p>
 
               {/* CTAs */}
@@ -622,7 +644,7 @@ export default function HomePage() {
                     minWidth: "220px",
                   }}
                 >
-                  Explore Restaurants
+                  {t("home.exploreRestaurants")}
                 </motion.button>
               </motion.div>
             </motion.div>
@@ -675,7 +697,7 @@ export default function HomePage() {
                 className="text-xs tracking-[0.32em] uppercase mb-4"
                 style={{ color: "#c9a07a", fontFamily: "'Jost', sans-serif" }}
               >
-                Curated Selection
+                {t("home.curatedSelection")}
               </p>
               <h2
                 className="font-light"
@@ -687,7 +709,7 @@ export default function HomePage() {
                   lineHeight: 1.1,
                 }}
               >
-                Featured Restaurants
+                {t("home.featuredRestaurants")}
               </h2>
               <div className="flex items-center justify-center gap-4 mt-6">
                 <div
@@ -707,7 +729,7 @@ export default function HomePage() {
                 className="mt-5 text-sm font-light"
                 style={{ color: "rgba(245,237,228,0.6)", fontFamily: "'Jost', sans-serif" }}
               >
-                Hand‑picked dining experiences from Cebu's finest establishments
+                {t("home.featuredSubtitle")}
               </p>
             </motion.div>
 
@@ -821,7 +843,7 @@ export default function HomePage() {
                         letterSpacing: "0.1em",
                       }}
                     >
-                      View & Book →
+                      {t("common.viewAndBook")}
                     </span>
                   </div>
                 </motion.div>
@@ -851,7 +873,7 @@ export default function HomePage() {
                   fontFamily: "'Jost', sans-serif",
                 }}
               >
-                Browse All Restaurants
+                {t("home.browseAllRestaurants")}
               </motion.button>
             </motion.div>
           </section>

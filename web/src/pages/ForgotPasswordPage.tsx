@@ -1,5 +1,6 @@
 import { Mail, ArrowLeft, UtensilsCrossed, Send } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { requestPasswordReset } from "../lib/api/auth.api";
 
@@ -24,6 +25,7 @@ const SERIF = "'Cormorant Garamond', serif";
 const SANS = "'Jost', sans-serif";
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const prefillEmail =
     typeof (location.state as Record<string, unknown> | null)?.email === "string"
@@ -43,7 +45,7 @@ export default function ForgotPasswordPage() {
     setSuccessMsg(null);
 
     if (!isValidEmail(normalized)) {
-      setErrorMsg("Please enter a valid email address.");
+      setErrorMsg(t("forgotPassword.invalidEmail"));
       return;
     }
 
@@ -92,7 +94,7 @@ export default function ForgotPasswordPage() {
             }}
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Sign In
+            {t("nav.backToSignIn")}
           </Link>
         </div>
 
@@ -134,13 +136,13 @@ export default function ForgotPasswordPage() {
               className="mt-4 text-center text-4xl font-semibold tracking-tight"
               style={{ fontFamily: SERIF, color: "#faf4ea" }}
             >
-              Forgot Password
+              {t("forgotPassword.title")}
             </h1>
             <p
               className="mt-2 text-center text-sm"
               style={{ color: "#c9b99d" }}
             >
-              Enter your account email. If registered, we&apos;ll send a reset link.
+              {t("forgotPassword.subtitle")}
             </p>
 
             <form onSubmit={onSubmit} className="mt-7 space-y-4">
@@ -149,7 +151,7 @@ export default function ForgotPasswordPage() {
                   className="text-[11px] font-semibold uppercase tracking-[0.18em]"
                   style={{ color: "#d4b58a" }}
                 >
-                  Email Address
+                  {t("forgotPassword.emailLabel")}
                 </div>
                 <div
                   className="flex items-center gap-2 rounded-xl px-3 py-3"
@@ -209,7 +211,7 @@ export default function ForgotPasswordPage() {
                     "0 16px 30px rgba(146,63,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
                 }}
               >
-                {loading ? "Sending..." : "Send Reset Link"}
+                {loading ? t("forgotPassword.sending") : t("forgotPassword.sendResetLink")}
                 <Send className="h-4 w-4" />
               </button>
             </form>

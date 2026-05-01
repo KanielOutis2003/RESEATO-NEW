@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -95,17 +96,12 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-const PRICE_LABELS: Record<number, string> = {
-  1: "Budget Friendly",
-  2: "Moderate",
-  3: "Upscale",
-  4: "Fine Dining",
+const PRICE_LABEL_KEYS: Record<number, string> = {
+  1: "priceLabels.1",
+  2: "priceLabels.2",
+  3: "priceLabels.3",
+  4: "priceLabels.4",
 };
-
-function priceLabel(level: number | undefined) {
-  if (!level) return "";
-  return PRICE_LABELS[level] ?? "";
-}
 
 /* ── Gallery Lightbox ── */
 function GalleryLightbox({ images, startIndex, onClose }: { images: string[]; startIndex: number; onClose: () => void }) {
@@ -168,6 +164,8 @@ function GalleryLightbox({ images, startIndex, onClose }: { images: string[]; st
 }
 
 export default function RestaurantDetailsPage() {
+  // @ts-ignore - deep type instantiation
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthed, user, loading: authLoading } = useAuth();
@@ -227,7 +225,7 @@ export default function RestaurantDetailsPage() {
           if (!alive) return;
           if (attempt === 2) {
             setData(null);
-            setMsg(getErrorMessage(error, "Unable to load restaurant details."));
+            setMsg(getErrorMessage(error, t("restaurantDetails.unableToLoadDetails") as string));
           }
           await new Promise((r) => setTimeout(r, 2000));
         }
@@ -236,6 +234,7 @@ export default function RestaurantDetailsPage() {
     }
     loadRestaurant().finally(() => { if (alive) setLoadingRestaurant(false); });
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
@@ -258,7 +257,7 @@ export default function RestaurantDetailsPage() {
           if (attempt === retries) {
             setSlots([]);
             setTime("");
-            setMsg(getErrorMessage(error, "Unable to load available slots."));
+            setMsg(getErrorMessage(error, t("restaurantDetails.unableToLoadSlots") as string));
           }
           // wait before retrying
           await new Promise((r) => setTimeout(r, 2000));
@@ -268,13 +267,21 @@ export default function RestaurantDetailsPage() {
 
     fetchSlots(2).finally(() => { if (alive) setLoadingSlots(false); });
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, date, guests]);
 
+  const isToday = date === todayISO();
   const availableTimes = useMemo(() => slots.filter((s) => {
     if (!s.available) return false;
     if (s.remainingTables != null && s.remainingTables <= 0) return false;
+    // Hide slots whose time has already passed when the selected date is today
+    if (isToday) {
+      const now = new Date();
+      const [h, m] = s.time.split(":").map(Number);
+      if (h < now.getHours() || (h === now.getHours() && m <= now.getMinutes())) return false;
+    }
     return true;
-  }), [slots]);
+  }), [slots, isToday]);
 
   function decGuests() { setGuests((g) => Math.max(1, g - 1)); }
   function incGuests() { setGuests((g) => Math.min(50, g + 1)); }
@@ -298,7 +305,7 @@ export default function RestaurantDetailsPage() {
       setBookingOpen(false);
       navigate(`/payment/${res.id}`);
     } catch (e: any) {
-      setMsg(e?.payload?.message ?? e?.message ?? "Reservation failed");
+      setMsg(e?.payload?.message ?? e?.message ?? t("restaurantDetails.reservationFailed") as string);
     } finally {
       setSubmitting(false);
     }
@@ -370,7 +377,7 @@ export default function RestaurantDetailsPage() {
               color: "#e88b93",
             }}
           >
-            {msg ?? "Unable to load restaurant details."}
+            {msg ?? t("restaurantDetails.unableToLoadDetails")}
           </div>
         </div>
       </div>
@@ -401,7 +408,7 @@ export default function RestaurantDetailsPage() {
             color: GOLD,
           }}
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back
+          <ArrowLeft className="h-3.5 w-3.5" /> {t("restaurantDetails.backToRestaurants")}
         </button>
 
         <motion.div
@@ -440,7 +447,7 @@ export default function RestaurantDetailsPage() {
                   className="rounded-full px-3 py-1 text-[10px] tracking-[0.2em] uppercase backdrop-blur-md"
                   style={{ background: "rgba(201,160,122,0.15)", color: GOLD, border: "1px solid rgba(201,160,122,0.4)" }}
                 >
-                  {priceLabel(data.priceLevel)}
+                  {PRICE_LABEL_KEYS[data.priceLevel] ? t(PRICE_LABEL_KEYS[data.priceLevel]) : ""}
                 </span>
               )}
             </div>
@@ -474,9 +481,9 @@ export default function RestaurantDetailsPage() {
         {/* Quick info bar */}
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
-            { Icon: Phone, label: "Phone", value: data.contactPhone || "Not available" },
-            { Icon: Mail, label: "Email", value: data.contactEmail || "support@reseato.com" },
-            { Icon: Clock, label: "Hours", value: "10:00 AM - 10:00 PM" },
+            { Icon: Phone, label: t("restaurantDetails.phone"), value: data.contactPhone || t("restaurantDetails.notAvailable") as string },
+            { Icon: Mail, label: t("restaurantDetails.email"), value: data.contactEmail || "support@reseato.com" },
+            { Icon: Clock, label: t("restaurantDetails.openingHours"), value: "10:00 AM - 10:00 PM" },
           ].map(({ Icon, label, value }) => (
             <div
               key={label}
@@ -518,7 +525,7 @@ export default function RestaurantDetailsPage() {
               <div className="text-[10px] tracking-[0.3em] uppercase mb-2" style={{ color: GOLD }}>The Story</div>
               <h2 className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>About</h2>
               <p className="mt-4 leading-relaxed text-[15px]" style={{ color: "rgba(245,237,228,0.7)" }}>
-                {data.description || "A wonderful dining experience awaits you at this restaurant."}
+                {data.description || t("restaurantDetails.defaultDescription")}
               </p>
             </div>
 
@@ -599,7 +606,7 @@ export default function RestaurantDetailsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] tracking-[0.3em] uppercase mb-2" style={{ color: GOLD }}>Find Us</div>
-                  <h2 className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>Location</h2>
+                  <h2 className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>{t("restaurantDetails.location")}</h2>
                 </div>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getMapQuery(data.name))}`}
@@ -613,7 +620,7 @@ export default function RestaurantDetailsPage() {
               </div>
               <div className="mt-5 overflow-hidden rounded-2xl" style={{ border: "1px solid rgba(201,160,122,0.2)" }}>
                 <iframe
-                  title="Restaurant Location"
+                  title={t("restaurantDetails.location") as string}
                   width="100%"
                   height="280"
                   style={{ border: 0, filter: "grayscale(0.3) brightness(0.85)" }}
@@ -642,9 +649,9 @@ export default function RestaurantDetailsPage() {
               <h3 className="text-2xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>House Rules</h3>
               <ul className="mt-4 space-y-3 text-sm" style={{ color: "rgba(245,237,228,0.7)" }}>
                 {[
-                  "Please arrive 10 minutes before your reservation",
-                  "Reservations may be released after a 15-min grace period",
-                  "Special requests are subject to availability",
+                  t("restaurantDetails.rule1"),
+                  t("restaurantDetails.rule2"),
+                  t("restaurantDetails.rule3"),
                 ].map((rule) => (
                   <li key={rule} className="flex items-start gap-2.5">
                     <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full" style={{ background: GOLD }} />
@@ -665,7 +672,7 @@ export default function RestaurantDetailsPage() {
               }}
             >
               <div className="text-[10px] tracking-[0.3em] uppercase mb-2" style={{ color: GOLD }}>Acclaim</div>
-              <h3 className="text-2xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>Rating</h3>
+              <h3 className="text-2xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>{t("restaurantDetails.rating")}</h3>
               <div className="mt-4 flex items-center gap-4">
                 <div className="text-5xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>
                   {Number(data.rating).toFixed(1)}
@@ -708,7 +715,7 @@ export default function RestaurantDetailsPage() {
         }}
       >
         <CalendarDays className="h-4 w-4" />
-        Book a Table
+        {t("restaurantDetails.bookATable")}
       </motion.button>
 
       {/* ── Lightbox ── */}
@@ -751,14 +758,14 @@ export default function RestaurantDetailsPage() {
 
               <div className="pr-10">
                 <div className="text-[10px] tracking-[0.3em] uppercase mb-1" style={{ color: GOLD }}>Reservation</div>
-                <h2 className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>Book a Table</h2>
+                <h2 className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>{t("restaurantDetails.bookATable")}</h2>
                 <p className="mt-1 text-sm" style={{ color: "rgba(245,237,228,0.55)" }}>
-                  {data?.name ?? "Restaurant"} &middot; {formatPrettyDate(date)}
+                  {data?.name ?? t("reservations.restaurant")} &middot; {formatPrettyDate(date)}
                 </p>
               </div>
 
               {authLoading ? (
-                <p className="mt-4" style={{ color: "rgba(245,237,228,0.55)" }}>Checking session...</p>
+                <p className="mt-4" style={{ color: "rgba(245,237,228,0.55)" }}>{t("common.checkingAccess")}</p>
               ) : !isAuthed ? (
                 <div
                   className="mt-5 rounded-2xl p-4"
@@ -768,7 +775,7 @@ export default function RestaurantDetailsPage() {
                   }}
                 >
                   <p className="text-sm" style={{ color: "rgba(245,237,228,0.7)" }}>
-                    You must be logged in to make a reservation.
+                    {t("restaurantDetails.mustBeLoggedIn")}
                   </p>
                   <Link
                     to="/log-in-sign-up"
@@ -780,13 +787,13 @@ export default function RestaurantDetailsPage() {
                       border: "1px solid rgba(201,160,122,0.4)",
                     }}
                   >
-                    Login / Sign up
+                    {t("restaurantDetails.loginSignUp")}
                   </Link>
                 </div>
               ) : (
                 <>
                   <div className="mt-5">
-                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Select date</div>
+                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>{t("restaurantDetails.selectDate")}</div>
                     <input
                       type="date"
                       value={date}
@@ -802,7 +809,7 @@ export default function RestaurantDetailsPage() {
                   </div>
 
                   <div className="mt-5">
-                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Number of guests</div>
+                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>{t("restaurantDetails.numberOfGuests")}</div>
                     <div
                       className="mt-2 flex items-center justify-between rounded-2xl px-4 py-3"
                       style={{ background: "rgba(10,5,7,0.7)", border: GOLD_BORDER }}
@@ -817,7 +824,7 @@ export default function RestaurantDetailsPage() {
                       </button>
                       <div className="text-center">
                         <div className="text-3xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>{guests}</div>
-                        <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: "rgba(245,237,228,0.5)" }}>Guests</div>
+                        <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: "rgba(245,237,228,0.5)" }}>{t("restaurantDetails.guests")}</div>
                       </div>
                       <button
                         type="button"
@@ -831,18 +838,18 @@ export default function RestaurantDetailsPage() {
                   </div>
 
                   <div className="mt-5">
-                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Select time slot</div>
+                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>{t("restaurantDetails.selectTime")}</div>
                     <div
                       className="mt-2 overflow-hidden rounded-2xl"
                       style={{ border: GOLD_BORDER, background: "rgba(10,5,7,0.7)" }}
                     >
                       {loadingSlots ? (
                         <div className="px-4 py-6 text-center text-sm" style={{ color: "rgba(245,237,228,0.55)" }}>
-                          Loading slots...
+                          {t("common.loading")}
                         </div>
                       ) : availableTimes.length === 0 ? (
                         <div className="px-4 py-6 text-center text-sm" style={{ color: "rgba(245,237,228,0.55)" }}>
-                          No available slots for this date.
+                          {t("restaurantDetails.noSlotsAvailable")}
                         </div>
                       ) : (
                         <table className="w-full text-sm">
@@ -857,8 +864,12 @@ export default function RestaurantDetailsPage() {
                           <tbody>
                             {slots.map((s) => {
                               const hour = Number(s.time.slice(0, 2));
+                              const minute = Number(s.time.slice(3, 5));
                               const period = hour < 12 ? "AM" : "PM";
-                              const canFit = s.available && (s.remainingTables == null || s.remainingTables > 0);
+                              // Mark as unavailable if time has passed today
+                              const now = new Date();
+                              const isPast = isToday && (hour < now.getHours() || (hour === now.getHours() && minute <= now.getMinutes()));
+                              const canFit = !isPast && s.available && (s.remainingTables == null || s.remainingTables > 0);
                               const isSelected = time === s.time && canFit;
                               return (
                                 <tr
@@ -906,7 +917,7 @@ export default function RestaurantDetailsPage() {
                                                 : "#7dd9a6",
                                         }}
                                       >
-                                        {s.remainingTables} table{s.remainingTables !== 1 ? "s" : ""}
+                                        {t("restaurantDetails.tablesLeft", { count: s.remainingTables })}
                                       </span>
                                     ) : (
                                       <span className="text-[11px]" style={{ color: "rgba(245,237,228,0.4)" }}>—</span>
@@ -922,7 +933,7 @@ export default function RestaurantDetailsPage() {
                                           color: "#e88b93",
                                         }}
                                       >
-                                        Full
+                                        {t("restaurantDetails.full")}
                                       </span>
                                     ) : isSelected ? (
                                       <span
@@ -933,7 +944,7 @@ export default function RestaurantDetailsPage() {
                                           color: GOLD,
                                         }}
                                       >
-                                        Selected
+                                        {t("restaurantDetails.selected")}
                                       </span>
                                     ) : (
                                       <span
@@ -944,7 +955,7 @@ export default function RestaurantDetailsPage() {
                                           color: "#7dd9a6",
                                         }}
                                       >
-                                        Open
+                                        {t("restaurantDetails.open")}
                                       </span>
                                     )}
                                   </td>
@@ -956,17 +967,17 @@ export default function RestaurantDetailsPage() {
                       )}
                     </div>
                     <div className="mt-2 text-[10px] tracking-wider" style={{ color: "rgba(245,237,228,0.4)" }}>
-                      Click on a row to select your preferred time slot.
+                      {t("restaurantDetails.clickToSelect")}
                     </div>
                   </div>
 
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <div>
-                      <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Your name</div>
+                      <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>{t("restaurantDetails.fullName")}</div>
                       <input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="Your full name"
+                        placeholder={t("restaurantDetails.fullName") as string}
                         className="mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none"
                         style={{
                           background: "rgba(10,5,7,0.7)",
@@ -976,7 +987,7 @@ export default function RestaurantDetailsPage() {
                       />
                     </div>
                     <div>
-                      <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Phone</div>
+                      <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>{t("restaurantDetails.phone")}</div>
                       <input
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
@@ -992,11 +1003,11 @@ export default function RestaurantDetailsPage() {
                   </div>
 
                   <div className="mt-5">
-                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>Special requests</div>
+                    <div className="text-[10px] tracking-[0.2em] uppercase" style={{ color: GOLD }}>{t("restaurantDetails.specialRequests")}</div>
                     <textarea
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
-                      placeholder="e.g., birthday celebration, window seat..."
+                      placeholder={t("restaurantDetails.specialRequestsPlaceholder") as string}
                       className="mt-2 min-h-[80px] w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none"
                       style={{
                         background: "rgba(10,5,7,0.7)",
@@ -1029,10 +1040,10 @@ export default function RestaurantDetailsPage() {
                       boxShadow: "0 14px 32px rgba(146,63,74,0.4)",
                     }}
                   >
-                    {submitting ? "Reserving..." : "Proceed to Payment"}
+                    {submitting ? t("restaurantDetails.booking") : t("restaurantDetails.bookNow")}
                   </button>
                   <div className="mt-2 text-center text-[10px] tracking-wider" style={{ color: "rgba(245,237,228,0.4)" }}>
-                    Reservation payment is required to secure your slot.
+                    {t("restaurantDetails.paymentRequired")}
                   </div>
                 </>
               )}

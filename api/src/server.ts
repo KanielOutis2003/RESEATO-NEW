@@ -177,7 +177,11 @@ function createDateRangeKeys(from: string, to: string) {
 }
 
 function getTodayDateKeyUTC() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function getErrorCode(error: any) {
@@ -3128,6 +3132,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         total: number;
         completed: number;
         cancelled: number;
+        declined: number;
         pending: number;
         confirmed: number;
         paid: number;
@@ -3141,6 +3146,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         total: 0,
         completed: 0,
         cancelled: 0,
+        declined: 0,
         pending: 0,
         confirmed: 0,
         paid: 0,
@@ -3159,7 +3165,8 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
 
       const status = normalizeReservationStatus((row as any).status);
       if (status === "completed") bucket.completed += 1;
-      if (status === "cancelled" || status === "declined") bucket.cancelled += 1;
+      if (status === "cancelled") bucket.cancelled += 1;
+      if (status === "declined") bucket.declined += 1;
       if (status === "pending") bucket.pending += 1;
       if (status === "confirmed") bucket.confirmed += 1;
 
@@ -3181,6 +3188,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         acc.totalReservations += day.total;
         acc.totalCompleted += day.completed;
         acc.totalCancelled += day.cancelled;
+        acc.totalDeclined += day.declined;
         acc.totalPaid += day.paid;
         acc.totalRevenueMinor += day.revenueMinor;
         return acc;
@@ -3189,6 +3197,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         totalReservations: 0,
         totalCompleted: 0,
         totalCancelled: 0,
+        totalDeclined: 0,
         totalPaid: 0,
         totalRevenueMinor: 0,
       },
@@ -3208,6 +3217,13 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
           )
         : 0;
 
+    const declinedRate =
+      summaryBase.totalReservations > 0
+        ? Number(
+            ((summaryBase.totalDeclined / summaryBase.totalReservations) * 100).toFixed(2),
+          )
+        : 0;
+
     return res.json({
       from,
       to,
@@ -3216,6 +3232,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         ...summaryBase,
         completionRate,
         cancellationRate,
+        declinedRate,
       },
     });
   } catch (error: any) {

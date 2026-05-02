@@ -346,7 +346,11 @@ export default function VendorReservationsPage() {
               return (
                 <article
                   key={reservation.id}
-                  className="flex flex-col rounded-2xl border border-[#e8e2e3] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+                  className={`flex flex-col rounded-2xl border shadow-[0_12px_30px_rgba(15,23,42,0.08)] ${
+                    isPending
+                      ? "border-[#f8d9a5] bg-[#fffbf5] ring-2 ring-[#f8d9a5]/40"
+                      : "border-[#e8e2e3] bg-white"
+                  }`}
                 >
                   {/* Status badges */}
                   <div className="flex items-center justify-between gap-2 px-4 pt-4">

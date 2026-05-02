@@ -34,13 +34,20 @@ function pct(n: number) {
 }
 
 function shiftDate(base: string, days: number) {
-  const d = new Date(base);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  const [y, m, d] = base.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + days);
+  const yyyy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 type RangePreset = "7d" | "30d" | "90d";

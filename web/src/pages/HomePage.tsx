@@ -526,20 +526,6 @@ export default function HomePage() {
             </Link>
 
             <div className="flex items-center gap-3">
-              {/* Language Toggle */}
-              <button
-                type="button"
-                onClick={() => i18n.changeLanguage(i18n.language === "fil" ? "en" : "fil")}
-                className="grid h-9 w-9 place-items-center rounded-full text-[10px] font-bold uppercase tracking-wider transition hover:brightness-110"
-                style={{
-                  background: "rgba(28,13,16,0.6)",
-                  border: "1px solid rgba(201,160,122,0.35)",
-                  color: "#c9a07a",
-                }}
-              >
-                {i18n.language === "fil" ? "FIL" : "EN"}
-              </button>
-
               {/* Get Started Button */}
               <motion.button
                 type="button"
@@ -558,6 +544,20 @@ export default function HomePage() {
               >
                 {t("common.getStarted")}
               </motion.button>
+
+              {/* Language Toggle */}
+              <button
+                type="button"
+                onClick={() => i18n.changeLanguage(i18n.language === "fil" ? "en" : "fil")}
+                className="grid h-9 w-9 place-items-center rounded-full text-[10px] font-bold uppercase tracking-wider transition hover:brightness-110"
+                style={{
+                  background: "rgba(28,13,16,0.6)",
+                  border: "1px solid rgba(201,160,122,0.35)",
+                  color: "#c9a07a",
+                }}
+              >
+                {i18n.language === "fil" ? "FIL" : "EN"}
+              </button>
             </div>
           </div>
 

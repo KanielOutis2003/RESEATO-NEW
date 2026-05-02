@@ -67,16 +67,16 @@ function cx(...classes: Array<string | false | null | undefined>) {
 }
 
 const RESTAURANT_MAP_QUERIES: Record<string, string> = {
-  "sachi ramen": "Sachi Ramen SM City Cebu",
-  "somac korean": "Somac Korean Restaurant SM Seaside Cebu",
+  "sachi": "Sachi Ramen, 2nd Level, Main Mall, SM City Cebu, North Reclamation Area, Mabolo, Cebu City",
+  "somac": "Somac, 3rd floor Mountain Wing Sky Park, SM Seaside City, Mambaling, Cebu City",
   "boy belly": "Boy Belly SM Seaside Cebu",
-  "seafood & ribs warehouse": "Seafood & Ribs Warehouse SM Seaside Cebu",
-  "kuya j": "Kuya J SM Seaside City Cebu",
-  "cabalen": "Cabalen SM Seaside City Cebu",
-  "chika-an": "Chika-an Cebuano Kitchen SM City Cebu",
+  "seafood & ribs warehouse": "Seafood & Ribs Warehouse, 2nd Level, Main Mall, SM City Cebu, North Reclamation Area, Mabolo, Cebu City",
+  "kuya j": "10.2818,123.8791",
+  "cabalen": "Cabalen, Lower Ground Floor, Mountain Wing, SM Seaside City, Mambaling, Cebu City",
+  "chika-an": "Chika-an Cebuano Restaurant, 2nd Level, Main Mall, SM City Cebu, North Reclamation Area, Mabolo, Cebu City",
   "mesa restaurant": "Mesa Restaurant Philippines SM Seaside Cebu",
-  "seoul black": "Seoul Black SM Seaside City Cebu",
-  "superbowl of china": "Superbowl of China SM City Cebu",
+  "seoul black": "Seoul Black, 2nd Floor, North Wing, SM City Cebu, North Reclamation Area, Mabolo, Cebu City",
+  "superbowl of china": "Superbowl of China, 2nd Level, Main Mall, SM City Cebu, North Reclamation Area, Mabolo, Cebu City",
 };
 
 function getMapQuery(restaurantName: string): string {
@@ -270,18 +270,24 @@ export default function RestaurantDetailsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, date, guests]);
 
-  const isToday = date === todayISO();
-  const availableTimes = useMemo(() => slots.filter((s) => {
-    if (!s.available) return false;
-    if (s.remainingTables != null && s.remainingTables <= 0) return false;
-    // Hide slots whose time has already passed when the selected date is today
-    if (isToday) {
-      const now = new Date();
-      const [h, m] = s.time.split(":").map(Number);
-      if (h < now.getHours() || (h === now.getHours() && m <= now.getMinutes())) return false;
-    }
-    return true;
-  }), [slots, isToday]);
+  const today = todayISO();
+  const isToday = date === today;
+  const isPastDate = date < today;
+  const availableTimes = useMemo(() => {
+    // No slots available for past dates
+    if (isPastDate) return [];
+    return slots.filter((s) => {
+      if (!s.available) return false;
+      if (s.remainingTables != null && s.remainingTables <= 0) return false;
+      // Hide slots whose time has already passed when the selected date is today
+      if (isToday) {
+        const now = new Date();
+        const [h, m] = s.time.split(":").map(Number);
+        if (h < now.getHours() || (h === now.getHours() && m <= now.getMinutes())) return false;
+      }
+      return true;
+    });
+  }, [slots, isToday, isPastDate]);
 
   function decGuests() { setGuests((g) => Math.max(1, g - 1)); }
   function incGuests() { setGuests((g) => Math.min(50, g + 1)); }
@@ -797,6 +803,7 @@ export default function RestaurantDetailsPage() {
                     <input
                       type="date"
                       value={date}
+                      min={today}
                       onChange={(e) => setDate(e.target.value)}
                       className="mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none transition"
                       style={{

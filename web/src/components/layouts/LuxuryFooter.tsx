@@ -7,8 +7,10 @@ import {
   Twitter,
   UtensilsCrossed,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function LuxuryFooter() {
+  const { t } = useTranslation();
   return (
     <footer
       className="pt-16 pb-10 sm:pt-20"
@@ -39,7 +41,7 @@ export default function LuxuryFooter() {
               className="text-sm leading-relaxed max-w-xs"
               style={{ color: "rgba(245,237,228,0.5)", fontFamily: "'Jost', sans-serif" }}
             >
-              Elevating your dining experience in Cebu. Book exclusive tables at the city's most coveted restaurants.
+              {t("footer.brandDescription")}
             </p>
             <div className="flex items-center gap-4">
               {[
@@ -68,7 +70,7 @@ export default function LuxuryFooter() {
               className="text-xs tracking-[0.2em] uppercase mb-6 font-semibold"
               style={{ color: "#c9a07a", fontFamily: "'Jost', sans-serif" }}
             >
-              Explore
+              {t("footer.explore")}
             </h4>
             <ul className="flex flex-col gap-4">
               <li>
@@ -77,7 +79,7 @@ export default function LuxuryFooter() {
                   className="text-sm transition-colors hover:text-white"
                   style={{ color: "rgba(245,237,228,0.6)", fontFamily: "'Jost', sans-serif" }}
                 >
-                  Restaurants
+                  {t("nav.restaurants")}
                 </Link>
               </li>
               <li>
@@ -86,7 +88,7 @@ export default function LuxuryFooter() {
                   className="text-sm transition-colors hover:text-white"
                   style={{ color: "rgba(245,237,228,0.6)", fontFamily: "'Jost', sans-serif" }}
                 >
-                  My Reservations
+                  {t("nav.myReservations")}
                 </Link>
               </li>
             </ul>
@@ -98,7 +100,7 @@ export default function LuxuryFooter() {
               className="text-xs tracking-[0.2em] uppercase mb-6 font-semibold"
               style={{ color: "#c9a07a", fontFamily: "'Jost', sans-serif" }}
             >
-              Legal
+              {t("footer.legal")}
             </h4>
             <ul className="flex flex-col gap-4">
               <li>
@@ -106,7 +108,7 @@ export default function LuxuryFooter() {
                   className="text-sm"
                   style={{ color: "rgba(245,237,228,0.6)", fontFamily: "'Jost', sans-serif" }}
                 >
-                  Terms & Conditions
+                  {t("footer.termsAndConditions")}
                 </span>
               </li>
               <li>
@@ -114,7 +116,7 @@ export default function LuxuryFooter() {
                   className="text-sm"
                   style={{ color: "rgba(245,237,228,0.6)", fontFamily: "'Jost', sans-serif" }}
                 >
-                  Privacy Policy
+                  {t("footer.privacyPolicy")}
                 </span>
               </li>
             </ul>
@@ -126,18 +128,18 @@ export default function LuxuryFooter() {
               className="text-xs tracking-[0.2em] uppercase mb-6 font-semibold"
               style={{ color: "#c9a07a", fontFamily: "'Jost', sans-serif" }}
             >
-              Newsletter
+              {t("footer.newsletter")}
             </h4>
             <p
               className="text-sm mb-4"
               style={{ color: "rgba(245,237,228,0.5)", fontFamily: "'Jost', sans-serif" }}
             >
-              Subscribe for exclusive dining invites and news.
+              {t("footer.newsletterDescription")}
             </p>
             <div className="relative">
               <input
                 type="email"
-                placeholder="Email Address"
+                placeholder={t("footer.emailPlaceholder")}
                 className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-colors"
                 style={{
                   background: "rgba(255,255,255,0.05)",
@@ -168,18 +170,18 @@ export default function LuxuryFooter() {
             className="text-[11px] tracking-wider uppercase text-center sm:text-left"
             style={{ color: "rgba(245,237,228,0.3)", fontFamily: "'Jost', sans-serif" }}
           >
-            © {new Date().getFullYear()} RESEATO · Cebu City, Philippines
+            {t("footer.copyright", { year: new Date().getFullYear() })}
           </p>
           <div
             className="flex items-center gap-1.5 text-[10px] tracking-[0.2em] uppercase"
             style={{ color: "rgba(245,237,228,0.25)", fontFamily: "'Jost', sans-serif" }}
           >
-            Crafted with{" "}
+            {t("footer.craftedInCebu")}{" "}
             <Star
               className="h-3 w-3"
               style={{ color: "rgba(201,160,122,0.4)", fill: "rgba(201,160,122,0.2)" }}
             />{" "}
-            in Cebu
+            {t("footer.inCebu")}
           </div>
         </div>
       </div>

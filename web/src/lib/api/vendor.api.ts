@@ -267,6 +267,7 @@ export type VendorChartPoint = {
   total: number;
   completed: number;
   cancelled: number;
+  declined: number;
   pending: number;
   confirmed: number;
   paid: number;
@@ -281,12 +282,14 @@ export type VendorChartsResponse = {
     totalReservations: number;
     totalCompleted: number;
     totalCancelled: number;
+    totalDeclined: number;
     totalPending: number;
     totalConfirmed: number;
     totalPaid: number;
     totalRevenueMinor: number;
     completionRate: number;
     cancellationRate: number;
+    declinedRate: number;
   };
 };
 

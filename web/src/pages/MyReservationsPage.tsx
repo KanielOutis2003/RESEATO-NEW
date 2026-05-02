@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -33,7 +34,7 @@ const GOLD_BORDER = "1px solid rgba(212,181,138,0.35)";
 const SERIF = "'Cormorant Garamond', serif";
 const SANS = "'Jost', sans-serif";
 
-type StatusFilter = "all" | "pending" | "confirmed" | "completed" | "cancelled" | "receipts";
+type StatusFilter = "all" | "pending" | "confirmed" | "completed" | "cancelled" | "declined" | "receipts";
 
 const FILTERS: Array<{ key: StatusFilter; label: string }> = [
   { key: "all", label: "All" },
@@ -41,6 +42,7 @@ const FILTERS: Array<{ key: StatusFilter; label: string }> = [
   { key: "confirmed", label: "Confirmed" },
   { key: "completed", label: "Completed" },
   { key: "cancelled", label: "Cancelled" },
+  { key: "declined", label: "Declined" },
   { key: "receipts", label: "Receipts" },
 ];
 
@@ -82,14 +84,6 @@ function toPrettyDate(iso: string) {
   });
 }
 
-function toDateOnly(iso: string) {
-  const [year, month, day] = iso.split("-").map(Number);
-  if (!year || !month || !day) return null;
-
-  const date = new Date(year, month - 1, day);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
 
 function sortByDateTime(rows: ReservationWithRestaurant[]) {
   return [...rows].sort((a, b) => {
@@ -107,6 +101,8 @@ function statusPillStyle(status: string): React.CSSProperties {
     return { background: "rgba(120,175,240,0.18)", color: "#c4dcf6", border: "1px solid rgba(196,220,246,0.45)" };
   if (s === "cancelled")
     return { background: "rgba(224,105,115,0.18)", color: "#f5a7ad", border: "1px solid rgba(245,167,173,0.45)" };
+  if (s === "declined")
+    return { background: "rgba(159,18,57,0.18)", color: "#e88b93", border: "1px solid rgba(232,139,147,0.4)" };
   return { background: "rgba(212,181,138,0.18)", color: GOLD, border: "1px solid rgba(212,181,138,0.45)" };
 }
 
@@ -308,6 +304,8 @@ function CancelConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  // @ts-ignore - deep type instantiation
+  const { t } = useTranslation();
   if (!open) return null;
   return (
     <AnimatePresence>
@@ -342,16 +340,16 @@ function CancelConfirmModal({
               </div>
               <div>
                 <h3 className="text-xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>
-                  Cancel Reservation
+                  {t("reservations.cancelReservation")}
                 </h3>
                 <p className="text-xs tracking-wider uppercase" style={{ color: "rgba(250,244,234,0.5)", fontFamily: SANS }}>
-                  This action cannot be undone
+                  {t("reservations.cannotBeUndone")}
                 </p>
               </div>
             </div>
 
             <p className="mt-4 text-sm" style={{ color: "rgba(250,244,234,0.7)", fontFamily: SANS }}>
-              Are you sure you want to cancel your reservation at{" "}
+              {t("reservations.cancelConfirmText")}{" "}
               <span className="font-semibold" style={{ color: GOLD }}>{restaurantName}</span>?
             </p>
 
@@ -368,7 +366,7 @@ function CancelConfirmModal({
                   fontFamily: SANS,
                 }}
               >
-                No, keep it
+                {t("reservations.noKeepIt")}
               </button>
               <button
                 type="button"
@@ -381,7 +379,7 @@ function CancelConfirmModal({
                   fontFamily: SANS,
                 }}
               >
-                {loading ? "Cancelling..." : "Yes, cancel"}
+                {loading ? t("reservations.yesCancelling") : t("reservations.yesCancel")}
               </button>
             </div>
           </motion.div>
@@ -408,6 +406,8 @@ function ReceiptModal({
   onClose: () => void;
   reservation: ReservationWithRestaurant | null;
 }) {
+  // @ts-ignore - deep type instantiation
+  const { t } = useTranslation();
   if (!open || !reservation) return null;
 
   const provider = String(reservation.payment_provider ?? "").toLowerCase();
@@ -462,7 +462,7 @@ function ReceiptModal({
                 {theme.logo}
               </div>
               <div className="text-lg font-bold tracking-wide">{theme.label}</div>
-              <div className="mt-1 text-sm opacity-90">Payment Receipt</div>
+              <div className="mt-1 text-sm opacity-90">{t("receipt.paymentReceipt")}</div>
             </div>
 
             {/* Success Badge */}
@@ -474,10 +474,10 @@ function ReceiptModal({
 
             {/* Amount */}
             <div className="mt-3 text-center">
-              <div className="text-[11px] uppercase tracking-wider text-gray-500">Amount Paid</div>
+              <div className="text-[11px] uppercase tracking-wider text-gray-500">{t("receipt.amountPaid")}</div>
               <div className="mt-1 text-3xl font-bold text-gray-900">{amount ?? "—"}</div>
               <div className="mt-2 inline-flex rounded-full bg-green-100 px-3 py-0.5 text-xs font-semibold text-green-700">
-                Successful
+                {t("receipt.successful")}
               </div>
             </div>
 
@@ -491,37 +491,37 @@ function ReceiptModal({
             {/* Details */}
             <div className="space-y-2.5 px-6 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Ref. No.</span>
+                <span className="text-gray-500">{t("receipt.refNo")}</span>
                 <span className="font-mono text-xs font-semibold text-gray-900">{refNo}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Paid To</span>
+                <span className="text-gray-500">{t("receipt.paidTo")}</span>
                 <span className="font-medium text-gray-900">RESEATO</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Restaurant</span>
+                <span className="text-gray-500">{t("receipt.restaurant")}</span>
                 <span className="max-w-[180px] truncate text-right font-medium text-gray-900">
                   {reservation.restaurant?.name ?? "N/A"}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Date & Time</span>
+                <span className="text-gray-500">{t("receipt.dateAndTime")}</span>
                 <span className="font-medium text-gray-900">
                   {reservation.date}, {to12Hour(reservation.time)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Guests</span>
+                <span className="text-gray-500">{t("receipt.guests")}</span>
                 <span className="font-medium text-gray-900">{reservation.guests}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Payment Method</span>
+                <span className="text-gray-500">{t("receipt.paymentMethod")}</span>
                 <span className="font-semibold" style={{ color: theme.accent }}>
                   {theme.label}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Transaction Date</span>
+                <span className="text-gray-500">{t("receipt.transactionDate")}</span>
                 <span className="text-xs text-gray-900">{txnDate}</span>
               </div>
             </div>
@@ -560,6 +560,8 @@ function ReceiptModal({
 }
 
 export default function MyReservationsPage() {
+  // @ts-ignore - deep type instantiation
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [items, setItems] = useState<ReservationWithRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -602,7 +604,7 @@ export default function MyReservationsPage() {
         if (ps === "paid") acc.receipts += 1;
         return acc;
       },
-      { all: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0, receipts: 0 },
+      { all: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0, declined: 0, receipts: 0 },
     );
   }, [items]);
 
@@ -618,28 +620,14 @@ export default function MyReservationsPage() {
         ? items
         : items.filter((row) => normalizeStatus(row.status) === statusFilter);
 
-    if (statusFilter !== "all") return sortByDateTime(byStatus);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return sortByDateTime(
-      byStatus.filter((row) => {
-        const s = normalizeStatus(row.status);
-        if (s === "completed" || s === "cancelled") return false;
-
-        const d = toDateOnly(row.date);
-        if (!d) return true;
-        return d >= today;
-      }),
-    );
+    return sortByDateTime(byStatus);
   }, [items, statusFilter]);
 
   const sectionTitle =
     statusFilter === "all"
-      ? "Upcoming Reservations"
+      ? t("reservations.allReservations")
       : statusFilter === "receipts"
-        ? "Paid Receipts"
+        ? t("reservations.paidReceipts")
         : `${statusFilter[0].toUpperCase()}${statusFilter.slice(1)} Reservations`;
 
   async function onCancelConfirm() {
@@ -651,7 +639,7 @@ export default function MyReservationsPage() {
       const updated = await cancelReservationSupabase(cancelTarget.id);
       setItems((prev) => prev.map((row) => (row.id === cancelTarget.id ? updated : row)));
       setCancelTarget(null);
-      setMsg("Reservation cancelled successfully.");
+      setMsg(t("reservations.cancelledSuccessfully"));
       setTimeout(() => setMsg(null), 3000);
     } catch (e: any) {
       setMsg(e?.message ?? "Cancel failed");
@@ -698,7 +686,7 @@ export default function MyReservationsPage() {
             }}
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Back
+            {t("common.back")}
           </button>
 
           <div className="mt-8 flex items-start gap-5">
@@ -717,19 +705,19 @@ export default function MyReservationsPage() {
                 className="text-[11px] tracking-[0.3em] uppercase mb-2"
                 style={{ color: GOLD }}
               >
-                Your Journey
+                {t("reservations.yourJourney")}
               </div>
               <h1
                 className="text-4xl sm:text-5xl lg:text-6xl font-light leading-none"
                 style={{ color: CREAM, fontFamily: SERIF, letterSpacing: "-0.01em" }}
               >
-                My Reservations
+                {t("reservations.myReservations")}
               </h1>
               <p
                 className="mt-3 text-sm"
                 style={{ color: "rgba(250,244,234,0.55)" }}
               >
-                Manage your curated dining experiences
+                {t("reservations.manageExperiences")}
               </p>
             </div>
           </div>
@@ -771,10 +759,10 @@ export default function MyReservationsPage() {
                 style={{ color: GOLD }}
               >
                 <Filter className="h-4 w-4" />
-                Filter by Status
+                {t("reservations.filterByStatus")}
               </div>
               <div className="text-xs tracking-wider uppercase" style={{ color: "rgba(250,244,234,0.5)" }}>
-                {visibleItems.length} reservation{visibleItems.length === 1 ? "" : "s"}
+                {t("reservations.reservation", { count: visibleItems.length })}
               </div>
             </div>
 
@@ -802,7 +790,7 @@ export default function MyReservationsPage() {
                           }
                     }
                   >
-                    {filter.label}
+                    {t(`filters.${filter.key}`)}
                     {filter.key !== "all" ? ` (${statusCount[filter.key]})` : ""}
                   </button>
                 );
@@ -830,7 +818,7 @@ export default function MyReservationsPage() {
                 color: "rgba(250,244,234,0.55)",
               }}
             >
-              Loading reservations...
+              {t("reservations.loadingReservations")}
             </div>
           ) : visibleItems.length === 0 ? (
             <div
@@ -841,7 +829,7 @@ export default function MyReservationsPage() {
                 color: "rgba(250,244,234,0.55)",
               }}
             >
-              No reservations found for this status.
+              {t("reservations.noReservationsFound")}
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
@@ -851,6 +839,7 @@ export default function MyReservationsPage() {
                 const canPay =
                   status !== "cancelled" &&
                   status !== "completed" &&
+                  status !== "declined" &&
                   paymentStatus !== "paid";
 
                 return (
@@ -892,7 +881,7 @@ export default function MyReservationsPage() {
                           className="mt-2 text-[11px] tracking-wider uppercase truncate"
                           style={{ color: "rgba(250,244,234,0.4)" }}
                         >
-                          Booking ID · {row.id}
+                          {t("reservations.bookingId")} · {row.id}
                         </p>
                       </div>
 
@@ -911,7 +900,7 @@ export default function MyReservationsPage() {
                       >
                         <div className="inline-flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase" style={{ color: GOLD }}>
                           <CalendarDays className="h-3.5 w-3.5" />
-                          Date
+                          {t("reservations.date")}
                         </div>
                         <div className="mt-1 text-lg font-light" style={{ color: CREAM, fontFamily: SERIF }}>
                           {toPrettyDate(row.date)}
@@ -924,7 +913,7 @@ export default function MyReservationsPage() {
                       >
                         <div className="inline-flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase" style={{ color: GOLD }}>
                           <Clock3 className="h-3.5 w-3.5" />
-                          Time
+                          {t("reservations.time")}
                         </div>
                         <div className="mt-1 text-lg font-light" style={{ color: CREAM, fontFamily: SERIF }}>
                           {to12Hour(row.time)}
@@ -937,10 +926,10 @@ export default function MyReservationsPage() {
                       >
                         <div className="inline-flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase" style={{ color: GOLD }}>
                           <UsersRound className="h-3.5 w-3.5" />
-                          Guests
+                          {t("reservations.guests")}
                         </div>
                         <div className="mt-1 text-lg font-light" style={{ color: CREAM, fontFamily: SERIF }}>
-                          {row.guests} {row.guests === 1 ? "Person" : "People"}
+                          {row.guests} {row.guests === 1 ? t("reservations.person") : t("reservations.people")}
                         </div>
                       </div>
 
@@ -950,10 +939,10 @@ export default function MyReservationsPage() {
                       >
                         <div className="inline-flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase" style={{ color: GOLD }}>
                           <MapPin className="h-3.5 w-3.5" />
-                          Location
+                          {t("reservations.location")}
                         </div>
                         <div className="mt-1 truncate text-sm" style={{ color: CREAM }}>
-                          {row.restaurant?.location ?? "Location not available"}
+                          {row.restaurant?.location ?? t("reservations.locationNotAvailable")}
                         </div>
                       </div>
                     </div>
@@ -964,7 +953,7 @@ export default function MyReservationsPage() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] uppercase tracking-[0.2em]" style={{ color: GOLD }}>
-                          Payment
+                          {t("reservations.payment")}
                         </span>
                         <span
                           className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em]"
@@ -974,6 +963,15 @@ export default function MyReservationsPage() {
                         </span>
                       </div>
                     </div>
+
+                    {status === "declined" && row.decline_reason && (
+                      <div
+                        className="mt-4 rounded-xl p-3 text-sm"
+                        style={{ background: "rgba(159,18,57,0.12)", border: "1px solid rgba(232,139,147,0.3)", color: "#e88b93" }}
+                      >
+                        <span className="font-semibold">Decline reason:</span> {row.decline_reason}
+                      </div>
+                    )}
 
                     <div className="mt-5 grid gap-2 sm:grid-cols-2">
                       {canPay && (
@@ -988,7 +986,7 @@ export default function MyReservationsPage() {
                           }}
                         >
                           <CreditCard className="h-4 w-4" />
-                          Pay Fee
+                          {t("reservations.payFee")}
                         </Link>
                       )}
 
@@ -1003,7 +1001,7 @@ export default function MyReservationsPage() {
                         }}
                       >
                         <X className="h-4 w-4" />
-                        Cancel
+                        {t("common.cancel")}
                       </button>
 
                       {paymentStatus === "paid" && (
@@ -1017,7 +1015,7 @@ export default function MyReservationsPage() {
                           }}
                         >
                           <Receipt className="h-4 w-4" />
-                          View Receipt
+                          {t("reservations.viewReceipt")}
                         </button>
                       )}
                     </div>
@@ -1027,15 +1025,15 @@ export default function MyReservationsPage() {
                       style={{ borderTop: "1px solid rgba(201,160,122,0.12)", color: "rgba(250,244,234,0.5)" }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="tracking-wider uppercase">Restaurant</span>
+                        <span className="tracking-wider uppercase">{t("reservations.restaurant")}</span>
                         <span style={{ color: CREAM }}>
-                          {row.restaurant?.name ?? "Unavailable"}
+                          {row.restaurant?.name ?? t("reservations.unavailable")}
                         </span>
                       </div>
                       <div className="mt-1.5 flex items-center justify-between">
-                        <span className="tracking-wider uppercase">Location</span>
+                        <span className="tracking-wider uppercase">{t("reservations.location")}</span>
                         <span className="truncate max-w-[60%] text-right" style={{ color: CREAM }}>
-                          {row.restaurant?.location ?? "Unavailable"}
+                          {row.restaurant?.location ?? t("reservations.unavailable")}
                         </span>
                       </div>
                     </div>

@@ -18,6 +18,7 @@ export type ReservationRow = {
   payment_reference?: string | null;
   payment_paid_at?: string | null;
   payment_error?: string | null;
+  decline_reason?: string | null;
 };
 
 async function getAuthedUserId() {

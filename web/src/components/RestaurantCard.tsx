@@ -1,24 +1,19 @@
 import { Clock, MapPin, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { Restaurant } from "../lib/types/restaurants";
-
-const PRICE_LABELS: Record<number, string> = {
-  1: "Budget Friendly",
-  2: "Moderate",
-  3: "Upscale",
-  4: "Fine Dining",
-};
-
-const price = (level: number) => {
-  const normalized = Math.min(4, Math.max(1, Number(level) || 1));
-  return PRICE_LABELS[normalized] ?? "Budget Friendly";
-};
 
 const FALLBACK_IMG =
   "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80";
 
 export default function RestaurantCard({ r }: { r: Restaurant }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const price = (level: number) => {
+    const normalized = Math.min(4, Math.max(1, Number(level) || 1));
+    return t(`priceLabels.${normalized}`);
+  };
   const ratingLabel = Number.isFinite(r.rating) ? r.rating.toFixed(1) : "0.0";
 
   return (
@@ -114,7 +109,7 @@ export default function RestaurantCard({ r }: { r: Restaurant }) {
               active:scale-95
             "
           >
-            View
+            {t("common.viewAndBook")}
           </button>
         </div>
       </div>

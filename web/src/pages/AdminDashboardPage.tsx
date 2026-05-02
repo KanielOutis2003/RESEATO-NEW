@@ -812,7 +812,7 @@ export default function AdminDashboardPage() {
     xml += `<Row ss:Height="28"><Cell ss:StyleID="title" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">RESEATO - Admin Performance Report</Data></Cell></Row>\n`;
     xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Report Period: ${escXml(chartData.from)} to ${escXml(chartData.to)}</Data></Cell></Row>\n`;
     xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Generated: ${escXml(generatedAt)}</Data></Cell></Row>\n`;
-    xml += `<Row><Cell ss:StyleID="metaBold" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Total Reservations: ${chartData.summary.totalReservations}  |  Revenue: PHP ${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}  |  Completion: ${(chartData.summary.completionRate * 100).toFixed(1)}%  |  Cancellation: ${(chartData.summary.cancellationRate * 100).toFixed(1)}%</Data></Cell></Row>\n`;
+    xml += `<Row><Cell ss:StyleID="metaBold" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Total Reservations: ${chartData.summary.totalReservations}  |  Revenue: PHP ${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}  |  Completion: ${(chartData.summary.completionRate).toFixed(1)}%  |  Cancellation: ${(chartData.summary.cancellationRate).toFixed(1)}%</Data></Cell></Row>\n`;
     xml += "<Row></Row>\n";
 
     // Column header row
@@ -831,8 +831,8 @@ export default function AdminDashboardPage() {
     xml += `<Cell ss:StyleID="sum"><Data ss:Type="Number">${chartData.summary.totalPaid}</Data></Cell>`;
     xml += `<Cell ss:StyleID="sum"><Data ss:Type="Number">${chartData.summary.totalRevenueMinor}</Data></Cell>`;
     xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.totalRevenueMinor / 100).toFixed(2)}</Data></Cell>`;
-    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.completionRate * 100).toFixed(2)}</Data></Cell>`;
-    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.cancellationRate * 100).toFixed(2)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.completionRate).toFixed(2)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="num"><Data ss:Type="Number">${(chartData.summary.cancellationRate).toFixed(2)}</Data></Cell>`;
     xml += "</Row>\n";
 
     // Data rows
@@ -1909,7 +1909,7 @@ export default function AdminDashboardPage() {
                       <div className="rounded-xl border border-[#ebedf1] bg-white p-2">
                         <div className="text-[10px] uppercase tracking-wide text-[#98a2b3]">Performance</div>
                         <div className="mt-1 text-xs font-medium text-[#344054]">
-                          {item.totalTables} tables | {item.rating.toFixed(1)} rating
+                          {item.rating.toFixed(1)} rating
                         </div>
                       </div>
                     </div>
@@ -1971,7 +1971,6 @@ export default function AdminDashboardPage() {
                       <th className="px-3 py-2.5">System Profit</th>
                       <th className="px-3 py-2.5">Status</th>
                       <th className="px-3 py-2.5">Featured</th>
-                      <th className="px-3 py-2.5">Tables</th>
                       <th className="px-3 py-2.5">Rating</th>
                       <th className="px-3 py-2.5">Actions</th>
                     </tr>
@@ -1979,7 +1978,7 @@ export default function AdminDashboardPage() {
                   <tbody>
                     {restaurants.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="px-3 py-8 text-center text-sm text-[#8b97a8]">
+                        <td colSpan={8} className="px-3 py-8 text-center text-sm text-[#8b97a8]">
                           No restaurants found.
                         </td>
                       </tr>
@@ -2067,7 +2066,6 @@ export default function AdminDashboardPage() {
                               <Star className={`h-5 w-5 ${item.isFeatured ? "fill-[#f59e0b] text-[#f59e0b]" : "text-[#d1d5db] hover:text-[#f59e0b]/50"}`} />
                             </button>
                           </td>
-                          <td className="px-3 py-3 text-[#475467]">{item.totalTables}</td>
                           <td className="px-3 py-3 text-[#475467]">{item.rating.toFixed(1)}</td>
                           <td className="px-3 py-3">
                             <button

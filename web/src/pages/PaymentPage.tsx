@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -236,6 +237,7 @@ const METHOD_META: Record<Method, { label: string; sub: string; accent: string; 
 };
 
 export default function PaymentPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { reservationId } = useParams<{ reservationId: string }>();
   const [details, setDetails] = useState<ReservationPaymentDetails | null>(null);
@@ -272,7 +274,7 @@ export default function PaymentPage() {
   async function onPayNow() {
     if (!reservationId || !details) return;
     if (!agreed) {
-      setMessage("Please accept the terms before continuing.");
+      setMessage(t("payment.acceptTermsFirst"));
       return;
     }
 
@@ -302,7 +304,7 @@ export default function PaymentPage() {
             className="rounded-2xl p-6"
             style={{ background: CARD_BG, border: CARD_BORDER, color: "#f0a5ac" }}
           >
-            Invalid reservation.
+            {t("payment.invalidReservation")}
           </div>
         </section>
         <LuxuryFooter />
@@ -337,7 +339,7 @@ export default function PaymentPage() {
                 RESEATO
               </div>
               <div className="text-xl font-light" style={{ color: CREAM, fontFamily: SERIF }}>
-                Preparing payment portal...
+                {t("payment.preparingPayment")}
               </div>
             </div>
           </motion.div>
@@ -362,7 +364,7 @@ export default function PaymentPage() {
 
           <div className="mt-6 inline-flex items-center gap-2 text-sm" style={{ color: TEXT_DIM }}>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading payment details...
+            {t("payment.loadingPaymentDetails")}
           </div>
         </section>
         <LuxuryFooter />
@@ -389,7 +391,7 @@ export default function PaymentPage() {
                 border: GOLD_BORDER,
               }}
             >
-              Go to My Reservations
+              {t("payment.goToMyReservations")}
             </Link>
           </div>
         </section>
@@ -428,17 +430,17 @@ export default function PaymentPage() {
         <div className="mt-10 text-center">
           <div className="inline-flex items-center gap-2.5 text-xs tracking-[0.3em] uppercase" style={{ color: GOLD }}>
             <span className="h-px w-8" style={{ background: GOLD }} />
-            Secure Checkout
+            {t("payment.securePayment")}
             <span className="h-px w-8" style={{ background: GOLD }} />
           </div>
           <h1
             className="mt-4 text-4xl font-light sm:text-5xl lg:text-6xl"
             style={{ color: CREAM, fontFamily: SERIF, letterSpacing: "-0.01em" }}
           >
-            Secure Payment
+            {t("payment.securePayment")}
           </h1>
           <p className="mt-3 text-sm" style={{ color: TEXT_DIM }}>
-            Complete your reservation fee payment to confirm your curated dining experience
+            {t("payment.completePaymentSubtitle")}
           </p>
         </div>
 
@@ -477,7 +479,7 @@ export default function PaymentPage() {
                 }}
               >
                 <span className="text-sm tracking-wider uppercase" style={{ color: TEXT_MUTED }}>
-                  Reservation Fee
+                  {t("payment.reservationFee")}
                 </span>
                 <span
                   className="text-3xl font-light sm:text-4xl"
@@ -490,7 +492,7 @@ export default function PaymentPage() {
               <div className="space-y-6 p-5">
                 <div>
                   <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: GOLD }}>
-                    Select Payment Method
+                    {t("payment.selectPaymentMethod")}
                   </div>
 
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -522,7 +524,7 @@ export default function PaymentPage() {
                             {meta.label}
                           </div>
                           <div className="text-xs" style={{ color: TEXT_DIM }}>
-                            {meta.sub}
+                            {meta.sub === "E-wallet" ? t("payment.eWallet") : t("payment.digitalBank")}
                           </div>
                         </button>
                       );
@@ -538,7 +540,7 @@ export default function PaymentPage() {
                     color: TEXT_MUTED,
                   }}
                 >
-                  Select your preferred payment method and click the button below to confirm payment.
+                  {t("payment.paymentInstructions")}
                 </div>
 
                 <label className="inline-flex items-start gap-3 text-sm" style={{ color: TEXT_MUTED }}>
@@ -551,7 +553,7 @@ export default function PaymentPage() {
                     disabled={paymentLocked}
                   />
                   <span>
-                    I agree that this reservation fee is final and non-refundable based on RESEATO terms.
+                    {t("payment.agreeTerms")}
                   </span>
                 </label>
 
@@ -569,12 +571,12 @@ export default function PaymentPage() {
                   {submitting ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Processing...
+                      {t("payment.processing")}
                     </>
                   ) : (
                     <>
                       <CheckCircle className="h-5 w-5" />
-                      Pay {feeLabel}
+                      {t("payment.pay", { amount: feeLabel })}
                     </>
                   )}
                 </button>

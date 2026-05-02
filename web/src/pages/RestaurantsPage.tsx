@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -130,6 +131,7 @@ const PRICE_LABELS: Record<number, string> = {
 
 export default function RestaurantsPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { session, loading: sessionLoading } = useSession();
 
   const [items, setItems] = useState<Restaurant[]>([]);
@@ -316,7 +318,7 @@ export default function RestaurantsPage() {
                   className="text-lg font-light"
                   style={{ color: "#f5ede4", fontFamily: "'Cormorant Garamond', serif" }}
                 >
-                  Preparing restaurants for you...
+                  {t("restaurants.loadingRestaurants")}
                 </div>
               </div>
             </motion.div>
@@ -361,7 +363,7 @@ export default function RestaurantsPage() {
             </div>
 
             <div className="mt-6 text-sm" style={{ color: "rgba(245,237,228,0.5)" }}>
-              Loading restaurants...
+              {t("restaurants.loadingRestaurants")}
             </div>
           </div>
         </div>
@@ -432,7 +434,7 @@ export default function RestaurantsPage() {
               className="text-xs tracking-[0.32em] uppercase mb-4"
               style={{ color: "#c9a07a" }}
             >
-              Browse Restaurants
+              {t("restaurants.browseRestaurants")}
             </p>
             <h1
               className="font-light"
@@ -449,7 +451,7 @@ export default function RestaurantsPage() {
                 textAlign: "center",
               }}
             >
-              “Welcome. Indulge in Cebu’s finest dining experiences, carefully selected for your pleasure.”
+              {t("restaurants.heroQuote")}
             </h1>
             <div className="flex items-center justify-center gap-4 mt-6">
               <div
@@ -475,7 +477,7 @@ export default function RestaurantsPage() {
               className="mt-5 text-sm font-light"
               style={{ color: "rgba(245,237,228,0.6)" }}
             >
-              “Step into a world of exceptional flavors—experience the best restaurants Cebu has to offer.”
+              {t("restaurants.heroSubQuote")}
             </p>
 
             {/* Search */}
@@ -488,7 +490,7 @@ export default function RestaurantsPage() {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search restaurants..."
+                  placeholder={t("restaurants.searchPlaceholder")}
                   className="w-full rounded-2xl py-3 pl-11 pr-4 text-sm outline-none transition-colors"
                   style={{
                     background: "rgba(28,13,16,0.7)",
@@ -537,7 +539,7 @@ export default function RestaurantsPage() {
                   }
                 >
                   <Icon className="h-3.5 w-3.5" />
-                  {c.label}
+                  {t(`categories.${c.key}`)}
                 </button>
               );
             })}
@@ -552,7 +554,7 @@ export default function RestaurantsPage() {
                 className="text-[10px] tracking-[0.32em] uppercase mb-2"
                 style={{ color: "#c9a07a", fontFamily: "'Jost', sans-serif" }}
               >
-                Curated Selection
+                {t("restaurants.curatedSelection")}
               </p>
               <h2
                 className="font-light"
@@ -563,13 +565,13 @@ export default function RestaurantsPage() {
                   lineHeight: 1.1,
                 }}
               >
-                Recommended Restaurants
+                {t("restaurants.recommended")}
               </h2>
               <p
                 className="mt-2 text-sm font-light"
                 style={{ color: "rgba(245,237,228,0.55)" }}
               >
-                Top-rated dining spots picked for you
+                {t("restaurants.recommendedSub")}
               </p>
             </div>
             <p
@@ -596,13 +598,13 @@ export default function RestaurantsPage() {
                   fontSize: "1.4rem",
                 }}
               >
-                No restaurants found
+                {t("restaurants.noRestaurantsFound")}
               </div>
               <p
                 className="mt-2 text-sm"
                 style={{ color: "rgba(245,237,228,0.4)" }}
               >
-                Try adjusting your filters or search term
+                {t("restaurants.adjustFilters")}
               </p>
             </div>
           ) : (

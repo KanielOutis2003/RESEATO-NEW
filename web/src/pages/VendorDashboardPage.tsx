@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  BarChart3,
   CalendarClock,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
   Clock3,
-  Download,
-  FileSpreadsheet,
   Loader2,
   Settings2,
 } from "lucide-react";
@@ -36,13 +35,6 @@ function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
   return fallback;
 }
-
-function csvCell(value: string | number | boolean) {
-  const text = String(value ?? "");
-  if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
-  return text;
-}
-
 
 function dateInputFromDate(date: Date) {
   const year = date.getFullYear();
@@ -376,126 +368,6 @@ export default function VendorDashboardPage() {
     ];
   }, [overview]);
 
-  function handleExportTrendsCsv() {
-    if (!chartData?.days?.length) return;
-
-    const restoNames = restaurants.map((r) => r.name).join(", ") || "All Restaurants";
-    const generatedAt = new Date().toLocaleString();
-
-    const headers = ["date", "total", "pending", "confirmed", "completed", "cancelled", "paid", "revenue_minor", "revenue_php"];
-
-    const rows = chartData.days.map((day) => [
-      day.date,
-      day.total,
-      day.pending,
-      day.confirmed,
-      day.completed,
-      day.cancelled,
-      day.paid,
-      day.revenueMinor,
-      (day.revenueMinor / 100).toFixed(2),
-    ]);
-
-    const metaRows = [
-      `RESEATO - Vendor Booking Report`,
-      `Restaurant: ${restoNames}`,
-      `Report Period: ${chartData.from} to ${chartData.to}`,
-      `Generated: ${generatedAt}`,
-      "",
-    ];
-
-    const csv = [
-      ...metaRows.map((line) => csvCell(line)),
-      headers.map(csvCell).join(","),
-      ...rows.map((row) => row.map((cell) => csvCell(cell)).join(",")),
-    ].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `RESEATO-Vendor-Report-${chartData.from}-to-${chartData.to}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  function handleExportTrendsExcel() {
-    if (!chartData?.days?.length) return;
-
-    const restoNames = restaurants.map((r) => r.name).join(", ") || "All Restaurants";
-    const generatedAt = new Date().toLocaleString();
-
-    const headers = ["Date", "Total", "Pending", "Confirmed", "Completed", "Cancelled", "Paid", "Revenue (minor)", "Revenue (PHP)"];
-
-    const rows = chartData.days.map((day) => [
-      day.date,
-      day.total,
-      day.pending,
-      day.confirmed,
-      day.completed,
-      day.cancelled,
-      day.paid,
-      day.revenueMinor,
-      (day.revenueMinor / 100).toFixed(2),
-    ]);
-
-    const escXml = (v: string | number) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const colWidths = [90, 60, 70, 80, 80, 75, 55, 110, 100];
-    let xml = '<?xml version="1.0"?>\n';
-    xml += '<?mso-application progid="Excel.Sheet"?>\n';
-    xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n';
-    xml += '<Styles>';
-    xml += '<Style ss:ID="title"><Font ss:Bold="1" ss:Size="16" ss:Color="#8b3d4a"/></Style>';
-    xml += '<Style ss:ID="meta"><Font ss:Size="11" ss:Color="#667085"/></Style>';
-    xml += '<Style ss:ID="metaBold"><Font ss:Bold="1" ss:Size="11" ss:Color="#374151"/></Style>';
-    xml += '<Style ss:ID="hdr"><Font ss:Bold="1" ss:Size="10" ss:Color="#FFFFFF"/><Interior ss:Color="#8b3d4a" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>';
-    xml += '<Style ss:ID="cell"><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders></Style>';
-    xml += '<Style ss:ID="num"><NumberFormat ss:Format="#,##0.00"/><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders></Style>';
-    xml += '<Style ss:ID="dateCell"><Alignment ss:Horizontal="Left"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/></Borders></Style>';
-    xml += '</Styles>\n';
-    xml += '<Worksheet ss:Name="Booking Report">\n<Table>\n';
-
-    // Column widths
-    for (const w of colWidths) xml += `<Column ss:AutoFitWidth="0" ss:Width="${w}"/>`;
-    xml += '\n';
-
-    // Report header
-    xml += `<Row ss:Height="28"><Cell ss:StyleID="title" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">RESEATO - Vendor Booking Report</Data></Cell></Row>\n`;
-    xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Restaurant: ${escXml(restoNames)}</Data></Cell></Row>\n`;
-    xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Report Period: ${escXml(chartData.from)} to ${escXml(chartData.to)}</Data></Cell></Row>\n`;
-    xml += `<Row><Cell ss:StyleID="meta" ss:MergeAcross="${headers.length - 1}"><Data ss:Type="String">Generated: ${escXml(generatedAt)}</Data></Cell></Row>\n`;
-    xml += "<Row></Row>\n";
-
-    // Column headers
-    xml += "<Row>";
-    for (const h of headers) xml += `<Cell ss:StyleID="hdr"><Data ss:Type="String">${escXml(h)}</Data></Cell>`;
-    xml += "</Row>\n";
-
-    // Data rows
-    for (const row of rows) {
-      const cells = row.map((cell, i) => {
-        if (i === 0) return `<Cell ss:StyleID="dateCell"><Data ss:Type="String">${escXml(cell)}</Data></Cell>`;
-        if (i >= 7) return `<Cell ss:StyleID="num"><Data ss:Type="Number">${escXml(cell)}</Data></Cell>`;
-        return `<Cell ss:StyleID="cell"><Data ss:Type="Number">${escXml(cell)}</Data></Cell>`;
-      }).join("");
-      xml += `<Row>${cells}</Row>\n`;
-    }
-
-    xml += "</Table>\n</Worksheet>\n</Workbook>";
-
-    const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `RESEATO-Vendor-Report-${chartData.from}-to-${chartData.to}.xls`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
   const displayName = user?.user_metadata?.full_name
     || user?.user_metadata?.first_name
     || user?.email?.split("@")[0]
@@ -556,14 +428,9 @@ export default function VendorDashboardPage() {
                     <h3 className="text-[22px] font-extrabold text-[#1f2937]">📅 Calendar</h3>
                     <p className="text-[13px] text-[#667085]">Click a date to view day snapshot.</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={handleExportTrendsCsv} className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56] transition hover:bg-[#f4dfe3]">
-                      <Download className="mr-1.5 inline-block h-3.5 w-3.5" />CSV
-                    </button>
-                    <button type="button" onClick={handleExportTrendsExcel} className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56] transition hover:bg-[#f4dfe3]">
-                      <FileSpreadsheet className="mr-1.5 inline-block h-3.5 w-3.5" />Excel
-                    </button>
-                  </div>
+                  <Link to="/vendor/analytics" className="rounded-[14px] border border-[#ead3d8] bg-[#f8ecee] px-3.5 py-2.5 text-sm font-bold text-[#8f3d56] transition hover:bg-[#f4dfe3] inline-flex items-center gap-1.5">
+                    <BarChart3 className="h-3.5 w-3.5" />View Reports
+                  </Link>
                 </div>
 
                 {/* Month/Year nav */}

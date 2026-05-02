@@ -177,7 +177,11 @@ function createDateRangeKeys(from: string, to: string) {
 }
 
 function getTodayDateKeyUTC() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function getErrorCode(error: any) {
@@ -701,7 +705,8 @@ async function getActiveReservationCountsByGuestRange(
 
   for (const row of data ?? []) {
     const status = normalizeReservationStatus(row.status);
-    if (status !== "confirmed" && status !== "completed") continue;
+    // Count pending + confirmed as occupied; completed/cancelled/declined are free
+    if (status !== "pending" && status !== "confirmed") continue;
 
     const time = normalizeTime(row.time);
     if (!time) continue;
@@ -788,7 +793,8 @@ async function getActiveReservationCounts(restaurantId: string, date: string, ma
 
   for (const row of data ?? []) {
     const status = normalizeReservationStatus(row.status);
-    if (status !== "confirmed" && status !== "completed") continue;
+    // Count pending + confirmed as occupied; completed/cancelled/declined are free
+    if (status !== "pending" && status !== "confirmed") continue;
 
     const time = normalizeTime(row.time);
     if (!time) continue;
@@ -1224,6 +1230,17 @@ app.post("/reservations", requireUser, async (req: any, res) => {
         });
       }
     }
+
+    // Remove any previous declined/cancelled reservation by the same user for this slot
+    // so the unique constraint doesn't block rebooking
+    await supabase
+      .from("reservations")
+      .delete()
+      .eq("user_id", userId)
+      .eq("restaurant_id", restaurantId)
+      .eq("date", String(date))
+      .eq("time", timeValue)
+      .in("status", ["declined", "cancelled"]);
 
     const { data, error } = await supabase
       .from("reservations")
@@ -2513,6 +2530,8 @@ app.post(
         message:
           action === "approve"
             ? "Reservation approved. Customer has been notified."
+            : action === "complete"
+            ? "Reservation marked as completed successfully."
             : "Reservation declined successfully.",
       });
     } catch (error: any) {
@@ -2554,6 +2573,7 @@ app.get("/vendor/charts", requireUser, async (req: any, res) => {
         total: number;
         completed: number;
         cancelled: number;
+        declined: number;
         pending: number;
         confirmed: number;
         paid: number;
@@ -2567,6 +2587,7 @@ app.get("/vendor/charts", requireUser, async (req: any, res) => {
         total: 0,
         completed: 0,
         cancelled: 0,
+        declined: 0,
         pending: 0,
         confirmed: 0,
         paid: 0,
@@ -2599,7 +2620,8 @@ app.get("/vendor/charts", requireUser, async (req: any, res) => {
 
         const status = normalizeReservationStatus((row as any).status);
         if (status === "completed") bucket.completed += 1;
-        if (status === "cancelled" || status === "declined") bucket.cancelled += 1;
+        if (status === "cancelled") bucket.cancelled += 1;
+        if (status === "declined") bucket.declined += 1;
         if (status === "pending") bucket.pending += 1;
         if (status === "confirmed") bucket.confirmed += 1;
 
@@ -2622,6 +2644,7 @@ app.get("/vendor/charts", requireUser, async (req: any, res) => {
         acc.totalReservations += day.total;
         acc.totalCompleted += day.completed;
         acc.totalCancelled += day.cancelled;
+        acc.totalDeclined += day.declined;
         acc.totalPending += day.pending;
         acc.totalConfirmed += day.confirmed;
         acc.totalPaid += day.paid;
@@ -2632,6 +2655,7 @@ app.get("/vendor/charts", requireUser, async (req: any, res) => {
         totalReservations: 0,
         totalCompleted: 0,
         totalCancelled: 0,
+        totalDeclined: 0,
         totalPending: 0,
         totalConfirmed: 0,
         totalPaid: 0,
@@ -2653,6 +2677,13 @@ app.get("/vendor/charts", requireUser, async (req: any, res) => {
           )
         : 0;
 
+    const declinedRate =
+      summaryBase.totalReservations > 0
+        ? Number(
+            ((summaryBase.totalDeclined / summaryBase.totalReservations) * 100).toFixed(2),
+          )
+        : 0;
+
     return res.json({
       from,
       to,
@@ -2661,6 +2692,7 @@ app.get("/vendor/charts", requireUser, async (req: any, res) => {
         ...summaryBase,
         completionRate,
         cancellationRate,
+        declinedRate,
       },
     });
   } catch (error: any) {
@@ -3100,6 +3132,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         total: number;
         completed: number;
         cancelled: number;
+        declined: number;
         pending: number;
         confirmed: number;
         paid: number;
@@ -3113,6 +3146,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         total: 0,
         completed: 0,
         cancelled: 0,
+        declined: 0,
         pending: 0,
         confirmed: 0,
         paid: 0,
@@ -3131,7 +3165,8 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
 
       const status = normalizeReservationStatus((row as any).status);
       if (status === "completed") bucket.completed += 1;
-      if (status === "cancelled" || status === "declined") bucket.cancelled += 1;
+      if (status === "cancelled") bucket.cancelled += 1;
+      if (status === "declined") bucket.declined += 1;
       if (status === "pending") bucket.pending += 1;
       if (status === "confirmed") bucket.confirmed += 1;
 
@@ -3153,6 +3188,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         acc.totalReservations += day.total;
         acc.totalCompleted += day.completed;
         acc.totalCancelled += day.cancelled;
+        acc.totalDeclined += day.declined;
         acc.totalPaid += day.paid;
         acc.totalRevenueMinor += day.revenueMinor;
         return acc;
@@ -3161,6 +3197,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         totalReservations: 0,
         totalCompleted: 0,
         totalCancelled: 0,
+        totalDeclined: 0,
         totalPaid: 0,
         totalRevenueMinor: 0,
       },
@@ -3180,6 +3217,13 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
           )
         : 0;
 
+    const declinedRate =
+      summaryBase.totalReservations > 0
+        ? Number(
+            ((summaryBase.totalDeclined / summaryBase.totalReservations) * 100).toFixed(2),
+          )
+        : 0;
+
     return res.json({
       from,
       to,
@@ -3188,6 +3232,7 @@ app.get("/admin/charts", requireUser, async (req: any, res) => {
         ...summaryBase,
         completionRate,
         cancellationRate,
+        declinedRate,
       },
     });
   } catch (error: any) {

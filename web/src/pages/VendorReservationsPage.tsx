@@ -101,9 +101,12 @@ export default function VendorReservationsPage() {
   const [reservations, setReservations] = useState<VendorReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [receiptId, setReceiptId] = useState<string | null>(null);
+  const [declineTarget, setDeclineTarget] = useState<string | null>(null);
+  const [declineReason, setDeclineReason] = useState("No available table");
   const [restaurantIdFilter, setRestaurantIdFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("");
@@ -117,7 +120,7 @@ export default function VendorReservationsPage() {
     listVendorRestaurants()
       .then((data) => setRestaurants(Array.isArray(data) ? data : []))
       .catch((error) =>
-        setMessage(getErrorMessage(error, "Unable to load restaurants filter.")),
+        setMessage({ text: getErrorMessage(error, "Unable to load restaurants filter."), type: "error" }),
       );
   }, [isAuthed]);
 
@@ -144,7 +147,7 @@ export default function VendorReservationsPage() {
         setReservations(Array.isArray(data) ? data : []);
       } catch (error) {
         if (!alive) return;
-        setMessage(getErrorMessage(error, "Unable to load reservations."));
+        setMessage({ text: getErrorMessage(error, "Unable to load reservations."), type: "error" });
       } finally {
         if (!alive) return;
         setLoading(false);
@@ -167,31 +170,52 @@ export default function VendorReservationsPage() {
     reservationId: string,
     action: "approve" | "decline" | "complete",
   ) {
+    if (action === "decline") {
+      setDeclineTarget(reservationId);
+      setDeclineReason("No available table");
+      return;
+    }
+
     try {
       setActingId(reservationId);
       setMessage(null);
 
-      let reason: string | undefined;
-      if (action === "decline") {
-        const input = window.prompt("Decline reason (optional):", "No available table");
-        if (input === null) {
-          setActingId(null);
-          return;
-        }
-        reason = input;
-      }
-
-      const result = await decideVendorReservation(reservationId, action, reason);
+      const result = await decideVendorReservation(reservationId, action);
       setReservations((prev) =>
         prev.map((reservation) =>
           reservation.id === reservationId ? result.reservation : reservation,
         ),
       );
       setViewingId(null);
-      setMessage(result.message);
+      setMessage({ text: result.message, type: "success" });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
-      setMessage(getErrorMessage(error, `Failed to ${action} reservation.`));
+      setMessage({ text: getErrorMessage(error, `Failed to ${action} reservation.`), type: "error" });
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  async function handleConfirmDecline() {
+    if (!declineTarget) return;
+    const id = declineTarget;
+    setDeclineTarget(null);
+
+    try {
+      setActingId(id);
+      setMessage(null);
+
+      const result = await decideVendorReservation(id, "decline", declineReason || undefined);
+      setReservations((prev) =>
+        prev.map((reservation) =>
+          reservation.id === id ? result.reservation : reservation,
+        ),
+      );
+      setViewingId(null);
+      setMessage({ text: result.message, type: "success" });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      setMessage({ text: getErrorMessage(error, "Failed to decline reservation."), type: "error" });
     } finally {
       setActingId(null);
     }
@@ -236,8 +260,12 @@ export default function VendorReservationsPage() {
         </header>
 
         {message && (
-          <div className="mt-5 rounded-2xl border border-[#f2cccf] bg-[#fff6f7] px-4 py-3 text-sm text-[#9f1239]">
-            {message}
+          <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm ${
+            message.type === "success"
+              ? "border-[#b7e4c7] bg-[#ecfdf3] text-[#166534]"
+              : "border-[#f2cccf] bg-[#fff6f7] text-[#9f1239]"
+          }`}>
+            {message.text}
           </div>
         )}
 
@@ -318,7 +346,11 @@ export default function VendorReservationsPage() {
               return (
                 <article
                   key={reservation.id}
-                  className="flex flex-col rounded-2xl border border-[#e8e2e3] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+                  className={`flex flex-col rounded-2xl border shadow-[0_12px_30px_rgba(15,23,42,0.08)] ${
+                    isPending
+                      ? "border-[#f8d9a5] bg-[#fffbf5] ring-2 ring-[#f8d9a5]/40"
+                      : "border-[#e8e2e3] bg-white"
+                  }`}
                 >
                   {/* Status badges */}
                   <div className="flex items-center justify-between gap-2 px-4 pt-4">
@@ -480,6 +512,18 @@ export default function VendorReservationsPage() {
                       Decline reason: {reservation.decline_reason}
                     </div>
                   )}
+
+                  {/* View Receipt button */}
+                  {normalizePaymentStatus(reservation.payment_status) === "paid" && (
+                    <button
+                      type="button"
+                      onClick={() => setReceiptId(reservation.id)}
+                      className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-[#c4def3] bg-[#eef7ff] px-4 py-2.5 text-sm font-semibold text-[#1d4f7a] transition hover:bg-[#dceeff]"
+                    >
+                      <Receipt className="h-4 w-4" />
+                      View Receipt
+                    </button>
+                  )}
                 </div>
 
                 {/* Modal footer */}
@@ -523,6 +567,115 @@ export default function VendorReservationsPage() {
             </div>
           );
         })()}
+
+        {/* Receipt Modal */}
+        {receiptId && (() => {
+          const reservation = reservations.find((r) => r.id === receiptId);
+          if (!reservation) return null;
+          const refNo = `RS${reservation.id.slice(0, 8).toUpperCase()}`;
+          const paidAt = reservation.payment_paid_at
+            ? new Date(reservation.payment_paid_at).toLocaleString("en-PH", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+            : "N/A";
+          const provider = reservation.payment_provider ?? "N/A";
+          const providerThemes: Record<string, { bg: string; logo: string; label: string }> = {
+            gcash: { bg: "bg-[#007dfe]", logo: "G", label: "GCash" },
+            paymaya: { bg: "bg-[#00b900]", logo: "M", label: "Maya" },
+            gotyme: { bg: "bg-[#ff6b00]", logo: "GT", label: "GoTyme" },
+          };
+          const theme = providerThemes[provider.toLowerCase()] ?? { bg: "bg-[#8b3d4a]", logo: "R", label: provider };
+
+          return (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setReceiptId(null)}>
+              <div className="mx-4 w-full max-w-[380px] overflow-hidden rounded-[20px] bg-white shadow-[0_28px_60px_rgba(0,0,0,0.4)]" onClick={(e) => e.stopPropagation()}>
+                {/* Provider Header */}
+                <div className={`${theme.bg} px-6 py-5 text-center text-white`}>
+                  <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-full bg-white/25 text-lg font-extrabold">{theme.logo}</div>
+                  <div className="text-lg font-bold tracking-wide">{theme.label}</div>
+                  <div className="mt-1 text-sm opacity-90">Payment Receipt</div>
+                </div>
+
+                {/* Success Badge */}
+                <div className="flex justify-center -mt-4">
+                  <div className="grid h-9 w-9 place-items-center rounded-full bg-[#22c55e] text-white shadow-md ring-4 ring-white">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div className="mt-3 text-center">
+                  <div className="text-[11px] uppercase tracking-wider text-gray-500">Amount Paid</div>
+                  <div className="mt-1 text-3xl font-bold text-gray-900">{toPesoFromMinor(reservation.payment_amount)}</div>
+                  <div className="mt-2 inline-flex rounded-full bg-green-100 px-3 py-0.5 text-xs font-semibold text-green-700">Successful</div>
+                </div>
+
+                {/* Tear Divider */}
+                <div className="relative my-4">
+                  <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-black/60" />
+                  <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-black/60" />
+                  <div className="mx-5 border-t-2 border-dashed border-gray-200" />
+                </div>
+
+                {/* Details */}
+                <div className="space-y-2.5 px-6 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">Ref. No.</span><span className="font-mono text-xs font-semibold text-gray-900">{refNo}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Restaurant</span><span className="max-w-[180px] truncate text-right font-medium text-gray-900">{reservation.restaurant?.name ?? "—"}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Guest</span><span className="font-medium text-gray-900">{reservation.name}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Date</span><span className="font-medium text-gray-900">{toPrettyDate(reservation.date)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Time</span><span className="font-medium text-gray-900">{to12Hour(reservation.time)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Guests</span><span className="font-medium text-gray-900">{reservation.guests}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Paid At</span><span className="font-medium text-gray-900">{paidAt}</span></div>
+                  {reservation.payment_reference && (
+                    <div className="flex justify-between"><span className="text-gray-500">Txn Ref</span><span className="max-w-[180px] truncate text-right font-mono text-xs font-semibold text-gray-900">{reservation.payment_reference}</span></div>
+                  )}
+                </div>
+
+                {/* Close button */}
+                <div className="px-6 py-4 mt-2">
+                  <button type="button" onClick={() => setReceiptId(null)} className="w-full rounded-xl bg-[#f3f4f6] py-2.5 text-sm font-semibold text-[#374151] transition hover:bg-[#e5e7eb]">Close</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Decline Reason Modal */}
+        {declineTarget && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setDeclineTarget(null)}>
+            <div className="mx-4 w-full max-w-[400px] rounded-[20px] bg-white shadow-[0_28px_60px_rgba(0,0,0,0.25)]" onClick={(e) => e.stopPropagation()}>
+              <div className="px-6 pt-6 pb-2">
+                <h3 className="text-base font-bold text-[#1f2937]">Decline Reservation</h3>
+                <p className="mt-1 text-sm text-[#6b7280]">Provide a reason for declining (optional).</p>
+              </div>
+              <div className="px-6 py-3">
+                <input
+                  type="text"
+                  value={declineReason}
+                  onChange={(e) => setDeclineReason(e.target.value)}
+                  placeholder="e.g. No available table"
+                  className="w-full rounded-xl border border-[#e5e7eb] bg-[#f9fafb] px-4 py-2.5 text-sm text-[#1f2937] outline-none focus:border-[#b76a73] focus:ring-1 focus:ring-[#b76a73] transition"
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === "Enter") handleConfirmDecline(); }}
+                />
+              </div>
+              <div className="flex items-center gap-3 px-6 pb-5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeclineTarget(null)}
+                  className="flex-1 rounded-xl bg-[#f3f4f6] py-2.5 text-sm font-semibold text-[#374151] transition hover:bg-[#e5e7eb]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDecline}
+                  className="flex-1 rounded-xl bg-[#be123c] py-2.5 text-sm font-semibold text-white transition hover:bg-[#9f1239]"
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
